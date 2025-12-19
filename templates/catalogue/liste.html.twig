@@ -1,8 +1,10 @@
 {% extends 'base.html.twig' %}
 
 {% block title %}
-    {% if sousCategorie %}
+    {% if sousCategorie and categorie %}
         {{ sousCategorie.nom }} - {{ categorie.nom }}
+    {% elseif sousCategorie %}
+        {{ sousCategorie.nom }}
     {% elseif categorie %}
         {{ categorie.nom }}
     {% endif %} - SoSand

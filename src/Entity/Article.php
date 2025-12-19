@@ -18,7 +18,9 @@ class Article
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\Column(length: 255, unique: true)]
+    // Longueur limitée à 191 pour compatibilité avec certaines versions de MySQL
+    // (index unique sur utf8mb4 limité à 767 octets)
+    #[ORM\Column(length: 191, unique: true)]
     private ?string $slug = null;
 
     #[ORM\Column(length: 255)]

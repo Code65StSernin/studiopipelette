@@ -61,25 +61,25 @@
     <!-- Featured Start -->
     <div class="row pb-3">
             <div class="col-lg-3 col-md-6 col-sm-12 pb-1">
-                <div class="d-flex align-items-center border mb-4" style="padding: 30px;">
+                <div class="d-flex align-items-center mb-4 home-feature-card card" style="padding: 30px;">
                     <h1 class="fa fa-check text-primary m-0 mr-3"></h1>
-                    <h5 class="font-weight-semi-bold m-0">Bougies artisanales</h5>
+                    <h5 class="font-weight-semi-bold m-0">Bijoux artisanaux</h5>
                 </div>
             </div>
             <div class="col-lg-3 col-md-6 col-sm-12 pb-1">
-                <div class="d-flex align-items-center border mb-4" style="padding: 30px;">
+                <div class="d-flex align-items-center mb-4 home-feature-card card" style="padding: 30px;">
                     <h1 class="fa fa-shipping-fast text-primary m-0 mr-2"></h1>
                     <h5 class="font-weight-semi-bold m-0">Livraison gratuite en point relais</h5>
                 </div>
             </div>
             <div class="col-lg-3 col-md-6 col-sm-12 pb-1">
-                <div class="d-flex align-items-center border mb-4" style="padding: 30px;">
+                <div class="d-flex align-items-center mb-4 home-feature-card card" style="padding: 30px;">
                     <h1 class="fas fa-exchange-alt text-primary m-0 mr-3"></h1>
                     <h5 class="font-weight-semi-bold m-0">Fidélité<br>récompensée</h5>
                 </div>
             </div>
             <div class="col-lg-3 col-md-6 col-sm-12 pb-1">
-                <div class="d-flex align-items-center border mb-4" style="padding: 30px;">
+                <div class="d-flex align-items-center mb-4 home-feature-card card" style="padding: 30px;">
                     <h1 class="fa fa-phone-volume text-primary m-0 mr-3"></h1>
                     <h5 class="font-weight-semi-bold m-0">Support 7/7<br>par Email</h5>
                 </div>
@@ -88,27 +88,28 @@
     </div>
     <!-- Featured End -->
 
-    <!-- Categories Start -->
-    <div class="pt-5">
-        <div class="row pb-3">
+{% endblock %}
+
+{% block body %}
+    <!-- Categories Start (plein écran) -->
+    <div class="container-fluid pt-5 pb-3 home-subcats-full">
+        <div class="row pb-3 home-subcats-row">
             {% for data in sousCategoriesData %}
                 {% set imageNumber = loop.index %}
-                <div class="col-lg-4 col-md-6 pb-1">
-                    <div class="cat-item d-flex flex-column border mb-4" style="padding: 30px;">
+                <div class="col-6 col-md-4 col-lg-2 pb-4 home-subcat-col">
+                    <div class="cat-item d-flex flex-column home-subcat-card card" style="padding: 18px 18px 24px;">
                         <p class="text-right">{{ data.articleCount }} Produit{% if data.articleCount > 1 %}s{% endif %}</p>
                         <a href="{{ path('app_catalogue_sous_categorie', {'slug': data.sousCategorie.slug}) }}" class="cat-img position-relative overflow-hidden mb-3">
                             <img class="img-fluid" src="{{ asset('assets/img/cat-' ~ imageNumber ~ '.jpg') }}" alt="{{ data.sousCategorie.nom }}">
                         </a>
-                        <h5 class="font-weight-semi-bold m-0">{{ data.sousCategorie.nom }}</h5>
+                        <h5 class="font-weight-semi-bold m-0 text-center">{{ data.sousCategorie.nom }}</h5>
                     </div>
                 </div>
             {% endfor %}
         </div>
     </div>
     <!-- Categories End -->
-{% endblock %}
 
-{% block body %}
     {% if offres is not empty %}
         <!-- Offer Start (dynamique) -->
         <div class="container-fluid offer py-5">
@@ -180,7 +181,7 @@
     <!-- Products Start (Full Width) -->
     <div class="container-fluid pt-5 pb-3">
         <div class="text-center mb-4">
-            <h2 class="section-title px-5"><span class="px-2">Bougies tendances</span></h2>
+            <h2 class="section-title px-5"><span class="px-2">Créations tendances</span></h2>
         </div>
         <div class="row px-xl-5">
             {% for article in featuredArticles %}

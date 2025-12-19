@@ -51,11 +51,11 @@
             <div class="row align-items-center py-3 px-xl-5">
                 <div class="col-lg-3 d-none d-lg-block" style="position: relative; z-index: 10;">
                     <a href="{{ path('app_home') }}" class="text-decoration-none">
-                        <img src="{{ asset('assets/img/logo lateral.png') }}" alt="Logo" style="height: 150px;">
+                        <img src="{{ asset('assets/img/logo_petit_noir.png') }}" alt="Logo" style="height: 150px;">
                     </a>
                 </div>
                 <div class="col-lg-6 col-6 text-left">
-                    <form action="{{ path('app_boutique') }}" method="get">
+                    <form action="{{ path('app_boutique') }}" method="get" class="search-card card">
                         <div class="input-group">
                             <input type="text" name="q" class="form-control" placeholder="Rechercher un produit" value="{{ app.request.query.get('q') }}">
                             <div class="input-group-append">
@@ -88,7 +88,7 @@
                 <div class="col-12">
                     <nav class="navbar navbar-expand-lg bg-light navbar-light py-3 py-lg-0 px-0" style="margin-top: 60px;">
                         <a href="{{ path('app_home') }}" class="text-decoration-none d-block d-lg-none">
-                            <img src="{{ asset('assets/img/logo lateral.png') }}" alt="Logo" style="height: 80px;">
+                            <img src="{{ asset('assets/img/logo_petit_noir.png') }}" alt="Logo" style="height: 80px;">
                         </a>
                         <button type="button" class="navbar-toggler" data-toggle="collapse" data-target="#navbarCollapse">
                             <span class="navbar-toggler-icon"></span>
@@ -142,34 +142,36 @@
             <!-- Menu de gauche + Contenu -->
             <div class="row px-xl-5">
                 {% if app.request.attributes.get('_route') not in ['app_boutique', 'app_article_show'] %}
-                <div class="col-12 col-lg-3">
-                    <a class="btn shadow-none d-flex align-items-center justify-content-between bg-primary text-white w-100" data-toggle="collapse" href="#navbar-vertical" style="height: 65px; padding: 0 30px;">
-                        <h6 class="m-0">Catégories</h6>
-                        <i class="fa fa-angle-down text-dark"></i>
-                    </a>
-                    <nav class="collapse navbar navbar-vertical navbar-light align-items-start p-0 border border-top-0 border-bottom-0 d-lg-block" id="navbar-vertical">
-                        <div class="navbar-nav w-100" style="height: auto">
-                            {% for categorie in categories %}
-                                {# Vérifier si cette catégorie a des sous-catégories (catégorie ID 1) #}
-                                {% set hasSousCategories = categorie.id == 1 %}
-                                
-                                {% if hasSousCategories %}
-                                    <div class="nav-item dropdown">
-                                        <a href="{{ path('app_catalogue_categorie', {'slug': categorie.slug}) }}" class="nav-link" data-toggle="dropdown">
-                                            {{ categorie.nom }} <i class="fa fa-angle-down float-right mt-1"></i>
-                                        </a>
-                                        <div class="dropdown-menu position-absolute bg-secondary border-0 rounded-0 w-100 m-0">
-                                            {% for sousCategorie in sousCategories %}
-                                                <a href="{{ path('app_catalogue_sous_categorie', {'slug': sousCategorie.slug}) }}" class="dropdown-item">{{ sousCategorie.nom }}</a>
-                                            {% endfor %}
+                <div class="col-12 col-lg-3 mb-4">
+                    <div class="left-menu-card card p-0">
+                        <a class="btn shadow-none d-flex align-items-center justify-content-between bg-primary text-white w-100 left-menu-toggle" data-toggle="collapse" href="#navbar-vertical" style="height: 65px; padding: 0 30px;">
+                            <h6 class="m-0">Catégories</h6>
+                            <i class="fa fa-angle-down text-dark"></i>
+                        </a>
+                        <nav class="collapse navbar navbar-vertical navbar-light align-items-start p-0 d-lg-block" id="navbar-vertical">
+                            <div class="navbar-nav w-100">
+                                {% for categorie in categories %}
+                                    {# Vérifier si cette catégorie a des sous-catégories (catégorie ID 1) #}
+                                    {% set hasSousCategories = categorie.id == 1 %}
+                                    
+                                    {% if hasSousCategories %}
+                                        <div class="nav-item dropdown">
+                                            <a href="{{ path('app_catalogue_categorie', {'slug': categorie.slug}) }}" class="nav-link" data-toggle="dropdown">
+                                                {{ categorie.nom }} <i class="fa fa-angle-down float-right mt-1"></i>
+                                            </a>
+                                            <div class="dropdown-menu position-absolute bg-secondary border-0 rounded-0 w-100 m-0">
+                                                {% for sousCategorie in sousCategories %}
+                                                    <a href="{{ path('app_catalogue_sous_categorie', {'slug': sousCategorie.slug}) }}" class="dropdown-item">{{ sousCategorie.nom }}</a>
+                                                {% endfor %}
+                                            </div>
                                         </div>
-                                    </div>
-                                {% else %}
-                                    <a href="{{ path('app_catalogue_categorie', {'slug': categorie.slug}) }}" class="nav-item nav-link">{{ categorie.nom }}</a>
-                                {% endif %}
-                            {% endfor %}
-                        </div>
-                    </nav>
+                                    {% else %}
+                                        <a href="{{ path('app_catalogue_categorie', {'slug': categorie.slug}) }}" class="nav-item nav-link">{{ categorie.nom }}</a>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        </nav>
+                    </div>
                 </div>
                 {% endif %}
                 
@@ -189,7 +191,7 @@
             <div class="row px-xl-5 pt-5">
                 <div class="col-lg-4 col-md-12 mb-5 pr-3 pr-xl-5">
                     <a href="{{ path('app_home') }}" class="text-decoration-none">
-                        <img src="{{ asset('assets/img/logo lateral blanc.png') }}" alt="Logo" style="height: 120px;" class="mb-4">
+                        <img src="{{ asset('assets/img/logo_petit_blanc.png') }}" alt="Logo" style="height: 120px;" class="mb-4">
                     </a>
                     <p>Découvrez nos bougies artisanales, conçues avec soin et passion. Pour une ambiance chaleureuse et unique.</p>
                     {% if societe.adresse %}
