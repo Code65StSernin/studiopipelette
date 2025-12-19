@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Facture {{ facture.numero }}</title>
+    <style>
+        @page {
+            margin: 0;
+        }
+
+        body {
+            font-family: DejaVu Sans, Arial, Helvetica, sans-serif;
+            font-size: 12px;
+            margin: 0;
+            padding: 0;
+        }
+
+        .page-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+
+        .page-bg img {
+            width: 100%;
+            height: 100%;
+        }
+
+        .facture-wrapper {
+            width: 100%;
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 190px 40px 60px 60px; /* laisse la place pour l'en-tête graphique */
+        }
+        .facture-header {
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+            display: table;
+            width: 100%;
+        }
+        .facture-header-left,
+        .facture-header-right {
+            display: table-cell;
+            vertical-align: top;
+            width: 50%;
+        }
+        h1, h2, h3, h4, h5 {
+            margin: 0;
+            padding: 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 6px 8px;
+        }
+        th {
+            background-color: #f5f5f5;
+        }
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+        .mt-2 { margin-top: 8px; }
+        .mt-3 { margin-top: 12px; }
+
+        .totals-row td {
+            border: none;
+        }
+    </style>
+    </head>
+<body>
+    {% if backgroundUrl is defined %}
+        <div class="page-bg">
+            <img src="{{ backgroundUrl }}" alt="">
+        </div>
+    {% endif %}
+
+    <div class="facture-wrapper">
+        <div class="facture-header">
+            <div class="facture-header-left">
+                <h2>Facture {{ facture.numero }}</h2>
+                <p>
+                    <strong>Date :</strong> {{ facture.dateCreation|date('d/m/Y') }}<br>
+                    <strong>Client :</strong> {{ facture.clientPrenom }} {{ facture.clientNom }}<br>
+                    <strong>Email :</strong> {{ facture.clientEmail }}
+                </p>
+                <p class="mt-2">
+                    <strong>Adresse de livraison :</strong><br>
+                    {% if adresseLivraison is defined and adresseLivraison %}
+                        {{ adresseLivraison|nl2br }}
+                    {% else %}
+                        {{ facture.modeLivraison == 'domicile' ? 'À domicile' : 'Point relais' }}
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+
+        {% if facture.lignesFacture is empty %}
+            <p><em>Aucun détail d'article disponible pour cette facture.</em></p>
+        {% else %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Article</th>
+                        <th>Taille</th>
+                        <th class="text-center">Quantité</th>
+                        <th class="text-right">Prix unitaire</th>
+                        <th class="text-right">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ligne in facture.lignesFacture %}
+                        <tr>
+                            <td>{{ ligne.articleDesignation }}</td>
+                            <td>{{ ligne.articleTaille }}</td>
+                            <td class="text-center">{{ ligne.quantite }}</td>
+                            <td class="text-right">{{ (ligne.prixUnitaire / 100)|number_format(2, ',', ' ') }} €</td>
+                            <td class="text-right">{{ (ligne.prixTotal / 100)|number_format(2, ',', ' ') }} €</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="totals-row">
+                        <td colspan="4" class="text-right"><strong>Frais de livraison :</strong></td>
+                        <td class="text-right">
+                            {{ (facture.fraisLivraison / 100)|number_format(2, ',', ' ') }} €
+                        </td>
+                    </tr>
+                    {% if facture.remisePourcentage is not null %}
+                        <tr class="totals-row">
+                            <td colspan="4" class="text-right"><strong>Code promo appliqué :</strong></td>
+                            <td class="text-right">
+                                {{ facture.remisePourcentage|number_format(0) }} %
+                            </td>
+                        </tr>
+                    {% endif %}
+                    <tr class="totals-row">
+                        <td colspan="4" class="text-right"><strong>Total TTC :</strong></td>
+                        <td class="text-right"><strong>{{ (facture.totalTTC / 100)|number_format(2, ',', ' ') }} €</strong></td>
+                    </tr>
+                    <tr class="totals-row">
+                        <td colspan="4" class="text-right"><strong>Réglé :</strong></td>
+                        <td class="text-right">
+                            {{ (facture.totalTTC / 100)|number_format(2, ',', ' ') }} €
+                        </td>
+                    </tr>
+                    <tr class="totals-row">
+                        <td colspan="4" class="text-right"><strong>Reste à régler :</strong></td>
+                        <td class="text-right">
+                            0,00 €
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
+        {% endif %}
+    </div>
+    </body>
+</html>

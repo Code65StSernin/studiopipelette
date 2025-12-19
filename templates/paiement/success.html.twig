@@ -1,0 +1,13 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Paiement confirmé - SoSand{% endblock %}
+
+{% block content_right %}
+    <div class="alert alert-success">
+        <strong>Merci !</strong> Ton paiement a été reçu.
+        <br>
+        <small>Session Stripe : {{ session_id }}</small>
+    </div>
+
+    <a href="{{ path('app_home') }}" class="btn btn-outline-primary">Retour accueil</a>
+{% endblock %}

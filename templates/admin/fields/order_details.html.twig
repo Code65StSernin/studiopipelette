@@ -1,0 +1,11 @@
+{% if field.value is not empty %}
+    <ul class="list-unstyled mb-0">
+        {% for ligne in field.value %}
+            <li>
+                {{ ligne.quantite }}x {{ ligne.articleDesignation }} ({{ ligne.articleTaille }})
+            </li>
+        {% endfor %}
+    </ul>
+{% else %}
+    <span class="text-muted">Aucun article</span>
+{% endif %}

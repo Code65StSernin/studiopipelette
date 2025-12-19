@@ -1,0 +1,9 @@
+{% if field.value is not empty %}
+    <ul class="list-unstyled">
+        {% for detail in field.value %}
+            <li>
+                {{ detail.quantity }}x {{ detail.product }} ({{ detail.size }})
+            </li>
+        {% endfor %}
+    </ul>
+{% endif %}

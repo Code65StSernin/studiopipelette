@@ -1,0 +1,62 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Paiement - SoSand{% endblock %}
+
+{% block content_right %}
+<div class="card border-secondary mb-4">
+    <div class="card-header bg-secondary border-0">
+        <h4 class="font-weight-semi-bold m-0">Paiement</h4>
+    </div>
+    <div class="card-body">
+        <p class="mb-3">Vous allez être redirigé vers la page de paiement sécurisée Stripe.</p>
+
+        {# TODO: remplace ce montant par ton total panier + frais livraison #}
+        <input type="hidden" id="amountCents" value="5900">
+
+        <button class="btn btn-primary" id="payBtn">
+            Payer maintenant
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+{{ parent() }}
+
+<script src="https://js.stripe.com/v3/"></script>
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+    const payBtn = document.getElementById('payBtn');
+    const amountCents = document.getElementById('amountCents').value;
+
+    const stripe = Stripe('{{ stripePublicKey }}');
+
+    payBtn.addEventListener('click', async () => {
+        payBtn.disabled = true;
+
+        const formData = new URLSearchParams();
+        formData.append('amount', amountCents);
+
+        const res = await fetch('{{ path('app_payment_create_session') }}', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+            body: formData.toString()
+        });
+
+        const data = await res.json();
+
+        if (data.error) {
+            alert(data.error);
+            payBtn.disabled = false;
+            return;
+        }
+
+        const result = await stripe.redirectToCheckout({ sessionId: data.id });
+        if (result.error) {
+            alert(result.error.message);
+            payBtn.disabled = false;
+        }
+    });
+});
+</script>
+{% endblock %}

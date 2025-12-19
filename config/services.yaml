@@ -1,0 +1,19 @@
+# config/services.yaml
+
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+
+    App\:
+        resource: '../src/'
+        # Exclure les répertoires qui ne contiennent pas de services
+        exclude:
+            - '../src/DependencyInjection/'
+            - '../src/Entity/'
+            - '../src/Kernel.php'
+
+    # Configuration explicite du service ImageService
+    App\Service\ImageService:
+        arguments:
+            $projectDir: '%kernel.project_dir%'

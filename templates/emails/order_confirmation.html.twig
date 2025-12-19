@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+</head>
+<body style="font-family: Arial, sans-serif; background:#f8f8f8; padding:20px;">
+    <div style="max-width:600px; margin:auto; background:#ffffff; padding:20px; border-radius:6px;">
+
+        <h2 style="color:#333;">Merci pour votre commande</h2>
+
+        <p>
+            Bonjour <strong>{{ user.prenom ?? user.email }}</strong>,
+        </p>
+
+        <p>
+            Nous vous remercions sincèrement pour votre commande.
+            Celle-ci a bien été reçue et est actuellement en préparation.
+        </p>
+
+        <h3>Récapitulatif de votre commande</h3>
+
+        <table style="width:100%; border-collapse:collapse; margin:20px 0;">
+            <thead>
+                <tr style="background:#f8f8f8;">
+                    <th style="border:1px solid #ddd; padding:8px; text-align:left;">Article</th>
+                    <th style="border:1px solid #ddd; padding:8px; text-align:center;">Taille</th>
+                    <th style="border:1px solid #ddd; padding:8px; text-align:center;">Quantité</th>
+                    <th style="border:1px solid #ddd; padding:8px; text-align:right;">Prix</th>
+                    <th style="border:1px solid #ddd; padding:8px; text-align:right;">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ligne in facture.lignesFacture %}
+                    <tr>
+                        <td style="border:1px solid #ddd; padding:8px;">{{ ligne.articleDesignation }}</td>
+                        <td style="border:1px solid #ddd; padding:8px; text-align:center;">{{ ligne.articleTaille }}</td>
+                        <td style="border:1px solid #ddd; padding:8px; text-align:center;">{{ ligne.quantite }}</td>
+                        <td style="border:1px solid #ddd; padding:8px; text-align:right;">{{ (ligne.prixUnitaire / 100)|number_format(2, ',', ' ') }} €</td>
+                        <td style="border:1px solid #ddd; padding:8px; text-align:right;"><strong>{{ (ligne.prixTotal / 100)|number_format(2, ',', ' ') }} €</strong></td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                {% if facture.fraisLivraison > 0 %}
+                    <tr>
+                        <td colspan="4" style="border:1px solid #ddd; padding:8px; text-align:right;"><strong>Frais de livraison :</strong></td>
+                        <td style="border:1px solid #ddd; padding:8px; text-align:right;"><strong>{{ (facture.fraisLivraison / 100)|number_format(2, ',', ' ') }} €</strong></td>
+                    </tr>
+                {% endif %}
+                <tr style="background:#e8f4fd;">
+                    <td colspan="4" style="border:1px solid #ddd; padding:8px; text-align:right;"><strong>Total TTC :</strong></td>
+                    <td style="border:1px solid #ddd; padding:8px; text-align:right;"><strong style="font-size:16px;">{{ (facture.totalTTC / 100)|number_format(2, ',', ' ') }} €</strong></td>
+                </tr>
+            </tfoot>
+        </table>
+
+        <p>
+            Mode de livraison :
+            <strong>
+                {% if facture.modeLivraison == 'domicile' %}
+                    À domicile (+{{ (facture.fraisLivraison / 100)|number_format(2, ',', ' ') }} €)
+                {% else %}
+                    Point relais
+                {% endif %}
+            </strong>
+        </p>
+
+        {% if order.relayName %}
+            <p>
+                Point relais :<br>
+                {{ order.relayName }}<br>
+                {{ order.relayAddress }}
+            </p>
+        {% endif %}
+
+        <p>
+            Vous pouvez visualiser et télécharger votre facture en vous rendant sur So'Sand, dans votre espace client, option "Factures" dans le menu "Mon compte".
+        </p>
+        <p>
+            Vous recevrez un email dès que votre commande sera expédiée.
+        </p>
+
+        <p style="margin-top:30px;">
+            À très bientôt,<br>
+            <strong>L’équipe So'Sand</strong>
+        </p>
+
+    </div>
+</body>
+</html>

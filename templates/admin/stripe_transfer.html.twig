@@ -1,0 +1,73 @@
+{% extends '@EasyAdmin/page/content.html.twig' %}
+
+{% block content %}
+    <h1 class="mb-4">Rapatriement Stripe</h1>
+
+    <p class="text-muted">
+        Sélectionnez les factures payées que vous souhaitez inclure dans un virement Stripe.
+        Le montant proposé correspond au total TTC des factures moins les frais CB (1,5% + 0,25€ par facture).
+    </p>
+
+    {% if factures is empty %}
+        <div class="alert alert-info">
+            Aucune facture payée en attente de transfert Stripe.
+        </div>
+    {% else %}
+        <form method="post">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <strong>Factures éligibles</strong>
+                    <button type="submit" class="btn btn-primary btn-sm">
+                        Créer le virement Stripe
+                    </button>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-striped mb-0">
+                            <thead>
+                                <tr>
+                                    <th style="width: 40px;">
+                                        <input type="checkbox" id="select-all">
+                                    </th>
+                                    <th>Numéro</th>
+                                    <th>Date</th>
+                                    <th>Client</th>
+                                    <th class="text-right">Total TTC</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for facture in factures %}
+                                    <tr>
+                                        <td>
+                                            <input type="checkbox" name="factures[]" value="{{ facture.id }}" class="facture-checkbox">
+                                        </td>
+                                        <td>{{ facture.numero }}</td>
+                                        <td>{{ facture.dateCreation|date('d/m/Y') }}</td>
+                                        <td>{{ facture.clientPrenom }} {{ facture.clientNom }}</td>
+                                        <td class="text-right">{{ (facture.totalTTC / 100)|number_format(2, ',', ' ') }} €</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </form>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                var selectAll = document.getElementById('select-all');
+                if (!selectAll) {
+                    return;
+                }
+                selectAll.addEventListener('change', function () {
+                    var checked = this.checked;
+                    document.querySelectorAll('.facture-checkbox').forEach(function (cb) {
+                        cb.checked = checked;
+                    });
+                });
+            });
+        </script>
+    {% endif %}
+{% endblock %}
+

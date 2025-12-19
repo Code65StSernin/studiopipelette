@@ -1,0 +1,90 @@
+{% extends '@EasyAdmin/page/content.html.twig' %}
+
+{% block content_title %}
+    Préparation de l'envoi Mondial Relay
+{% endblock %}
+
+{% block main %}
+    <div class="content-panel" style="max-width: 900px; margin: 0 auto;">
+        <h2 class="mb-3">Commande n°{{ order.id }}</h2>
+
+        <div class="row mb-4">
+            <div class="col-md-6">
+                {% if order.facture %}
+                    <p class="mb-2">
+                        <strong>Facture :</strong> {{ order.facture.numero }}<br>
+                        <strong>Client :</strong> {{ order.facture.clientPrenom }} {{ order.facture.clientNom }}
+                    </p>
+                {% endif %}
+
+                <h3 class="h6 mt-3">Adresse client</h3>
+                {% if customer_address %}
+                    <p class="mb-0 text-muted" style="white-space: pre-line;">
+                        {{ customer_address }}
+                    </p>
+                {% else %}
+                    <p class="mb-0 text-warning"><em>Aucune adresse client enregistrée.</em></p>
+                {% endif %}
+            </div>
+
+            <div class="col-md-6">
+                <h3 class="h6 mt-3">Point relais</h3>
+                {% if relay_address %}
+                    <p class="mb-0 text-muted">
+                        {{ relay_address }}
+                    </p>
+                {% else %}
+                    <p class="mb-0 text-muted"><em>Pas de point relais (livraison à domicile).</em></p>
+                {% endif %}
+            </div>
+        </div>
+
+        {{ form_start(form) }}
+            <div class="row g-3">
+                <div class="col-md-6">
+                    {{ form_row(form.mondialRelayRecipientLastName) }}
+                </div>
+                <div class="col-md-6">
+                    {{ form_row(form.mondialRelayRecipientFirstName) }}
+                </div>
+            </div>
+
+            <div class="row g-3 mt-1">
+                <div class="col-md-4">
+                    {{ form_row(form.mondialRelayParcelsCount) }}
+                </div>
+                <div class="col-md-4">
+                    {{ form_row(form.mondialRelayContentValueCents) }}
+                </div>
+                <div class="col-md-4">
+                    {{ form_row(form.mondialRelayWeightKg) }}
+                </div>
+            </div>
+
+            <div class="row g-3 mt-1">
+                <div class="col-md-12">
+                    {{ form_row(form.mondialRelayContentDescription) }}
+                </div>
+            </div>
+
+            <div class="row g-3 mt-1">
+                <div class="col-md-4">
+                    {{ form_row(form.mondialRelayLengthCm) }}
+                </div>
+                <div class="col-md-4">
+                    {{ form_row(form.mondialRelayWidthCm) }}
+                </div>
+                <div class="col-md-4">
+                    {{ form_row(form.mondialRelayHeightCm) }}
+                </div>
+            </div>
+
+            <button class="btn btn-primary mt-4">
+                Demander le bordereau Mondial Relay
+            </button>
+        {{ form_end(form) }}
+    </div>
+{% endblock %}
+
+
+

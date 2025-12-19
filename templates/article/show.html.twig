@@ -1,0 +1,507 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ article.nom }} - {{ parent() }}{% endblock %}
+
+{% block body %}
+<div class="container-fluid">
+    <div class="row px-xl-5">
+        <div class="col-12">
+            <nav class="breadcrumb bg-light mb-30">
+                <a class="breadcrumb-item text-dark" href="{{ path('app_home') }}">Accueil</a>
+                {% if article.categorie %}
+                    <a class="breadcrumb-item text-dark" href="{{ path('app_catalogue_categorie', {'slug': article.categorie.slug}) }}">{{ article.categorie.nom }}</a>
+                {% endif %}
+                {% if article.sousCategorie %}
+                    <a class="breadcrumb-item text-dark" href="{{ path('app_catalogue_sous_categorie', {'slug': article.sousCategorie.slug}) }}">{{ article.sousCategorie.nom }}</a>
+                {% endif %}
+                <span class="breadcrumb-item active">{{ article.nom }}</span>
+            </nav>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid pb-5">
+    <div class="row px-xl-5">
+        {# Colonne gauche - Images #}
+        <div class="col-lg-5 mb-30">
+            <div id="product-carousel" class="position-relative">
+                {# Image principale #}
+                <div class="product-main-image text-center mb-3">
+                    {% if article.photos|length > 0 %}
+                        {% set firstPhoto = article.photos|first %}
+                        <img id="mainImage" 
+                             src="{{ asset('assets/img/articles/' ~ article.id ~ '/' ~ firstPhoto.filename) }}" 
+                             alt="{{ article.nom }}"
+                             style="max-width: 75%; height: auto; max-height: 600px;">
+                    {% else %}
+                        <img src="{{ asset('assets/img/placeholder.jpg') }}" 
+                             alt="{{ article.nom }}"
+                             style="max-width: 75%; height: auto; max-height: 600px;">
+                    {% endif %}
+                </div>
+                
+                {# Carrousel de miniatures #}
+                {% if article.photos|length > 1 %}
+                <div class="product-thumbnails d-flex justify-content-center">
+                    {% for photo in article.photos %}
+                        <div class="thumbnail-item mx-2" style="cursor: pointer;">
+                            <img src="{{ asset('assets/img/articles/thumbnails/' ~ article.id ~ '/' ~ photo.filename) }}" 
+                                 alt="{{ article.nom }}"
+                                 class="border {% if loop.first %}border-primary{% endif %}"
+                                 style="width: 80px; height: 80px; object-fit: cover;"
+                                 data-image="{{ asset('assets/img/articles/' ~ article.id ~ '/' ~ photo.filename) }}"
+                                 onclick="changeMainImage(this)">
+                        </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        {# Colonne droite - Informations produit #}
+        <div class="col-lg-7 h-auto mb-30">
+            <div class="h-100 bg-light p-30">
+                {# Étiquettes Catégorie et Sous-catégorie #}
+                <div class="mb-3">
+                    {% if article.categorie %}
+                        <span class="badge badge-dark mr-2" style="font-size: 0.9rem; padding: 0.5rem 1rem;">
+                            {{ article.categorie.nom }}
+                        </span>
+                    {% endif %}
+                    {% if article.sousCategorie %}
+                        <span class="badge badge-secondary" style="font-size: 0.9rem; padding: 0.5rem 1rem;">
+                            {{ article.sousCategorie.nom }}
+                        </span>
+                    {% endif %}
+                </div>
+                
+                <h3 class="d-flex align-items-center">
+                    <span>{{ article.nom }}</span>
+                    <span id="discountBadge" class="badge badge-danger ml-3" style="font-size: 1rem; padding: 0.5rem 1rem; display: none;">
+                        -<span id="discountPercent">0</span>%
+                    </span>
+                </h3>
+                
+                {# Temps de combustion #}
+                {% if article.tempsCombustionMin and article.tempsCombustionMax %}
+                <p class="text-muted mb-3">
+                    <strong>Temps de combustion :</strong> de {{ article.tempsCombustionMin }} à {{ article.tempsCombustionMax }}h
+                </p>
+                {% endif %}
+                
+                {# Description #}
+                <p class="mb-4">{{ article.description }}</p>
+                
+                {# Informations de base #}
+                {% if article.lieuFabrication %}
+                <div class="d-flex mb-3 align-items-center">
+                    <img src="{{ asset('assets/img/drapeauardeche.jpg') }}" alt="Drapeau Ardèche" style="width: 50px; margin-right: 15px;">
+                    <span>Fabriqué artisanalement en {{ article.lieuFabrication }}</span>
+                </div>
+                {% endif %}
+                
+                {# Tailles disponibles avec sélection #}
+                {% if article.tailles and article.tailles|length > 0 %}
+                    {% set firstTaille = article.tailles|first %}
+                    {% if firstTaille is iterable and firstTaille.taille is defined %}
+                        {# Format correct: tableau d'objets #}
+                        <div class="d-flex mb-3 align-items-center">
+                            <strong class="text-dark mr-3">📦</strong>
+                            <span class="mr-3">{{ article.tailles|length }} taille{% if article.tailles|length > 1 %}s{% endif %} disponible{% if article.tailles|length > 1 %}s{% endif %} :</span>
+                            
+                            {# Carrés de sélection de taille #}
+                            <div id="sizeSelection" class="d-flex">
+                                {% for taille in article.tailles %}
+                                    <div class="size-option mr-2 text-center d-flex align-items-center justify-content-center" 
+                                         style="width: 45px; height: 45px; cursor: pointer; background-color: #f0f0f0; border: 2px solid #f0f0f0; {% if loop.first %}border-color: #000 !important; background-color: #000; color: #fff;{% endif %}"
+                                         data-size="{{ taille.taille }}"
+                                         data-price="{{ taille.prix }}"
+                                         data-barre="{% if taille.barre is defined and taille.barre %}{{ taille.barre }}{% endif %}"
+                                         data-stock="{{ taille.stock }}"
+                                         onclick="selectSize(this)">
+                                        <strong>{{ taille.taille }}</strong>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% else %}
+                        {# Format incorrect #}
+                        <div class="alert alert-danger">
+                            <strong>⚠️ Erreur de configuration</strong><br>
+                            Le champ "Tailles" n'est pas au bon format. Il doit contenir :<br>
+                            <code>[{"taille":"S","prix":15.00,"combustion":25,"stock":10},{"taille":"M","prix":20.00,"combustion":40,"stock":5}]</code><br>
+                            <small>Allez dans <strong>Admin > Articles</strong> pour corriger.</small>
+                        </div>
+                    {% endif %}
+                {% else %}
+                    <div class="alert alert-warning">
+                        <strong>Aucune taille définie</strong><br>
+                        Allez dans <strong>Admin > Articles</strong> pour ajouter les tailles.
+                    </div>
+                {% endif %}
+                
+                {# Cire naturelle #}
+                {% if article.typeCire %}
+                <div class="d-flex mb-3">
+                    <strong class="text-dark mr-3">🕯️</strong>
+                    <span>Cire 100% naturelle de {{ article.typeCire }}</span>
+                </div>
+                {% endif %}
+                
+                {# Parfums #}
+                {% if article.parfums|length > 0 %}
+                <div class="d-flex mb-3">
+                    <strong class="text-dark mr-3">🌸</strong>
+                    <span>Parfum : 
+                        {% for parfum in article.parfums %}
+                            {{ parfum }}{% if not loop.last %}, {% endif %}
+                        {% endfor %}
+                    </span>
+                </div>
+                {% endif %}
+                
+                {# Couleurs #}
+                {% if article.couleurs|length > 0 %}
+                <div class="d-flex mb-4 align-items-center">
+                    <strong class="text-dark mr-3">🎨</strong>
+                    <span class="mr-2">Couleur{% if article.couleurs|length > 1 %}s{% endif %} :</span>
+                    <div class="d-flex align-items-center">
+                        {% for couleur in article.couleurs %}
+                            <span class="mr-3 d-flex align-items-center">
+                                {% if couleur.codeHex %}
+                                    <span class="color-square mr-1" style="background-color: {{ couleur.codeHex }};"></span>
+                                {% endif %}
+                                {{ couleur.nom }}
+                            </span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                
+                {# Prix #}
+                <h3 class="font-weight-semi-bold mb-4">
+                    {% if article.prixMin %}
+                        <span id="currentPrice">{{ article.prixMin|number_format(2, ',', ' ') }}</span> €
+                    {% else %}
+                        <span id="currentPrice">20,00</span> €
+                    {% endif %}
+                    <span id="barredPrice" style="font-size: 1.2rem; color: #666; text-decoration: line-through; margin-left: 15px; display: none;"></span>
+                </h3>
+                
+                {# Accordéons #}
+                <div class="accordion mb-4" id="productAccordion">
+                    {# Composition et fabrication #}
+                    {% if article.compositionFabrication %}
+                    <div class="card">
+                        <div class="card-header" id="headingComposition">
+                            <h5 class="mb-0">
+                                <button class="btn btn-link collapsed text-dark w-100 text-left" 
+                                        type="button" 
+                                        data-toggle="collapse" 
+                                        data-target="#collapseComposition">
+                                    <i class="fa fa-plus mr-2"></i> Composition et fabrication
+                                </button>
+                            </h5>
+                        </div>
+                        <div id="collapseComposition" class="collapse" data-parent="#productAccordion">
+                            <div class="card-body">
+                                {{ article.compositionFabrication|nl2br }}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {# Taille et temps de combustion #}
+                    {% if article.informationsTailleCombustion %}
+                    <div class="card">
+                        <div class="card-header" id="headingSize">
+                            <h5 class="mb-0">
+                                <button class="btn btn-link collapsed text-dark w-100 text-left" 
+                                        type="button" 
+                                        data-toggle="collapse" 
+                                        data-target="#collapseSize">
+                                    <i class="fa fa-plus mr-2"></i> Taille et temps de combustion
+                                </button>
+                            </h5>
+                        </div>
+                        <div id="collapseSize" class="collapse" data-parent="#productAccordion">
+                            <div class="card-body">
+                                {{ article.informationsTailleCombustion|nl2br }}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {# Livraison #}
+                    {% if article.informationsLivraison %}
+                    <div class="card">
+                        <div class="card-header" id="headingDelivery">
+                            <h5 class="mb-0">
+                                <button class="btn btn-link collapsed text-dark w-100 text-left" 
+                                        type="button" 
+                                        data-toggle="collapse" 
+                                        data-target="#collapseDelivery">
+                                    <i class="fa fa-plus mr-2"></i> Livraison
+                                </button>
+                            </h5>
+                        </div>
+                        <div id="collapseDelivery" class="collapse" data-parent="#productAccordion">
+                            <div class="card-body">
+                                {{ article.informationsLivraison|nl2br }}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                {# En stock #}
+                <div class="d-flex align-items-center mb-4 pt-2">
+                    <span id="stockStatus" class="text-success">
+                        <i class="fa fa-check mr-2"></i>En stock
+                    </span>
+                </div>
+                
+                {# Formulaire ajouter au panier #}
+                <form method="post" action="{{ path('app_panier_ajouter', {id: article.id}) }}" id="addToCartForm">
+                    <input type="hidden" name="taille" id="selectedSize" value="{% if article.tailles and article.tailles|length > 0 %}{{ article.tailles|first.taille }}{% endif %}">
+                    <input type="hidden" name="quantite" value="1">
+                    <button type="submit" class="btn btn-primary px-3" id="addToCartBtn">
+                        <i class="fa fa-shopping-cart mr-1"></i> AJOUTER AU PANIER
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    {# Section sous-titre (Une Évasion Gourmande) #}
+    {% if article.sousTitre %}
+    <div class="row px-xl-5 mt-5">
+        <div class="col-12">
+            <div class="bg-light p-30">
+                <h3 class="mb-3">{{ article.sousTitre }}</h3>
+                <p>{{ article.sousTitreContenu|nl2br }}</p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+// Changement d'image principale au clic sur miniature
+function changeMainImage(thumbnail) {
+    const mainImage = document.getElementById('mainImage');
+    const newImageSrc = thumbnail.getAttribute('data-image');
+    mainImage.src = newImageSrc;
+    
+    // Mettre à jour les bordures
+    document.querySelectorAll('.thumbnail-item img').forEach(img => {
+        img.classList.remove('border-primary');
+        img.classList.add('border');
+    });
+    thumbnail.classList.add('border-primary');
+}
+
+// Sélection de taille et mise à jour du prix
+function selectSize(element) {
+    // Retirer la sélection de toutes les tailles
+    document.querySelectorAll('.size-option').forEach(option => {
+        option.style.borderColor = '#f0f0f0';
+        option.style.backgroundColor = '#f0f0f0';
+        option.style.color = '#000';
+    });
+    
+    // Appliquer la sélection à la taille cliquée (fond noir, texte blanc)
+    element.style.borderColor = '#000';
+    element.style.backgroundColor = '#000';
+    element.style.color = '#fff';
+    
+    // Mettre à jour le prix
+    const price = parseFloat(element.getAttribute('data-price'));
+    const barredPrice = element.getAttribute('data-barre');
+    const stock = parseInt(element.getAttribute('data-stock'));
+    const size = element.getAttribute('data-size');
+    
+    // Mettre à jour le champ caché de la taille sélectionnée
+    const selectedSizeInput = document.getElementById('selectedSize');
+    if (selectedSizeInput) {
+        selectedSizeInput.value = size;
+    }
+    
+    document.getElementById('currentPrice').textContent = price.toFixed(2).replace('.', ',');
+    
+    // Mettre à jour le prix barré et le badge de réduction
+    const barredPriceElement = document.getElementById('barredPrice');
+    const discountBadge = document.getElementById('discountBadge');
+    const discountPercent = document.getElementById('discountPercent');
+    
+    if (barredPrice && barredPrice !== '' && !isNaN(parseFloat(barredPrice))) {
+        const barredPriceValue = parseFloat(barredPrice);
+        barredPriceElement.textContent = barredPriceValue.toFixed(2).replace('.', ',') + ' €';
+        barredPriceElement.style.display = 'inline';
+        
+        // Calculer le pourcentage de réduction
+        const discount = Math.round(((barredPriceValue - price) / barredPriceValue) * 100);
+        discountPercent.textContent = discount;
+        discountBadge.style.display = 'inline-block';
+    } else {
+        barredPriceElement.style.display = 'none';
+        discountBadge.style.display = 'none';
+    }
+    
+    // Mettre à jour le statut du stock et le bouton d'ajout au panier
+    const stockStatus = document.getElementById('stockStatus');
+    const addToCartBtn = document.getElementById('addToCartBtn');
+    
+    if (stock > 0) {
+        stockStatus.innerHTML = '<i class="fa fa-check mr-2"></i>En stock (' + stock + ' disponible' + (stock > 1 ? 's' : '') + ')';
+        stockStatus.className = 'text-success';
+        if (addToCartBtn) {
+            addToCartBtn.disabled = false;
+            addToCartBtn.classList.remove('btn-secondary');
+            addToCartBtn.classList.add('btn-primary');
+            addToCartBtn.innerHTML = '<i class="fa fa-shopping-cart mr-1"></i> AJOUTER AU PANIER';
+        }
+    } else {
+        stockStatus.innerHTML = '<i class="fa fa-times mr-2"></i>Rupture de stock';
+        stockStatus.className = 'text-danger';
+        if (addToCartBtn) {
+            addToCartBtn.disabled = true;
+            addToCartBtn.classList.remove('btn-primary');
+            addToCartBtn.classList.add('btn-secondary');
+            addToCartBtn.innerHTML = '<i class="fa fa-times mr-1"></i> RUPTURE DE STOCK';
+        }
+    }
+}
+
+// Changer l'icône de l'accordéon au clic
+document.addEventListener('DOMContentLoaded', function() {
+    // Sélectionner tous les boutons d'accordéon
+    const accordionButtons = document.querySelectorAll('[data-toggle="collapse"]');
+    
+    // Fonction pour mettre à jour toutes les icônes
+    function updateAllIcons() {
+        accordionButtons.forEach(btn => {
+            const icon = btn.querySelector('i');
+            if (!icon) return;
+            
+            // Si le bouton a la classe 'collapsed', l'accordéon est fermé
+            if (btn.classList.contains('collapsed')) {
+                icon.classList.remove('fa-minus');
+                icon.classList.add('fa-plus');
+            } else {
+                // Sinon, l'accordéon est ouvert
+                icon.classList.remove('fa-plus');
+                icon.classList.add('fa-minus');
+            }
+        });
+    }
+    
+    // Écouter le clic sur chaque bouton
+    accordionButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            // Attendre que Bootstrap ait mis à jour les classes
+            setTimeout(updateAllIcons, 350); // Bootstrap collapse animation dure 350ms
+        });
+    });
+    
+    // Initialiser le prix barré, le badge de réduction et l'état du bouton pour la première taille
+    const firstSizeOption = document.querySelector('.size-option');
+    if (firstSizeOption) {
+        const barredPrice = firstSizeOption.getAttribute('data-barre');
+        const price = parseFloat(firstSizeOption.getAttribute('data-price'));
+        const stock = parseInt(firstSizeOption.getAttribute('data-stock'));
+        const barredPriceElement = document.getElementById('barredPrice');
+        const discountBadge = document.getElementById('discountBadge');
+        const discountPercent = document.getElementById('discountPercent');
+        const stockStatus = document.getElementById('stockStatus');
+        const addToCartBtn = document.getElementById('addToCartBtn');
+        
+        // Prix barré et badge de réduction
+        if (barredPrice && barredPrice !== '' && !isNaN(parseFloat(barredPrice)) && barredPriceElement) {
+            const barredPriceValue = parseFloat(barredPrice);
+            barredPriceElement.textContent = barredPriceValue.toFixed(2).replace('.', ',') + ' €';
+            barredPriceElement.style.display = 'inline';
+            
+            // Calculer et afficher le pourcentage de réduction
+            const discount = Math.round(((barredPriceValue - price) / barredPriceValue) * 100);
+            discountPercent.textContent = discount;
+            discountBadge.style.display = 'inline-block';
+        } else if (barredPriceElement) {
+            barredPriceElement.style.display = 'none';
+            if (discountBadge) discountBadge.style.display = 'none';
+        }
+        
+        // État du stock et du bouton
+        if (stock > 0) {
+            stockStatus.innerHTML = '<i class="fa fa-check mr-2"></i>En stock (' + stock + ' disponible' + (stock > 1 ? 's' : '') + ')';
+            stockStatus.className = 'text-success';
+            if (addToCartBtn) {
+                addToCartBtn.disabled = false;
+                addToCartBtn.classList.remove('btn-secondary');
+                addToCartBtn.classList.add('btn-primary');
+            }
+        } else {
+            stockStatus.innerHTML = '<i class="fa fa-times mr-2"></i>Rupture de stock';
+            stockStatus.className = 'text-danger';
+            if (addToCartBtn) {
+                addToCartBtn.disabled = true;
+                addToCartBtn.classList.remove('btn-primary');
+                addToCartBtn.classList.add('btn-secondary');
+                addToCartBtn.innerHTML = '<i class="fa fa-times mr-1"></i> RUPTURE DE STOCK';
+            }
+        }
+    }
+});
+</script>
+
+<style>
+.size-option {
+    transition: all 0.3s ease;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.size-option:hover {
+    transform: scale(1.05);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.color-square {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.accordion .card {
+    border: none;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.accordion .card-header {
+    background: transparent;
+    border: none;
+    padding: 0;
+}
+
+.accordion .btn-link {
+    text-decoration: none;
+    padding: 15px 0;
+}
+
+.accordion .btn-link:hover {
+    text-decoration: none;
+}
+
+.thumbnail-item img {
+    transition: all 0.3s ease;
+}
+
+.thumbnail-item img:hover {
+    transform: scale(1.05);
+}
+</style>
+{% endblock %}
+

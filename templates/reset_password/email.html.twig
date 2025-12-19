@@ -1,0 +1,23 @@
+<h1>Réinitialisation de votre mot de passe</h1>
+
+<p>Bonjour {{ user.prenom }},</p>
+
+<p>
+    Vous avez demandé à réinitialiser votre mot de passe sur So'Sand.
+    Pour créer un nouveau mot de passe, cliquez sur le lien suivant : <br><br>
+    <a href="{{ url('app_home') }}?reset_token={{ resetToken }}">Réinitialiser mon mot de passe</a>.
+</p>
+
+<p>
+    Ce lien expirera dans 1 heure.
+</p>
+
+<p>
+    Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer cet email. Votre mot de passe actuel restera inchangé.
+</p>
+
+<p>
+    Cordialement,<br>
+    L'équipe So'Sand
+</p>
+

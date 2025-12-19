@@ -1,0 +1,20 @@
+<p>Bonjour {{ user.prenom }} {{ user.nom }},</p>
+
+<p>Votre commande So'Sand (n° {{ order.id }}) vient d'être <strong>expédiée</strong>.</p>
+
+<p>
+    <strong>Transporteur :</strong> Mondial Relay<br>
+    <strong>Numéro d'expédition :</strong> {{ shipmentNumber }}
+</p>
+
+<p>
+    Vous pouvez suivre l'acheminement de votre colis en vous rendant sur le site de Mondial Relay :<br>
+    <a href="{{ trackingUrl }}" target="_blank">{{ trackingUrl }}</a><br>
+    et en saisissant votre numéro d'expédition.
+</p>
+
+<p>
+    Merci pour votre confiance et à très bientôt sur So'Sand.
+</p>
+
+<p>L'équipe So'Sand</p>

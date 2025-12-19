@@ -1,0 +1,227 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Boutique - SoSand{% endblock %}
+
+{% block content_right %}
+    <!-- Page avec filtres et articles -->
+    <div class="row">
+        <!-- Filters Sidebar Start -->
+        <div class="col-lg-2 col-md-12 mb-5">
+            <div class="border-bottom mb-4 pb-4">
+                <h5 class="font-weight-semi-bold mb-4">Filtres</h5>
+                    <form method="get" action="{{ path('app_boutique') }}" id="filterForm">
+                        <!-- Filtre par Recherche -->
+                        <div class="mb-4">
+                            <h6 class="font-weight-bold mb-3">Recherche</h6>
+                            <input type="text" name="q" class="form-control" placeholder="Nom, couleur, parfum..." value="{{ filters.q }}">
+                        </div>
+                        
+                        <!-- Filtre par Catégorie -->
+                        <div class="mb-4">
+                            <h6 class="font-weight-bold mb-3">Catégorie</h6>
+                            <select name="categorie" class="form-control">
+                                <option value="">Toutes les catégories</option>
+                                {% for categorie in categories %}
+                                    <option value="{{ categorie.id }}" {% if filters.categorie == categorie.id %}selected{% endif %}>
+                                        {{ categorie.nom }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- Filtre par Couleur -->
+                        <div class="mb-4">
+                            <h6 class="font-weight-bold mb-3">Couleur</h6>
+                            <select name="couleur" class="form-control">
+                                <option value="">Toutes les couleurs</option>
+                                {% for couleur in couleurs %}
+                                    <option value="{{ couleur.id }}" {% if filters.couleur == couleur.id %}selected{% endif %}>
+                                        {{ couleur.nom }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- Filtre par Parfum -->
+                        <div class="mb-4">
+                            <h6 class="font-weight-bold mb-3">Parfum</h6>
+                            <select name="parfum" class="form-control">
+                                <option value="">Tous les parfums</option>
+                                {% for parfum in parfums %}
+                                    <option value="{{ parfum.id }}" {% if filters.parfum == parfum.id %}selected{% endif %}>
+                                        {{ parfum.nom }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- Boutons -->
+                        <button type="submit" class="btn btn-primary btn-block mb-2">
+                            <i class="fa fa-search mr-2"></i>Rechercher
+                        </button>
+                        <a href="{{ path('app_boutique') }}" class="btn btn-secondary btn-block">
+                            <i class="fa fa-times mr-2"></i>Réinitialiser
+                        </a>
+                    </form>
+            </div>
+        </div>
+        <!-- Filters Sidebar End -->
+        
+        <!-- Products Section Start -->
+        <div class="col-lg-10 col-md-12">
+            <div class="row pb-3">
+                <div class="col-12 pb-1 mb-3">
+                    <h5 class="text-dark mb-0">
+                        {{ totalArticles }} article{% if totalArticles > 1 %}s{% endif %} trouvé{% if totalArticles > 1 %}s{% endif %}
+                    </h5>
+                </div>
+                
+                {% if articles|length > 0 %}
+                    {% for article in articles %}
+                    {% set minPrice = null %}
+                    {% set minBarredPrice = null %}
+                    {% set taillesCount = article.tailles|length %}
+                    
+                    {# Trouver le prix le plus bas et son prix barré correspondant #}
+                    {% for taille in article.tailles %}
+                        {% if minPrice is null or taille.prix < minPrice %}
+                            {% set minPrice = taille.prix %}
+                            {% set minBarredPrice = taille.barre is defined and taille.barre ? taille.barre : null %}
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {# Calculer le pourcentage de réduction #}
+                    {% set discount = null %}
+                    {% if minBarredPrice and minPrice %}
+                        {% set discount = ((minBarredPrice - minPrice) / minBarredPrice * 100)|round %}
+                    {% endif %}
+                    
+                    <div class="col-lg-3 col-md-4 col-sm-6 col-6 pb-1">
+                        <div class="card product-item border-0 mb-4">
+                            <div class="card-header product-img position-relative overflow-hidden bg-transparent border p-0">
+                                <a href="{{ path('app_article_show', {'slug': article.slug}) }}">
+                                    {% if article.photos|length > 0 %}
+                                        <img class="img-fluid w-100" src="{{ asset('assets/img/articles/' ~ article.id ~ '/' ~ article.photos|first.filename) }}" alt="{{ article.nom }}" style="object-fit: cover; height: 300px;">
+                                    {% else %}
+                                        <img class="img-fluid w-100" src="{{ asset('assets/img/product-1.jpg') }}" alt="{{ article.nom }}" style="object-fit: cover; height: 300px;">
+                                    {% endif %}
+                                </a>
+                                
+                                {# Badge sous-catégorie ou catégorie à gauche #}
+                                {% if article.sousCategorie %}
+                                    <div class="badge badge-secondary text-white position-absolute" style="top: 10px; left: 10px; padding: 5px 10px;">
+                                        {{ article.sousCategorie.nom }}
+                                    </div>
+                                {% elseif article.categorie %}
+                                    <div class="badge badge-secondary text-white position-absolute" style="top: 10px; left: 10px; padding: 5px 10px;">
+                                        {{ article.categorie.nom }}
+                                    </div>
+                                {% endif %}
+                                
+                                {# Badge réduction à droite #}
+                                {% if discount %}
+                                    <div class="badge badge-danger text-white position-absolute" style="top: 10px; right: 10px; padding: 5px 10px; font-size: 14px;">
+                                        -{{ discount }}%
+                                    </div>
+                                {% endif %}
+                                
+                                {# Cœur favori en bas à droite #}
+                                {% set isFavori = favoriService.estDansFavoris(article) %}
+                                {% if isFavori %}
+                                    {% set heartIcon = 'fas' %}
+                                    {% set heartColor = '#dc3545' %}
+                                {% else %}
+                                    {% set heartIcon = 'far' %}
+                                    {% set heartColor = '#6c757d' %}
+                                {% endif %}
+                                <button type="button" 
+                                        class="btn btn-sm position-absolute favori-btn" 
+                                        style="bottom: 10px; right: 10px; background: white; border-radius: 50%; width: 40px; height: 40px; padding: 0; box-shadow: 0 2px 5px rgba(0,0,0,0.2);"
+                                        data-article-id="{{ article.id }}"
+                                        onclick="toggleFavori({{ article.id }}, this)">
+                                    <i class="{{ heartIcon }} fa-heart" style="font-size: 18px; color: {{ heartColor }};"></i>
+                                </button>
+                            </div>
+                            <div class="card-body border-left border-right text-center p-0 pt-4 pb-3">
+                                <h6 class="text-truncate mb-3">{{ article.nom }}</h6>
+                                <div class="d-flex justify-content-center">
+                                    {% if minPrice %}
+                                        <h6>
+                                            {% if taillesCount > 1 %}A partir de {% endif %}
+                                            {{ minPrice|number_format(2, ',', ' ') }}€
+                                        </h6>
+                                        {% if minBarredPrice %}
+                                            <h6 class="text-muted ml-2"><del>{{ minBarredPrice|number_format(2, ',', ' ') }}€</del></h6>
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="card-footer d-flex justify-content-center bg-light border">
+                                <a href="{{ path('app_article_show', {'slug': article.slug}) }}" class="btn btn-sm text-dark p-0"><i class="fas fa-eye text-primary mr-1"></i>Voir détails</a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    
+                    <!-- Pagination Start -->
+                    {% if totalPages > 1 %}
+                        <div class="col-12 pb-1">
+                            <nav aria-label="Page navigation">
+                                <ul class="pagination justify-content-center mb-3">
+                                    {# Bouton Précédent #}
+                                    {% if currentPage > 1 %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="{{ path('app_boutique', filters|merge({'page': currentPage - 1})) }}" aria-label="Précédent">
+                                                <span aria-hidden="true">&laquo;</span>
+                                            </a>
+                                        </li>
+                                    {% else %}
+                                        <li class="page-item disabled">
+                                            <span class="page-link">&laquo;</span>
+                                        </li>
+                                    {% endif %}
+                                    
+                                    {# Numéros de pages #}
+                                    {% for i in 1..totalPages %}
+                                        {% if i == currentPage %}
+                                            <li class="page-item active">
+                                                <span class="page-link">{{ i }}</span>
+                                            </li>
+                                        {% else %}
+                                            <li class="page-item">
+                                                <a class="page-link" href="{{ path('app_boutique', filters|merge({'page': i})) }}">{{ i }}</a>
+                                            </li>
+                                        {% endif %}
+                                    {% endfor %}
+                                    
+                                    {# Bouton Suivant #}
+                                    {% if currentPage < totalPages %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="{{ path('app_boutique', filters|merge({'page': currentPage + 1})) }}" aria-label="Suivant">
+                                                <span aria-hidden="true">&raquo;</span>
+                                            </a>
+                                        </li>
+                                    {% else %}
+                                        <li class="page-item disabled">
+                                            <span class="page-link">&raquo;</span>
+                                        </li>
+                                    {% endif %}
+                                </ul>
+                            </nav>
+                        </div>
+                    {% endif %}
+                    <!-- Pagination End -->
+                    
+                {% else %}
+                    <div class="col-12">
+                        <div class="alert alert-info text-center">
+                            <i class="fas fa-info-circle mr-2"></i>
+                            Aucun article ne correspond à vos critères de recherche. Essayez de modifier vos filtres.
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        <!-- Products Section End -->
+    </div>
+{% endblock %}

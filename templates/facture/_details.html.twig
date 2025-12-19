@@ -1,0 +1,89 @@
+<!-- Template partiel pour les détails de facture -->
+<div class="facture-details">
+    <!-- En-tête de la facture -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <h5 class="mb-3">Facture {{ facture.numero }}</h5>
+            <p class="mb-1"><strong>Date :</strong> {{ facture.dateCreation|date('d/m/Y à H:i') }}</p>
+            <p class="mb-1"><strong>Client :</strong> {{ facture.clientPrenom }} {{ facture.clientNom }}</p>
+            <p class="mb-1"><strong>Email :</strong> {{ facture.clientEmail }}</p>
+        </div>
+        <div class="col-md-6 text-right">
+            <h5 class="mb-3">{{ societe.nom ?? "So'Sand" }}</h5>
+            <p class="mb-1">Bougies artisanales</p>
+            <p class="mb-1">Livraison : <span class="badge badge-primary">
+                {% if facture.modeLivraison == 'domicile' %}
+                    À domicile (+{{ (facture.fraisLivraison / 100)|format_currency('EUR') }})
+                {% else %}
+                    Point relais
+                {% endif %}
+            </span></p>
+            
+            <!-- Bouton pour télécharger le PDF -->
+            <a href="{{ path('app_facture_pdf', {id: facture.id}) }}" target="_blank" class="btn btn-sm btn-outline-danger mt-2">
+                <i class="fa fa-file-pdf"></i> Voir le PDF
+            </a>
+        </div>
+    </div>
+
+    <!-- Détail des articles -->
+    <div class="table-responsive">
+        {% if facture.lignesFacture is empty %}
+            <div class="alert alert-warning">
+                <i class="fa fa-exclamation-triangle mr-2"></i>
+                Aucun détail d'article disponible pour cette facture.
+                <br>
+                <small>Cette facture a été créée avant l'implémentation du système de détail des articles.</small>
+            </div>
+        {% else %}
+        <table class="table table-striped">
+            <thead class="thead-light">
+                <tr>
+                    <th>Article</th>
+                    <th>Taille</th>
+                    <th class="text-center">Quantité</th>
+                    <th class="text-right">Prix unitaire</th>
+                    <th class="text-right">Total</th>
+
+                </tr>
+            </thead>
+            <tbody>
+                {% for ligne in facture.lignesFacture %}
+                    <tr>
+                        <td>{{ ligne.articleDesignation }}</td>
+                        <td>{{ ligne.articleTaille }}</td>
+                        <td class="text-center">{{ ligne.quantite }}</td>
+                        <td class="text-right">{{ (ligne.prixUnitaire / 100)|format_currency('EUR') }}</td>
+                        <td class="text-right"><strong>{{ (ligne.prixTotal / 100)|format_currency('EUR') }}</strong></td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                {% if facture.fraisLivraison > 0 %}
+                    <tr>
+                        <td colspan="4" class="text-right"><strong>Frais de livraison :</strong></td>
+                        <td class="text-right"><strong>{{ (facture.fraisLivraison / 100)|format_currency('EUR') }}</strong></td>
+                    </tr>
+                {% endif %}
+                <tr class="table-primary">
+                    <td colspan="4" class="text-right"><strong>Total TTC :</strong></td>
+                    <td class="text-right"><strong class="h5">{{ (facture.totalTTC / 100)|format_currency('EUR') }}</strong></td>
+                </tr>
+            </tfoot>
+        </table>
+        {% endif %}
+    </div>
+
+    <!-- Informations complémentaires -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="alert alert-light border">
+                <small class="text-muted">
+                    <i class="fa fa-info-circle mr-1"></i>
+                    Cette facture est générée automatiquement lors de la validation de votre commande.
+                    Les prix sont TTC (toutes taxes comprises).
+                </small>
+            </div>
+        </div>
+    </div>
+</div>

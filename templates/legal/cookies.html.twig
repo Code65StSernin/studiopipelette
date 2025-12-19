@@ -1,0 +1,27 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Politique de cookies{% endblock %}
+
+{% block content_right %}
+    <div class="container-fluid">
+        <div class="row px-xl-5">
+            <div class="col-12">
+                <h1 class="h3 mb-4">Politique de cookies</h1>
+
+                {% if page %}
+                    <div class="bg-white p-4 rounded shadow-sm">
+                        {{ page.content|raw }}
+                    </div>
+                {% else %}
+                    <div class="bg-white p-4 rounded shadow-sm">
+                        <p>
+                            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed cursus ante dapibus diam. Sed nisi. Nulla quis sem at nibh elementum imperdiet.
+                            Duis sagittis ipsum. Praesent mauris. Fusce nec tellus sed augue semper porta. Mauris massa. Vestibulum lacinia arcu eget nulla.
+                        </p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+{% endblock %}
+

@@ -1,0 +1,395 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Choix du mode de livraison - SoSand{% endblock %}
+
+{# ===============================
+   Code postal pour Mondial Relay
+   =============================== #}
+
+{% set cpMondialRelay = '75001' %}
+
+{% if app.user and app.user.addresses|length > 0 %}
+    {% set adressePrincipale = null %}
+
+    {% for a in app.user.addresses %}
+        {% if a.isDefault %}
+            {% set adressePrincipale = a %}
+        {% endif %}
+    {% endfor %}
+
+    {% if adressePrincipale is null %}
+        {% set adressePrincipale = app.user.addresses|first %}
+    {% endif %}
+
+    {% if adressePrincipale and adressePrincipale.postalCode is defined and adressePrincipale.postalCode %}
+        {% set cpMondialRelay = adressePrincipale.postalCode %}
+    {% endif %}
+{% endif %}
+
+{% block content_right %}
+    <!-- Page Header -->
+    <div class="bg-secondary mb-4 p-4">
+        <div class="d-flex flex-column">
+            <h3 class="font-weight-semi-bold text-uppercase mb-2">Livraison</h3>
+            <nav class="d-inline-flex">
+                <a href="{{ path('app_home') }}" class="text-dark">Accueil</a>
+                <span class="mx-2">-</span>
+                <a href="{{ path('app_panier') }}" class="text-dark">Panier</a>
+                <span class="mx-2">-</span>
+                <span class="text-dark">Livraison</span>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-12">
+            <!-- Résumé du panier -->
+            <div class="card border-secondary mb-4">
+                <div class="card-header bg-secondary border-0">
+                    <h4 class="font-weight-semi-bold m-0">Résumé de votre commande</h4>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2">
+                        <p class="mb-0">Nombre d'articles :</p>
+                        <p class="mb-0"><strong>{{ panier.nombreArticles }}</strong></p>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <p class="mb-0">Sous-total produits :</p>
+                        <p class="mb-0">
+                            <strong>{{ sousTotal|number_format(2, ',', ' ') }} €</strong>
+                        </p>
+                    </div>
+
+                    {% if remisePourcentage > 0 %}
+                        <div class="d-flex justify-content-between mb-2 text-success">
+                            <p class="mb-0">Code promo ({{ remisePourcentage|number_format(0) }} %)&nbsp;:</p>
+                            <p class="mb-0">
+                                - {{ montantRemise|number_format(2, ',', ' ') }} €
+                            </p>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <p class="mb-0"><strong>Total après remise :</strong></p>
+                            <p class="mb-0">
+                                <strong>{{ totalApresRemise|number_format(2, ',', ' ') }} €</strong>
+                            </p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Choix du mode de livraison -->
+            <div class="card border-secondary mb-4">
+                <div class="card-header bg-secondary border-0">
+                    <h4 class="font-weight-semi-bold m-0">Choisissez votre mode de livraison</h4>
+                </div>
+                <div class="card-body">
+                    <form id="livraisonForm" method="post" action="{{ path('app_livraison_valider') }}">
+
+                        <!-- Livraison en point relais -->
+                        <div class="custom-control custom-radio mb-4">
+                            <input
+                                type="radio"
+                                class="custom-control-input"
+                                id="modeRelais"
+                                name="mode_livraison"
+                                value="relais"
+                                checked
+                            >
+                            <label class="custom-control-label" for="modeRelais">
+                                <strong>Livraison en point relais Mondial Relay</strong>
+                                <span class="ml-2 text-success">(Gratuit)</span>
+                                <p class="text-muted mb-0 mt-1">
+                                    Choisissez un point relais proche de chez vous
+                                </p>
+                            </label>
+                        </div>
+
+                        <!-- Widget Mondial Relay -->
+                        <div
+                            id="zoneWidgetRelais"
+                            class="mb-4 p-3"
+                            style="border: 2px solid #FFD333; border-radius: 5px; background-color: #f8f9fa;"
+                        >
+                            <div id="Zone_Widget"></div>
+
+                            <!-- (1) Résumé relais sélectionné -->
+                            <div id="mrSelectedResume" class="alert alert-success mt-3 d-none">
+                                <strong>Relais sélectionné :</strong>
+                                <span id="mrSelectedName"></span><br>
+                                <span id="mrSelectedAddress"></span>
+                            </div>
+
+                            <!-- Champs cachés point relais -->
+                            <input type="hidden" id="Pays" name="Pays" value="FR">
+                            <input type="hidden" id="MR_SelectedRelais" name="point_relais_id">
+                            <input type="hidden" id="MR_SelectedRelais_Nom" name="point_relais_nom">
+                            <input type="hidden" id="MR_SelectedRelais_Adresse" name="point_relais_adresse">
+                        </div>
+
+                        <hr class="my-4">
+
+                        <!-- Livraison à domicile -->
+                        <div class="custom-control custom-radio mb-4">
+                            <input
+                                type="radio"
+                                class="custom-control-input"
+                                id="modeDomicile"
+                                name="mode_livraison"
+                                value="domicile"
+                            >
+                            <label class="custom-control-label" for="modeDomicile">
+                                <strong>Livraison à domicile</strong>
+                                <span class="ml-2 text-primary">(5,90 €)</span>
+                                <p class="text-muted mb-0 mt-1">
+                                    Livraison à votre adresse sous 3–5 jours ouvrés
+                                </p>
+                            </label>
+                        </div>
+
+                        <div
+                            id="zoneDomicile"
+                            class="mb-4 p-3"
+                            style="display: none; border: 2px solid #D19C97; border-radius: 5px; background-color: #f8f9fa;"
+                        >
+                            <p class="mb-2">
+                                <i class="fa fa-info-circle text-primary mr-2"></i>
+                                Votre colis sera livré à l'adresse suivante :
+                            </p>
+
+                            {% if app.user and app.user.addresses|length > 0 %}
+                                {% set adressePrincipale = null %}
+                                {% for a in app.user.addresses %}
+                                    {% if a.isDefault %}
+                                        {% set adressePrincipale = a %}
+                                    {% endif %}
+                                {% endfor %}
+                                {% if adressePrincipale is null %}
+                                    {% set adressePrincipale = app.user.addresses|first %}
+                                {% endif %}
+
+                                <div class="ml-4">
+                                    <p class="mb-1" id="shippingAddressText">
+                                        {{ adressePrincipale.fullAddress }}
+                                    </p>
+                                </div>
+
+                                <a
+                                    href="#"
+                                    class="btn btn-sm btn-outline-primary mt-2"
+                                    data-toggle="modal"
+                                    data-target="#addressesModal"
+                                >
+                                    <i class="fa fa-edit mr-1"></i>
+                                    Gérer mes adresses
+                                </a>
+                            {% else %}
+                                <div class="alert alert-warning mb-0">
+                                    <i class="fa fa-exclamation-triangle mr-2"></i>
+                                    Vous devez d'abord ajouter une adresse de livraison.
+                                    <a
+                                        href="#"
+                                        class="alert-link"
+                                        data-toggle="modal"
+                                        data-target="#addressesModal"
+                                    >
+                                        Ajouter une adresse
+                                    </a>
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <hr class="my-4">
+
+                        <!-- Boutons -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ path('app_panier') }}" class="btn btn-outline-secondary">
+                                <i class="fa fa-arrow-left mr-2"></i>
+                                Retour au panier
+                            </a>
+
+                            <button
+                                type="submit"
+                                class="btn btn-primary px-4"
+                                id="btnValider"
+                            >
+                                Continuer vers le paiement
+                                <i class="fa fa-arrow-right ml-2"></i>
+                            </button>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+
+    <!-- Widget Mondial Relay -->
+    <script src="https://widget.mondialrelay.com/parcelshop-picker/jquery.plugin.mondialrelay.parcelshoppicker.min.js"></script>
+
+    <script>
+        $(document).ready(function () {
+
+            // Initialisation Mondial Relay (sélection point relais)
+            $("#Zone_Widget").MR_ParcelShopPicker({
+                Brand: "CC23QUC2",
+                Country: "FR",
+                PostCode: "{{ cpMondialRelay }}",
+                ColLivMod: "24R",
+                NbResults: "7",
+                SearchFar: "75",
+
+                Target: "#MR_SelectedRelais",
+                TargetDisplay: "#MR_SelectedRelais_Adresse",
+                TargetDisplayInfo: "#MR_SelectedRelais_Nom",
+
+                OnParcelShopSelected: function (data) {
+                    const id = data.ID || "";
+                    const nom = data.Nom || "";
+
+                    const fullAddress =
+                        (data.Adresse1 ? data.Adresse1 : "") +
+                        (data.CP ? ", " + data.CP : "") +
+                        (data.Ville ? " " + data.Ville : "");
+
+                    $("#MR_SelectedRelais").val(id);
+                    $("#MR_SelectedRelais_Nom").val(nom);
+                    $("#MR_SelectedRelais_Adresse").val(fullAddress);
+
+                    $("#mrSelectedName").text(nom);
+                    $("#mrSelectedAddress").text(fullAddress);
+                    $("#mrSelectedResume").removeClass("d-none");
+
+                    $("#btnValider").prop("disabled", false);
+                }
+            });
+
+            // Changement de mode de livraison
+            $('input[name="mode_livraison"]').on('change', function () {
+                if (this.value === 'relais') {
+                    $('#zoneWidgetRelais').show();
+                    $('#zoneDomicile').hide();
+
+                    if (!$('#MR_SelectedRelais').val()) {
+                        $('#btnValider').prop('disabled', true);
+                    }
+                }
+
+                if (this.value === 'domicile') {
+                    $('#zoneWidgetRelais').hide();
+                    $('#zoneDomicile').show();
+
+                    $("#mrSelectedResume").addClass("d-none");
+
+                    {% if app.user and app.user.addresses|length > 0 %}
+                        $('#btnValider').prop('disabled', false);
+                    {% else %}
+                        $('#btnValider').prop('disabled', true);
+                    {% endif %}
+                }
+            });
+
+            // Validation formulaire
+            $('#livraisonForm').on('submit', function (e) {
+                const mode = $('input[name="mode_livraison"]:checked').val();
+
+                if (mode === 'relais' && !$('#MR_SelectedRelais').val()) {
+                    e.preventDefault();
+                    alert("Veuillez sélectionner un point relais.");
+                    return false;
+                }
+
+                {% if not app.user or app.user.addresses|length == 0 %}
+                if (mode === 'domicile') {
+                    e.preventDefault();
+                    alert("Veuillez d'abord ajouter une adresse de livraison.");
+                    return false;
+                }
+                {% endif %}
+            });
+
+            // État initial
+            $('#btnValider').prop('disabled', true);
+            $('input[name="mode_livraison"]:checked').trigger('change');
+        });
+    </script>
+
+    <style>
+        /* Cadre jaune : plus propre */
+        #zoneWidgetRelais{
+            padding: 12px !important;
+        }
+
+        /* Le conteneur du widget : occupe tout l'espace */
+        #Zone_Widget{
+            width: 100%;
+            min-height: 520px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        /* On force tout ce que le plugin injecte à s'étirer */
+        #Zone_Widget > *{
+            width: 100% !important;
+        }
+
+        /* Si le widget injecte un iframe (selon version), on le force aussi */
+        #Zone_Widget iframe{
+            width: 100% !important;
+            min-height: 520px !important;
+            border: 0 !important;
+        }
+
+        /* 1) Donne une vraie place à la zone carte */
+        #Zone_Widget .leaflet-container{
+            width: 80% !important;
+            height: 420px !important;
+        }
+
+        /* 2) Souvent Leaflet est dans un wrapper avec width fixe -> on force aussi */
+        #Zone_Widget [id*="Map"],
+        #Zone_Widget [class*="Map"],
+        #Zone_Widget .mr-map,
+        #Zone_Widget .MRMap{
+            width: 80% !important;
+            max-width: 80% !important;
+        }
+
+        /* 3) Le "panel" de droite (carte) : on l’autorise à grandir */
+        #Zone_Widget .leaflet-container,
+        #Zone_Widget [id*="Map"]{
+            flex: 1 1 auto !important;
+        }
+
+        /* 4) Le panneau liste à gauche : largeur raisonnable */
+        #Zone_Widget [id*="Liste"],
+        #Zone_Widget [id*="List"],
+        #Zone_Widget [class*="List"],
+        #Zone_Widget .mr-list,
+        #Zone_Widget .MRList{
+            flex: 0 0 320px !important;
+            max-width: 360px !important;
+        }
+
+        /* Résumé relais */
+        #mrSelectedResume{
+            margin-top: 12px;
+        }
+
+        .custom-control-label {
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .custom-radio
+        .custom-control-input:checked
+        ~ .custom-control-label::before {
+            background-color: #D19C97;
+            border-color: #D19C97;
+        }
+    </style>
+{% endblock %}

@@ -1,0 +1,383 @@
+{% extends '@EasyAdmin/page/content.html.twig' %}
+
+{% block content_title %}
+    Tableau de bord So'Sand
+{% endblock %}
+
+{% block page_content %}
+    <div class="container-fluid" style="max-width: 1400px;">
+        <div class="row mb-3">
+            <div class="col-md-2 mb-3">
+                <div class="card bg-dark text-white h-100 shadow-sm">
+                    <div class="card-body">
+                        <h6 class="text-muted text-uppercase mb-2">Inscriptions</h6>
+                        <h3 class="mb-0">{{ stats.newUsersRange }}</h3>
+                        <small class="text-info">Total inscrits : {{ stats.totalUsers }}</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2 mb-3">
+                <div class="card bg-dark text-white h-100 shadow-sm">
+                    <div class="card-body">
+                        <h6 class="text-muted text-uppercase mb-2">Commandes payées</h6>
+                        <h3 class="mb-0">{{ stats.paidOrders }}</h3>
+                        <small class="text-info">
+                            Total commandes payées : {{ stats.paidOrdersTotal }}<br>
+                            Total commandes : {{ stats.totalOrders }}
+                        </small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2 mb-3">
+                <div class="card bg-dark text-white h-100 shadow-sm">
+                    <div class="card-body">
+                        <h6 class="text-muted text-uppercase mb-2">Chiffres d'affaires</h6>
+                        <p class="mb-1">
+                            <strong>CA brut :</strong>
+                            {{ (stats.caBrutCents / 100)|number_format(2, ',', ' ') }} €
+                        </p>
+                        <p class="mb-1">
+                            <strong>CA commercial :</strong>
+                            {{ (stats.caCommercialCents / 100)|number_format(2, ',', ' ') }} €
+                        </p>
+                        <p class="mb-0">
+                            <strong>CA encaissé :</strong>
+                            {{ (stats.caEncaisseCents / 100)|number_format(2, ',', ' ') }} €
+                        </p>
+                        <small class="text-info d-block mt-2">
+                            Total historique : {{ (stats.revenueTotalCents / 100)|number_format(2, ',', ' ') }} €
+                        </small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2 mb-3">
+                <div class="card bg-dark text-white h-100 shadow-sm">
+                    <div class="card-body">
+                        <h6 class="text-muted text-uppercase mb-2">Résultats</h6>
+                        <p class="mb-1">
+                            <strong>Résultat brut :</strong>
+                            {{ stats.resultatBrut|number_format(2, ',', ' ') }} €
+                        </p>
+                        <p class="mb-1">
+                            <strong>Résultat net :</strong>
+                            {{ stats.resultatNet|number_format(2, ',', ' ') }} €
+                        </p>
+                        <small class="text-info d-block mt-2">
+                            Dépenses période : {{ stats.depensesTotal|number_format(2, ',', ' ') }} €
+                        </small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2 mb-3">
+                <div class="card bg-dark text-white h-100 shadow-sm">
+                    <div class="card-body">
+                        <h6 class="text-muted text-uppercase mb-2">Ruptures de stock</h6>
+                        {% if outOfStockArticles is not empty %}
+                            <div style="max-height: 80px; overflow-y: auto;">
+                                <ul class="mb-1 pl-3">
+                                    {% for article in outOfStockArticles %}
+                                        <li>{{ article.nom }}</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                            <small class="text-warning">{{ stats.outOfStockSizes }} taille(s) en rupture</small>
+                        {% else %}
+                            <h3 class="mb-0">0</h3>
+                            <small class="text-success">Aucune rupture de stock</small>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2 mb-3">
+                <div class="card bg-dark text-white h-100 shadow-sm">
+                    <div class="card-body">
+                        <h6 class="text-muted text-uppercase mb-2">Trésorerie</h6>
+                        <p class="mb-1">
+                            <strong>Théorique :</strong>
+                            {{ stats.tresorerieTheorique|number_format(2, ',', ' ') }} €
+                        </p>
+                        <p class="mb-0">
+                            <strong>Réelle :</strong>
+                            {{ stats.tresorerieReelle|number_format(2, ',', ' ') }} €
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-2">
+            <div class="col-md-12 d-flex justify-content-between align-items-end">
+                <!-- Charges calculées -->
+                <div class="d-flex flex-wrap align-items-end">
+                    <div class="form-group mb-2 mr-3 px-1">
+                        <label class="mr-2 mb-0 text-white-50" for="chargesSociales">Charges sociales (URSSAF + CPF) :</label>
+                        <input id="chargesSociales" type="text" class="form-control form-control-sm bg-dark text-white border-secondary" 
+                               value="{{ stats.chargesSociales|number_format(2, ',', ' ') }} €" readonly style="min-width: 180px;">
+                    </div>
+                    <div class="form-group mb-2 mr-3 px-1">
+                        <label class="mr-2 mb-0 text-white-50" for="impotRevenu">Impôt sur le revenu :</label>
+                        <input id="impotRevenu" type="text" class="form-control form-control-sm bg-dark text-white border-secondary" 
+                               value="{{ stats.impotRevenu|number_format(2, ',', ' ') }} €" readonly style="min-width: 180px;">
+                    </div>
+                    <div class="form-group mb-2 mr-3 px-1">
+                        <label class="mr-2 mb-0 text-white-50" for="chargesAPayer"><strong>Charges à payer :</strong></label>
+                        <input id="chargesAPayer" type="text" class="form-control form-control-sm bg-dark text-white border-warning" 
+                               value="{{ stats.chargesAPayer|number_format(2, ',', ' ') }} €" readonly style="min-width: 180px; font-weight: bold;">
+                    </div>
+                    <div class="form-group mb-2 mr-3 px-1">
+                        <label class="mr-2 mb-0 text-white-50" for="fraisPaiementCb">Frais paiement CB :</label>
+                        <input id="fraisPaiementCb" type="text" class="form-control form-control-sm bg-dark text-white border-secondary" 
+                               value="{{ stats.fraisPaiementCb|number_format(2, ',', ' ') }} €" readonly style="min-width: 180px;">
+                    </div>
+                </div>
+
+                <!-- Filtres -->
+                <form method="get" class="d-flex flex-wrap align-items-end justify-content-end">
+                    <div class="form-group mb-2 mr-3 px-1">
+                        <label class="mr-2 mb-0 text-white-50" for="fromDate">Du :</label>
+                        <input id="fromDate" type="date" name="from" class="form-control form-control-sm" value="{{ fromDate }}">
+                    </div>
+
+                    <div class="form-group mb-2 mr-3 px-1">
+                        <label class="mr-2 mb-0 text-white-50" for="toDate">Au :</label>
+                        <input id="toDate" type="date" name="to" class="form-control form-control-sm" value="{{ toDate }}">
+                    </div>
+
+                    <div class="form-group mb-2 mr-3 px-1">
+                        <label class="mr-2 mb-0 text-white-50" for="topPeriod">Top articles :</label>
+                        <select id="topPeriod" name="topPeriod" class="form-control form-control-sm">
+                            <option value="today" {{ topPeriod == 'today' ? 'selected' }}>Aujourd'hui</option>
+                            <option value="month" {{ topPeriod == 'month' ? 'selected' }}>Mois</option>
+                            <option value="year"  {{ topPeriod == 'year'  ? 'selected' }}>Année</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group mb-2 mr-3 px-1">
+                        <label class="mr-2 mb-0 text-white-50" for="salesPeriod">Graphique :</label>
+                        <select id="salesPeriod" name="salesPeriod" class="form-control form-control-sm">
+                            <option value="day"   {{ salesPeriod == 'day'   ? 'selected' }}>Jour</option>
+                            <option value="week"  {{ salesPeriod == 'week'  ? 'selected' }}>Semaine</option>
+                            <option value="month" {{ salesPeriod == 'month' ? 'selected' }}>Mois</option>
+                            <option value="year"  {{ salesPeriod == 'year'  ? 'selected' }}>Année</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group mb-2 px-1">
+                        <button type="submit" class="btn btn-sm btn-primary">Filtrer</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <div class="col-md-8 mb-3">
+                <div class="card bg-secondary text-white h-100 shadow-sm">
+                    <div class="card-header bg-transparent border-0">
+                        <h5 class="card-title mb-0">Activité sur la période sélectionnée</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-2">Commandes payées : <strong>{{ stats.paidOrders }}</strong></p>
+                        <p class="mb-2">Inscriptions : <strong>{{ stats.newUsersRange }}</strong></p>
+                        <p class="mb-0">Panier moyen (30 jours) :
+                            <strong>
+                                {% if stats.paidOrders > 0 %}
+                                    {{ ((stats.revenueRangeCents / 100) / stats.paidOrders)|number_format(2, ',', ' ') }} €
+                                {% else %}
+                                    0,00 €
+                                {% endif %}
+                            </strong>
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="card bg-secondary text-white h-100 shadow-sm">
+                    <div class="card-header bg-transparent border-0">
+                        <h5 class="card-title mb-0">Abonnés newsletter</h5>
+                    </div>
+                    <div class="card-body">
+                        <h3 class="mb-0">{{ stats.newsletterActive }}</h3>
+                        <small class="text-muted">Total inscrits : {{ stats.newsletterTotal }}</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <div class="col-md-6 mb-3">
+                <div class="card bg-dark text-white h-100 shadow-sm">
+                    <div class="card-header bg-transparent border-0">
+                        <h5 class="card-title mb-0">Articles les plus vendus</h5>
+                    </div>
+                    <div class="card-body p-2">
+                        {% if topArticles is not empty %}
+                            <div class="table-responsive" style="max-height: 220px; overflow-y: auto;">
+                                <table class="table table-sm table-dark mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Article</th>
+                                            <th class="text-right">Qté</th>
+                                            <th class="text-right">CA</th>
+                                            <th class="text-right">Évol.</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for row in topArticles %}
+                                            <tr>
+                                                <td>{{ row.designation }}</td>
+                                                <td class="text-right">{{ row.quantite }}</td>
+                                                <td class="text-right">{{ (row.ca / 100)|number_format(2, ',', ' ') }} €</td>
+                                                <td class="text-right">
+                                                    {% if row.progress is same as(null) %}
+                                                        <span class="text-muted">–</span>
+                                                    {% elseif row.progress >= 0 %}
+                                                        <span class="text-success">+{{ row.progress }}%</span>
+                                                    {% else %}
+                                                        <span class="text-danger">{{ row.progress }}%</span>
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <p class="mb-0"><em>Aucune vente sur la période.</em></p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-3">
+                <div class="card bg-dark text-white h-100 shadow-sm">
+                    <div class="card-header bg-transparent border-0">
+                        <h5 class="card-title mb-0">Évolution du chiffre d'affaires</h5>
+                    </div>
+                    <div class="card-body" style="height: 260px;">
+                        {% if salesLabels is not empty %}
+                            <canvas id="salesChart" style="max-height: 220px;"></canvas>
+                        {% else %}
+                            <p class="mb-0"><em>Aucune commande payée sur la période sélectionnée.</em></p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <div class="col-md-12">
+                <div class="card bg-dark text-white shadow-sm">
+                    <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">Dernières commandes</h5>
+                        <a href="{{ path('admin', { 'crudAction': 'index', 'crudControllerFqcn': 'App\\Controller\\Admin\\OrderCrudController' }) }}" class="btn btn-sm btn-outline-light">Voir toutes les commandes</a>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-dark table-striped mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Date</th>
+                                        <th>Client</th>
+                                        <th>Montant</th>
+                                        <th>Statut</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for order in recentOrders %}
+                                        <tr>
+                                            <td>{{ order.id }}</td>
+                                            <td>{{ order.createdAt|date('d/m/Y H:i') }}</td>
+                                            <td>
+                                                {% if order.user %}
+                                                    {{ order.user.prenom }} {{ order.user.nom }}<br>
+                                                    <small class="text-muted">{{ order.user.email }}</small>
+                                                {% else %}
+                                                    <em>Compte supprimé</em>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ (order.amountTotalCents / 100)|number_format(2, ',', ' ') }} €</td>
+                                            <td>
+                                                {% if order.status == 'paid' %}
+                                                    <span class="badge badge-success">Payée</span>
+                                                {% elseif order.status == 'pending' %}
+                                                    <span class="badge badge-warning">En attente</span>
+                                                {% else %}
+                                                    <span class="badge badge-danger">Annulée</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% else %}
+                                        <tr>
+                                            <td colspan="5" class="text-center py-3"><em>Aucune commande récente.</em></td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block body_javascript %}
+    {{ parent() }}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        (function() {
+            const labels = {{ salesLabels|json_encode|raw }};
+            const data = {{ salesData|json_encode|raw }};
+
+            if (!labels.length || !data.length) {
+                return;
+            }
+
+            const canvas = document.getElementById('salesChart');
+            if (!canvas) {
+                return;
+            }
+
+            const ctx = canvas.getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'CA (€)',
+                        data: data,
+                        borderColor: '#4e73df',
+                        backgroundColor: 'rgba(78,115,223,0.15)',
+                        tension: 0.3,
+                        fill: true,
+                        pointRadius: 2,
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: {
+                            ticks: {
+                                maxTicksLimit: 8,
+                                color: '#ffffff'
+                            },
+                            grid: {
+                                color: 'rgba(255,255,255,0.1)'
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                color: '#ffffff'
+                            },
+                            grid: {
+                                color: 'rgba(255,255,255,0.1)'
+                            }
+                        }
+                    }
+                }
+            });
+        })();
+    </script>
+{% endblock %}

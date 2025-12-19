@@ -1,0 +1,117 @@
+{% extends '@EasyAdmin/page/content.html.twig' %}
+
+{% block content %}
+    <h1 class="mb-4">Compte bancaire</h1>
+
+    <div class="row mb-3">
+        <div class="col-12 d-flex justify-content-start">
+            <form method="get" class="form-inline" style="text-align:left;">
+                <div class="form-group mb-0 mr-2">
+                    <label for="month" class="mr-2 mb-0">Mois :</label>
+                    <input
+                        type="month"
+                        id="month"
+                        name="month"
+                        value="{{ month }}"
+                        class="form-control"
+                        style="width: 220px; max-width: 100%;"
+                    >
+                </div>
+                <button type="submit" class="btn btn-primary btn-sm">
+                    Changer
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card bg-dark text-white mb-3">
+                <div class="card-body">
+                    <h6 class="text-muted text-uppercase mb-2">Solde initial</h6>
+                    <h3 class="mb-0">{{ soldeInitial|number_format(2, ',', ' ') }} €</h3>
+                    <small class="text-white-50">Au {{ start|date('d/m/Y') }}</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-dark text-white mb-3">
+                <div class="card-body">
+                    <h6 class="text-muted text-uppercase mb-2">Solde prévisionnel fin de mois</h6>
+                    <h3 class="mb-0">{{ soldePrevisionnelFin|number_format(2, ',', ' ') }} €</h3>
+                    <small class="text-white-50">Au {{ end|date('d/m/Y') }}</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-dark text-white mb-3">
+                <div class="card-body">
+                    <h6 class="text-muted text-uppercase mb-2">Solde réel fin de mois</h6>
+                    <h3 class="mb-0">{{ soldeReelFin|number_format(2, ',', ' ') }} €</h3>
+                    <small class="text-white-50">Basé sur les opérations pointées</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <strong>Opérations du {{ start|date('d/m/Y') }} au {{ end|date('d/m/Y') }}</strong>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-sm table-striped mb-0">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Type</th>
+                            <th>Origine</th>
+                            <th>Objet</th>
+                            <th class="text-right">Montant</th>
+                            <th class="text-center">Pointée ?</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if operations is empty %}
+                            <tr>
+                                <td colspan="6" class="text-center text-muted py-3">
+                                    Aucune opération sur cette période.
+                                </td>
+                            </tr>
+                        {% else %}
+                            {% for op in operations %}
+                                <tr>
+                                    <td>{{ op.date|date('d/m/Y') }}</td>
+                                    <td>
+                                        {% if op.type == 'recette' %}
+                                            <span class="badge badge-success">Recette</span>
+                                        {% else %}
+                                            <span class="badge badge-danger">Dépense</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ op.origine ?? '-' }}</td>
+                                    <td>{{ op.objet }}</td>
+                                    <td class="text-right">
+                                        {% if op.type == 'recette' %}
+                                            <span class="text-success">+ {{ op.montant|number_format(2, ',', ' ') }} €</span>
+                                        {% else %}
+                                            <span class="text-danger">- {{ op.montant|number_format(2, ',', ' ') }} €</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        {% if op.pointage %}
+                                            <span class="badge badge-success">Oui</span>
+                                        {% else %}
+                                            <span class="badge badge-secondary">Non</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+

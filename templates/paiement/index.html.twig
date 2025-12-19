@@ -1,0 +1,42 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Paiement - SoSand{% endblock %}
+
+{% block content_right %}
+    <div class="card border-secondary mb-4">
+        <div class="card-header bg-secondary border-0">
+            <h4 class="font-weight-semi-bold m-0">Règlement de la commande</h4>
+        </div>
+
+        <div class="card-body">
+            <p class="mb-2">
+                <strong>Total produits :</strong>
+                {{ totalProduits|number_format(2, ',', ' ') }} €
+            </p>
+
+            {% if remisePourcentage > 0 %}
+                <p class="mb-2 text-success">
+                    <strong>Code promo ({{ remisePourcentage|number_format(0) }} %)&nbsp;:</strong>
+                    - {{ montantRemise|number_format(2, ',', ' ') }} €
+                </p>
+            {% endif %}
+
+            <p class="mb-2">
+                <strong>Frais livraison :</strong>
+                {{ fraisLivraison|number_format(2, ',', ' ') }} €
+            </p>
+
+            <p class="mb-4">
+                <strong>Total à payer :</strong>
+                {{ total|number_format(2, ',', ' ') }} €
+            </p>
+
+            <form method="post" action="{{ path('app_paiement_checkout') }}">
+                <button class="btn btn-primary">
+                    Régler
+                    <i class="fa fa-arrow-right ml-2"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+{% endblock %}

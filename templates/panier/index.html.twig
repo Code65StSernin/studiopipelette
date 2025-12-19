@@ -1,0 +1,297 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Mon Panier - SoSand{% endblock %}
+
+{% block content_right %}
+    <!-- Page Header intégré dans la colonne de droite -->
+    <div class="bg-secondary mb-4 p-4">
+        <div class="d-flex flex-column">
+            <h3 class="font-weight-semi-bold text-uppercase mb-2">Mon Panier</h3>
+            <nav class="d-inline-flex">
+                <a href="{{ path('app_home') }}" class="text-dark">Accueil</a>
+                <span class="mx-2">-</span>
+                <span class="text-dark">Panier</span>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-12">
+            {% if panier.isEmpty %}
+                <!-- Panier vide -->
+                <div class="card border-secondary mb-5">
+                    <div class="card-body text-center py-5">
+                        <i class="fa fa-shopping-cart fa-5x text-secondary mb-4"></i>
+                        <h3 class="mb-4">Votre panier est vide</h3>
+                        <p class="text-muted mb-4">Découvrez nos magnifiques bougies artisanales</p>
+                        <a href="{{ path('app_boutique') }}" class="btn btn-primary py-2 px-4">
+                            <i class="fa fa-arrow-left mr-2"></i>Continuer mes achats
+                        </a>
+                    </div>
+                </div>
+            {% else %}
+                <!-- Affichage des erreurs de stock -->
+                {% if erreursStock is not empty %}
+                    <div class="alert alert-warning" role="alert">
+                        <h5 class="alert-heading"><i class="fa fa-exclamation-triangle mr-2"></i>Attention : Problèmes de stock</h5>
+                        <ul class="mb-0">
+                            {% for erreur in erreursStock %}
+                                <li>{{ erreur }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+
+                <!-- Tableau du panier -->
+                <div class="card border-secondary mb-5">
+                    <div class="card-header bg-secondary border-0">
+                        <h4 class="font-weight-semi-bold m-0">Articles du panier ({{ panier.nombreArticles }})</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-bordered text-center mb-0">
+                                <thead class="bg-secondary text-dark">
+                                    <tr>
+                                        <th>Image</th>
+                                        <th>Produit</th>
+                                        <th>Taille</th>
+                                        <th>Prix unitaire</th>
+                                        <th>Quantité</th>
+                                        <th>Total</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="align-middle">
+                                    {% for ligne in panier.lignes %}
+                                        <tr>
+                                            <!-- Image -->
+                                            <td class="align-middle">
+                                                {% set firstPhoto = ligne.article.photos|first %}
+                                                {% if firstPhoto %}
+                                                    <img src="{{ asset('assets/img/articles/' ~ ligne.article.id ~ '/' ~ firstPhoto.filename) }}" 
+                                                         alt="{{ ligne.article.nom }}" 
+                                                         style="width: 80px; height: 80px; object-fit: cover;">
+                                                {% else %}
+                                                    <img src="{{ asset('assets/img/product-1.jpg') }}" 
+                                                         alt="{{ ligne.article.nom }}" 
+                                                         style="width: 80px; height: 80px; object-fit: cover;">
+                                                {% endif %}
+                                            </td>
+                                            
+                                            <!-- Nom du produit -->
+                                            <td class="align-middle">
+                                                <a href="{{ path('app_article_show', {slug: ligne.article.slug}) }}" class="text-dark">
+                                                    {{ ligne.article.nom }}
+                                                </a>
+                                            </td>
+                                            
+                                            <!-- Taille -->
+                                            <td class="align-middle">
+                                                <strong>{{ ligne.taille }}</strong>
+                                            </td>
+                                            
+                                            <!-- Prix unitaire -->
+                                            <td class="align-middle">
+                                                {{ ligne.prixUnitaire|number_format(2, ',', ' ') }} €
+                                            </td>
+                                            
+                                            <!-- Quantité avec boutons +/- -->
+                                            <td class="align-middle">
+                                                <div class="input-group quantity mx-auto" style="width: 150px;">
+                                                    <div class="input-group-btn">
+                                                        <form method="post" action="{{ path('app_panier_decrementer', {id: ligne.id}) }}" style="display: inline;">
+                                                            <button type="submit" class="btn btn-sm btn-primary btn-minus" {% if ligne.quantite <= 1 %}disabled{% endif %}>
+                                                                <i class="fa fa-minus"></i>
+                                                            </button>
+                                                        </form>
+                                                    </div>
+                                                    <input type="text" class="form-control form-control-sm bg-secondary text-center" value="{{ ligne.quantite }}" readonly>
+                                                    <div class="input-group-btn">
+                                                        <form method="post" action="{{ path('app_panier_incrementer', {id: ligne.id}) }}" style="display: inline;">
+                                                            <button type="submit" class="btn btn-sm btn-primary btn-plus" 
+                                                                    {% if ligne.stock is not null and ligne.quantite >= ligne.stock %}disabled{% endif %}>
+                                                                <i class="fa fa-plus"></i>
+                                                            </button>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                                {% if ligne.stock is not null %}
+                                                    <small class="text-muted d-block text-center mt-1">
+                                                        Stock: {{ ligne.stock }}
+                                                        {% if ligne.quantite >= ligne.stock %}
+                                                            <span class="text-warning">(Max atteint)</span>
+                                                        {% endif %}
+                                                    </small>
+                                                {% endif %}
+                                            </td>
+                                            
+                                            <!-- Sous-total -->
+                                            <td class="align-middle">
+                                                <strong>{{ ligne.sousTotal|number_format(2, ',', ' ') }} €</strong>
+                                            </td>
+                                            
+                                            <!-- Supprimer -->
+                                            <td class="align-middle">
+                                                <form method="post" action="{{ path('app_panier_supprimer', {id: ligne.id}) }}" 
+                                                      onsubmit="return confirm('Êtes-vous sûr de vouloir retirer cet article ?');">
+                                                    <button type="submit" class="btn btn-sm btn-danger">
+                                                        <i class="fa fa-trash"></i>
+                                                    </button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Résumé du panier -->
+                <div class="row justify-content-end">
+                    <div class="col-lg-5">
+                        <div class="card border-secondary mb-5">
+                            <div class="card-header bg-secondary border-0">
+                                <h4 class="font-weight-semi-bold m-0">Résumé du panier</h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between mb-3 pt-1">
+                                    <h6 class="font-weight-medium">Sous-total produits</h6>
+                                    <h6 class="font-weight-medium">{{ sousTotal|number_format(2, ',', ' ') }} €</h6>
+                                </div>
+
+                                {% if remisePourcentage > 0 %}
+                                    <div class="d-flex justify-content-between mb-2 text-success">
+                                        <h6 class="font-weight-medium">
+                                            Code promo {{ panier.codePromo.code }} ({{ remisePourcentage|number_format(0) }} %)
+                                        </h6>
+                                        <h6 class="font-weight-medium">
+                                            - {{ montantRemise|number_format(2, ',', ' ') }} €
+                                        </h6>
+                                    </div>
+                                {% endif %}
+
+                                <div class="d-flex justify-content-between">
+                                    <h6 class="font-weight-medium">Livraison</h6>
+                                    <h6 class="font-weight-medium">Calculée à l'étape suivante</h6>
+                                </div>
+                            </div>
+                            <div class="card-footer border-secondary bg-transparent">
+                                <div class="d-flex justify-content-between mt-2">
+                                    <h5 class="font-weight-bold">Total TTC</h5>
+                                    <h5 class="font-weight-bold">{{ totalApresRemise|number_format(2, ',', ' ') }} €</h5>
+                                </div>
+
+                                <button type="button" class="btn btn-block btn-primary my-3 py-3" data-toggle="modal" data-target="#promoCodeModal">
+                                    Utiliser un code promo
+                                </button>
+
+                                {% if erreursStock is empty %}
+                                    {% if app.user %}
+                                        <a href="{{ path('app_livraison_choix') }}" class="btn btn-block btn-primary my-3 py-3">
+                                            Livraison
+                                        </a>
+                                    {% else %}
+                                        <button type="button" class="btn btn-block btn-primary my-3 py-3" data-toggle="modal" data-target="#loginModal">
+                                            Livraison
+                                        </button>
+                                    {% endif %}
+                                {% else %}
+                                    <button class="btn btn-block btn-secondary my-3 py-3" disabled>
+                                        Corriger les problèmes de stock
+                                    </button>
+                                {% endif %}
+                                
+                                <a href="{{ path('app_boutique') }}" class="btn btn-block btn-outline-primary py-3">
+                                    <i class="fa fa-arrow-left mr-2"></i>Continuer mes achats
+                                </a>
+                                
+                                <form method="post" action="{{ path('app_panier_vider') }}" 
+                                      onsubmit="return confirm('Êtes-vous sûr de vouloir vider votre panier ?');" 
+                                      class="mt-2">
+                                    <button type="submit" class="btn btn-block btn-outline-danger py-2">
+                                        <i class="fa fa-times mr-2"></i>Vider le panier
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    {# Modal code promo #}
+    <div class="modal fade" id="promoCodeModal" tabindex="-1" role="dialog" aria-labelledby="promoCodeModalLabel" aria-hidden="true">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header bg-primary text-white">
+            <h5 class="modal-title" id="promoCodeModalLabel">Code promo</h5>
+            <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <form id="promoCodeForm" method="post" action="{{ path('app_panier_code') }}">
+            <div class="modal-body">
+              <div id="promoAlert" class="alert d-none"></div>
+              <div class="form-group">
+                <label for="promo_code">Entrez votre code promo</label>
+                <input type="text" id="promo_code" name="code" class="form-control" maxlength="50" required>
+              </div>
+              <input type="hidden" name="_token" value="{{ csrf_token('promo_code') }}">
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-dismiss="modal">Annuler</button>
+              <button type="submit" class="btn btn-primary">Valider</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+{% endblock %}
+
+{% block javascripts %}
+{{ parent() }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('promoCodeForm');
+    const alertDiv = document.getElementById('promoAlert');
+
+    if (!form || !alertDiv) {
+        return;
+    }
+
+    form.addEventListener('submit', function (e) {
+        e.preventDefault();
+
+        alertDiv.classList.add('d-none');
+        alertDiv.classList.remove('alert-success', 'alert-danger');
+
+        fetch(form.action, {
+            method: 'POST',
+            body: new FormData(form),
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+            .then(response => response.json())
+            .then(data => {
+                alertDiv.classList.remove('d-none');
+                alertDiv.classList.add(data.success ? 'alert-success' : 'alert-danger');
+                alertDiv.innerHTML = data.message;
+
+                if (data.success) {
+                    setTimeout(function () {
+                        window.location.reload();
+                    }, 800);
+                }
+            })
+            .catch(() => {
+                alertDiv.classList.remove('d-none');
+                alertDiv.classList.add('alert-danger');
+                alertDiv.innerHTML = 'Une erreur est survenue. Merci de réessayer.';
+            });
+    });
+});
+</script>
+{% endblock %}

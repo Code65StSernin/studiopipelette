@@ -1,0 +1,1 @@
+{{ url('newsletter_unsubscribe', { token: subscriber.unsubscribeToken }) }}

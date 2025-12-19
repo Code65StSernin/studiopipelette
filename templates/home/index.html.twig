@@ -1,0 +1,274 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Accueil{% endblock %}
+
+{% block content_right %}
+    {% if carousels is not empty %}
+        <!-- Carousel Start (dynamique) -->
+        <div id="header-carousel" class="carousel slide mb-5" data-ride="carousel">
+            <div class="carousel-inner">
+                {% for slide in carousels %}
+                    <div class="carousel-item {% if loop.first %}active{% endif %}" style="height: 410px;">
+                        <img class="img-fluid" src="{{ asset('assets/img/carousel/' ~ slide.image) }}" alt="Image">
+                        <div class="carousel-caption d-flex flex-column align-items-center justify-content-center">
+                            <div class="p-3" style="max-width: 700px;">
+                                <h4 class="text-light text-uppercase font-weight-medium mb-3">
+                                    {{ slide.petitTitre }}
+                                </h4>
+                                <h3 class="display-4 text-white font-weight-semi-bold mb-4">
+                                    {{ slide.grandTitre }}
+                                </h3>
+                                {% if slide.texteBouton and slide.lienBouton %}
+                                    <a href="{{ slide.lienBouton }}" class="btn btn-light py-2 px-3">
+                                        {{ slide.texteBouton }}
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+            <a class="carousel-control-prev" href="#header-carousel" data-slide="prev">
+                <div class="btn btn-dark" style="width: 45px; height: 45px;">
+                    <span class="carousel-control-prev-icon mb-n2"></span>
+                </div>
+            </a>
+            <a class="carousel-control-next" href="#header-carousel" data-slide="next">
+                <div class="btn btn-dark" style="width: 45px; height: 45px;">
+                    <span class="carousel-control-next-icon mb-n2"></span>
+                </div>
+            </a>
+        </div>
+        <!-- Carousel End -->
+    {% else %}
+        {# Fallback: ancien carousel statique si aucun slide actif #}
+        <div id="header-carousel" class="carousel slide mb-5" data-ride="carousel">
+            <div class="carousel-inner">
+                <div class="carousel-item active" style="height: 410px;">
+                    <img class="img-fluid" src="{{ asset('assets/img/carousel-1.jpg') }}" alt="Image">
+                    <div class="carousel-caption d-flex flex-column align-items-center justify-content-center">
+                        <div class="p-3" style="max-width: 700px;">
+                            <h4 class="text-light text-uppercase font-weight-medium mb-3">avec le code : HIVER10</h4>
+                            <h3 class="display-4 text-white font-weight-semi-bold mb-4">10% de réduction sur votre première commande</h3>
+                            <a href="{{ path('app_boutique') }}" class="btn btn-light py-2 px-3">Acheter</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+    
+    <!-- Featured Start -->
+    <div class="row pb-3">
+            <div class="col-lg-3 col-md-6 col-sm-12 pb-1">
+                <div class="d-flex align-items-center border mb-4" style="padding: 30px;">
+                    <h1 class="fa fa-check text-primary m-0 mr-3"></h1>
+                    <h5 class="font-weight-semi-bold m-0">Bougies artisanales</h5>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 col-sm-12 pb-1">
+                <div class="d-flex align-items-center border mb-4" style="padding: 30px;">
+                    <h1 class="fa fa-shipping-fast text-primary m-0 mr-2"></h1>
+                    <h5 class="font-weight-semi-bold m-0">Livraison gratuite en point relais</h5>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 col-sm-12 pb-1">
+                <div class="d-flex align-items-center border mb-4" style="padding: 30px;">
+                    <h1 class="fas fa-exchange-alt text-primary m-0 mr-3"></h1>
+                    <h5 class="font-weight-semi-bold m-0">Fidélité<br>récompensée</h5>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 col-sm-12 pb-1">
+                <div class="d-flex align-items-center border mb-4" style="padding: 30px;">
+                    <h1 class="fa fa-phone-volume text-primary m-0 mr-3"></h1>
+                    <h5 class="font-weight-semi-bold m-0">Support 7/7<br>par Email</h5>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Featured End -->
+
+    <!-- Categories Start -->
+    <div class="pt-5">
+        <div class="row pb-3">
+            {% for data in sousCategoriesData %}
+                {% set imageNumber = loop.index %}
+                <div class="col-lg-4 col-md-6 pb-1">
+                    <div class="cat-item d-flex flex-column border mb-4" style="padding: 30px;">
+                        <p class="text-right">{{ data.articleCount }} Produit{% if data.articleCount > 1 %}s{% endif %}</p>
+                        <a href="{{ path('app_catalogue_sous_categorie', {'slug': data.sousCategorie.slug}) }}" class="cat-img position-relative overflow-hidden mb-3">
+                            <img class="img-fluid" src="{{ asset('assets/img/cat-' ~ imageNumber ~ '.jpg') }}" alt="{{ data.sousCategorie.nom }}">
+                        </a>
+                        <h5 class="font-weight-semi-bold m-0">{{ data.sousCategorie.nom }}</h5>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+    <!-- Categories End -->
+{% endblock %}
+
+{% block body %}
+    {% if offres is not empty %}
+        <!-- Offer Start (dynamique) -->
+        <div class="container-fluid offer py-5">
+            {% set nbOffres = offres|length %}
+            <div class="row no-gutters px-xl-5 d-flex flex-wrap">
+                {% for offre in offres %}
+                    {% set width = (100 / nbOffres) %}
+                    <div class="mb-3 mb-md-0 px-md-2"
+                         style="flex: 0 0 {{ width }}%; max-width: {{ width }}%;">
+                        <div class="position-relative bg-secondary text-white py-5 px-5 h-100
+                            {% if offre.imageGauche %}text-center text-md-right{% else %}text-center text-md-left{% endif %}">
+                            {% if offre.image %}
+                                {% if offre.imageGauche %}
+                                    <div class="d-flex flex-column flex-md-row align-items-center justify-content-between">
+                                        <div class="mb-3 mb-md-0 mr-md-4">
+                                            <img src="{{ asset('assets/img/offres/' ~ offre.image) }}" alt="" class="img-fluid" style="max-height: 180px;">
+                                        </div>
+                                        <div class="position-relative text-left text-md-right" style="z-index: 1;">
+                                            {% if offre.petitTexte %}
+                                                <h5 class="text-uppercase text-primary mb-3">{{ offre.petitTexte }}</h5>
+                                            {% endif %}
+                                            <h1 class="mb-4 font-weight-semi-bold">{{ offre.grandTexte }}</h1>
+                                            {% if offre.texteBouton and offre.lienBouton %}
+                                                <a href="{{ offre.lienBouton }}" class="btn btn-outline-primary py-md-2 px-md-3">
+                                                    {{ offre.texteBouton }}
+                                                </a>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                {% else %}
+                                    <div class="d-flex flex-column flex-md-row align-items-center justify-content-between">
+                                        <div class="position-relative text-left" style="z-index: 1;">
+                                            {% if offre.petitTexte %}
+                                                <h5 class="text-uppercase text-primary mb-3">{{ offre.petitTexte }}</h5>
+                                            {% endif %}
+                                            <h1 class="mb-4 font-weight-semi-bold">{{ offre.grandTexte }}</h1>
+                                            {% if offre.texteBouton and offre.lienBouton %}
+                                                <a href="{{ offre.lienBouton }}" class="btn btn-outline-primary py-md-2 px-md-3">
+                                                    {{ offre.texteBouton }}
+                                                </a>
+                                            {% endif %}
+                                        </div>
+                                        <div class="mt-3 mt-md-0 ml-md-4">
+                                            <img src="{{ asset('assets/img/offres/' ~ offre.image) }}" alt="" class="img-fluid" style="max-height: 180px;">
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            {% else %}
+                                <div class="position-relative" style="z-index: 1;">
+                                    {% if offre.petitTexte %}
+                                        <h5 class="text-uppercase text-primary mb-3">{{ offre.petitTexte }}</h5>
+                                    {% endif %}
+                                    <h1 class="mb-4 font-weight-semi-bold">{{ offre.grandTexte }}</h1>
+                                    {% if offre.texteBouton and offre.lienBouton %}
+                                        <a href="{{ offre.lienBouton }}" class="btn btn-outline-primary py-md-2 px-md-3">
+                                            {{ offre.texteBouton }}
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+        <!-- Offer End -->
+    {% endif %}
+    
+    <!-- Products Start (Full Width) -->
+    <div class="container-fluid pt-5 pb-3">
+        <div class="text-center mb-4">
+            <h2 class="section-title px-5"><span class="px-2">Bougies tendances</span></h2>
+        </div>
+        <div class="row px-xl-5">
+            {% for article in featuredArticles %}
+                {% set minPrice = null %}
+                {% set minBarredPrice = null %}
+                {% set taillesCount = article.tailles|length %}
+                
+                {# Trouver le prix le plus bas et son prix barré correspondant #}
+                {% for taille in article.tailles %}
+                    {% if minPrice is null or taille.prix < minPrice %}
+                        {% set minPrice = taille.prix %}
+                        {% set minBarredPrice = taille.barre is defined and taille.barre ? taille.barre : null %}
+                    {% endif %}
+                {% endfor %}
+                
+                {# Calculer le pourcentage de réduction #}
+                {% set discount = null %}
+                {% if minBarredPrice and minPrice %}
+                    {% set discount = ((minBarredPrice - minPrice) / minBarredPrice * 100)|round %}
+                {% endif %}
+                
+                <div class="col-lg-3 col-md-6 col-sm-12 pb-1">
+                    <div class="card product-item border-0 mb-4">
+                        <div class="card-header product-img position-relative overflow-hidden bg-transparent border p-0">
+                            <a href="{{ path('app_article_show', {'slug': article.slug}) }}">
+                                {% if article.photos|length > 0 %}
+                                    <img class="img-fluid w-100" src="{{ asset('assets/img/articles/' ~ article.id ~ '/' ~ article.photos|first.filename) }}" alt="{{ article.nom }}">
+                                {% else %}
+                                    <img class="img-fluid w-100" src="{{ asset('assets/img/product-1.jpg') }}" alt="{{ article.nom }}">
+                                {% endif %}
+                            </a>
+                            
+                            {# Badge sous-catégorie ou catégorie à gauche #}
+                            {% if article.sousCategorie %}
+                                <div class="badge badge-secondary text-white position-absolute" style="top: 10px; left: 10px; padding: 5px 10px;">
+                                    {{ article.sousCategorie.nom }}
+                                </div>
+                            {% elseif article.categorie %}
+                                <div class="badge badge-secondary text-white position-absolute" style="top: 10px; left: 10px; padding: 5px 10px;">
+                                    {{ article.categorie.nom }}
+                                </div>
+                            {% endif %}
+                            
+                            {# Badge réduction à droite #}
+                            {% if discount %}
+                                <div class="badge badge-danger text-white position-absolute" style="top: 10px; right: 10px; padding: 5px 10px; font-size: 14px;">
+                                    -{{ discount }}%
+                                </div>
+                            {% endif %}
+                            
+                            {# Cœur favori en bas à droite #}
+                            {% set isFavori = favoriService.estDansFavoris(article) %}
+                            {% if isFavori %}
+                                {% set heartIcon = 'fas' %}
+                                {% set heartColor = '#dc3545' %}
+                            {% else %}
+                                {% set heartIcon = 'far' %}
+                                {% set heartColor = '#6c757d' %}
+                            {% endif %}
+                            <button type="button" 
+                                    class="btn btn-sm position-absolute favori-btn" 
+                                    style="bottom: 10px; right: 10px; background: white; border-radius: 50%; width: 40px; height: 40px; padding: 0; box-shadow: 0 2px 5px rgba(0,0,0,0.2);"
+                                    data-article-id="{{ article.id }}"
+                                    onclick="toggleFavori({{ article.id }}, this)">
+                                <i class="{{ heartIcon }} fa-heart" style="font-size: 18px; color: {{ heartColor }};"></i>
+                            </button>
+                        </div>
+                        <div class="card-body border-left border-right text-center p-0 pt-4 pb-3">
+                            <h6 class="text-truncate mb-3">{{ article.nom }}</h6>
+                            <div class="d-flex justify-content-center">
+                                {% if minPrice %}
+                                    <h6>
+                                        {% if taillesCount > 1 %}A partir de {% endif %}
+                                        {{ minPrice|number_format(2, ',', ' ') }}€
+                                    </h6>
+                                    {% if minBarredPrice %}
+                                        <h6 class="text-muted ml-2"><del>{{ minBarredPrice|number_format(2, ',', ' ') }}€</del></h6>
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="card-footer d-flex justify-content-center bg-light border">
+                            <a href="{{ path('app_article_show', {'slug': article.slug}) }}" class="btn btn-sm text-dark p-0"><i class="fas fa-eye text-primary mr-1"></i>Voir détails</a>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+    <!-- Products End -->
+{% endblock %}

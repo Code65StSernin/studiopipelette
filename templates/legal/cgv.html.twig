@@ -1,0 +1,28 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Conditions Générales de Vente{% endblock %}
+
+{% block content_right %}
+    <div class="container-fluid">
+        <div class="row px-xl-5">
+            <div class="col-12">
+                <h1 class="h3 mb-4">Conditions Générales de Vente</h1>
+
+                {% if page %}
+                    <div class="bg-white p-4 rounded shadow-sm">
+                        {{ page.content|raw }}
+                    </div>
+                {% else %}
+                    <div class="bg-white p-4 rounded shadow-sm">
+                        <p>
+                            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed non risus. Suspendisse lectus tortor, dignissim sit amet,
+                            adipiscing nec, ultricies sed, dolor. Cras elementum ultrices diam. Maecenas ligula massa, varius a, semper congue, euismod non, mi.
+                            Proin porttitor, orci nec nonummy molestie, enim est eleifend mi, non fermentum diam nisl sit amet erat.
+                        </p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+{% endblock %}
+

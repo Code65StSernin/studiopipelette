@@ -1,0 +1,18 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Désinscription newsletter - SoSand{% endblock %}
+
+{% block content_right %}
+    <div class="card border-secondary mb-4 mt-4">
+        <div class="card-header bg-secondary border-0">
+            <h4 class="font-weight-semi-bold m-0">Gestion de votre abonnement</h4>
+        </div>
+        <div class="card-body">
+            {% if status == 'success' %}
+                <p>Vous êtes bien désinscrit(e) de notre newsletter. Vous ne recevrez plus nos prochains emails.</p>
+            {% else %}
+                <p>Ce lien de désinscription n'est pas valide ou a déjà été utilisé.</p>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}

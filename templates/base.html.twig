@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="fr">
+    <head>
+        <meta charset="UTF-8">
+        <title>{% block title %}So'Sand{% endblock %}</title>
+        <meta content="width=device-width, initial-scale=1.0" name="viewport">
+        <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 128 128%22><text y=%221.2em%22 font-size=%2296%22>⚫️</text><text y=%221.3em%22 x=%220.2em%22 font-size=%2276%22 fill=%22%23fff%22>sf</text></svg>">
+        <!-- Favicon -->
+        <link href="{{ asset('assets/img/favicon.ico') }}" rel="icon">
+
+        <!-- Google Web Fonts -->
+        <link rel="preconnect" href="https://fonts.gstatic.com">
+        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet"> 
+
+        <!-- Font Awesome -->
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" rel="stylesheet">
+
+        <!-- Libraries Stylesheet -->
+        <link href="{{ asset('assets/lib/owlcarousel/assets/owl.carousel.min.css') }}" rel="stylesheet">
+
+        <!-- Customized Bootstrap Stylesheet -->
+        <link href="{{ asset('assets/css/style.css') }}" rel="stylesheet">
+
+        <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+
+        {% block stylesheets %}
+        {% endblock %}
+
+
+    </head>
+    <body>
+        <!-- Topbar Start -->
+        <div class="container-fluid">
+            <div class="row bg-secondary py-2 px-xl-5">
+                <div class="col-lg-6 d-none d-lg-block">
+                    <div class="d-inline-flex align-items-center">
+                        <a class="text-dark" href="{{path('app_faq')}}">FAQ</a>
+                    </div>
+                </div>
+                <div class="col-lg-6 text-center text-lg-right">
+                    <div class="d-inline-flex align-items-center">
+                        <a class="text-dark px-2" href="#">
+                            <i class="fab fa-facebook-f"></i>
+                        </a>
+                        <a class="text-dark px-2" href="#">
+                            <i class="fab fa-instagram"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="row align-items-center py-3 px-xl-5">
+                <div class="col-lg-3 d-none d-lg-block" style="position: relative; z-index: 10;">
+                    <a href="{{ path('app_home') }}" class="text-decoration-none">
+                        <img src="{{ asset('assets/img/logo lateral.png') }}" alt="Logo" style="height: 150px;">
+                    </a>
+                </div>
+                <div class="col-lg-6 col-6 text-left">
+                    <form action="{{ path('app_boutique') }}" method="get">
+                        <div class="input-group">
+                            <input type="text" name="q" class="form-control" placeholder="Rechercher un produit" value="{{ app.request.query.get('q') }}">
+                            <div class="input-group-append">
+                                <button type="submit" class="btn input-group-text bg-transparent text-primary" style="border: 1px solid #ced4da; border-left: 0;">
+                                    <i class="fa fa-search"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="col-lg-3 col-6 text-right">
+                    <a href="{{ path('app_favoris') }}" class="btn border">
+                        <i class="fas fa-heart text-primary"></i>
+                        <span class="badge" id="favori-count">{{ favoriService.nombreArticles|default(0) }}</span>
+                    </a>
+                    <a href="{{ path('app_panier') }}" class="btn border">
+                        <i class="fas fa-shopping-cart text-primary"></i>
+                        <span class="badge" id="cart-count">{{ panierService.nombreArticles|default(0) }}</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+        <!-- Topbar End -->
+
+
+        <!-- Navbar Start -->
+        <div class="container-fluid mb-5">
+            <!-- Menu principal en pleine largeur -->
+            <div class="row border-top px-xl-5">
+                <div class="col-12">
+                    <nav class="navbar navbar-expand-lg bg-light navbar-light py-3 py-lg-0 px-0" style="margin-top: 60px;">
+                        <a href="{{ path('app_home') }}" class="text-decoration-none d-block d-lg-none">
+                            <img src="{{ asset('assets/img/logo lateral.png') }}" alt="Logo" style="height: 80px;">
+                        </a>
+                        <button type="button" class="navbar-toggler" data-toggle="collapse" data-target="#navbarCollapse">
+                            <span class="navbar-toggler-icon"></span>
+                        </button>
+                        <div class="collapse navbar-collapse justify-content-between" id="navbarCollapse">
+                            <div class="navbar-nav mr-auto py-0">
+                                <a href="{{ path('app_home') }}" class="nav-item nav-link">Accueil</a>
+                                <a href="{{ path('app_boutique') }}" class="nav-item nav-link">Boutique</a>
+                                {% if app.user %}
+                                    <div class="nav-item dropdown">
+                                        <a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown">Mon compte</a>
+                                        <div class="dropdown-menu rounded-0 m-0">
+                                            <a href="{{ path('app_panier') }}" class="dropdown-item">Panier</a>
+                                            <a href="{{ path('app_commandes') }}" class="dropdown-item">Commandes</a>
+                                            <a href="{{ path('app_factures') }}" class="dropdown-item">Factures</a>
+                                            <a href="#" id="addressesLink" class="dropdown-item">Adresses</a>
+                                            <a href="#" id="deleteAccountLink" class="text-danger dropdown-item">Supprimer mon compte</a>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                                <a href="#" class="nav-item nav-link" data-toggle="modal" data-target="#contactModal">Contact</a>
+                                {% if is_granted('ROLE_ADMIN') %}
+                                    <a href="{{ path('admin') }}" class="nav-item nav-link" title="Administration">
+                                        <i class="fas fa-cog"></i>
+                                    </a>
+                                {% endif %}
+                            </div>
+                            <div class="navbar-nav ml-auto py-0">
+                                {% if app.user %}
+                                    <span class="nav-item nav-link text-black">Bonjour, {{ app.user.prenom }}</span>
+                                    <a href="{{ path('app_logout') }}" class="nav-item nav-link">Déconnexion</a>
+                                {% else %}
+                                    <a href="#" class="nav-item nav-link" data-toggle="modal" data-target="#loginModal">Connexion</a>
+                                    <a href="#" class="nav-item nav-link" data-toggle="modal" data-target="#registerModal">Inscription</a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </nav>
+                </div>
+            </div>
+            
+            <!-- Header Content (carousel, etc.) -->
+            <div class="row px-xl-5">
+                <div class="col-12">
+                    {% block header_content %}
+                    {# Zone pour carrousel ou autres contenus spécifiques au header de chaque page #}
+                    {% endblock %}
+                </div>
+            </div>
+            
+            <!-- Menu de gauche + Contenu -->
+            <div class="row px-xl-5">
+                {% if app.request.attributes.get('_route') not in ['app_boutique', 'app_article_show'] %}
+                <div class="col-12 col-lg-3">
+                    <a class="btn shadow-none d-flex align-items-center justify-content-between bg-primary text-white w-100" data-toggle="collapse" href="#navbar-vertical" style="height: 65px; padding: 0 30px;">
+                        <h6 class="m-0">Catégories</h6>
+                        <i class="fa fa-angle-down text-dark"></i>
+                    </a>
+                    <nav class="collapse navbar navbar-vertical navbar-light align-items-start p-0 border border-top-0 border-bottom-0 d-lg-block" id="navbar-vertical">
+                        <div class="navbar-nav w-100" style="height: auto">
+                            {% for categorie in categories %}
+                                {# Vérifier si cette catégorie a des sous-catégories (catégorie ID 1) #}
+                                {% set hasSousCategories = categorie.id == 1 %}
+                                
+                                {% if hasSousCategories %}
+                                    <div class="nav-item dropdown">
+                                        <a href="{{ path('app_catalogue_categorie', {'slug': categorie.slug}) }}" class="nav-link" data-toggle="dropdown">
+                                            {{ categorie.nom }} <i class="fa fa-angle-down float-right mt-1"></i>
+                                        </a>
+                                        <div class="dropdown-menu position-absolute bg-secondary border-0 rounded-0 w-100 m-0">
+                                            {% for sousCategorie in sousCategories %}
+                                                <a href="{{ path('app_catalogue_sous_categorie', {'slug': sousCategorie.slug}) }}" class="dropdown-item">{{ sousCategorie.nom }}</a>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                {% else %}
+                                    <a href="{{ path('app_catalogue_categorie', {'slug': categorie.slug}) }}" class="nav-item nav-link">{{ categorie.nom }}</a>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </nav>
+                </div>
+                {% endif %}
+                
+                <div class="col-12 {% if app.request.attributes.get('_route') in ['app_boutique', 'app_article_show'] %}col-lg-12{% else %}col-lg-9{% endif %}">
+                    {% block content_right %}
+                    {# Zone pour le contenu dans la colonne de droite (aligné avec menu gauche) #}
+                    {% endblock %}
+                </div>
+            </div>
+        </div>
+        <!-- Navbar End -->
+        
+        {% block body %}{% endblock %}
+        
+        <!-- Footer Start -->
+        <div class="container-fluid bg-secondary text-dark mt-5 pt-5">
+            <div class="row px-xl-5 pt-5">
+                <div class="col-lg-4 col-md-12 mb-5 pr-3 pr-xl-5">
+                    <a href="{{ path('app_home') }}" class="text-decoration-none">
+                        <img src="{{ asset('assets/img/logo lateral blanc.png') }}" alt="Logo" style="height: 120px;" class="mb-4">
+                    </a>
+                    <p>Découvrez nos bougies artisanales, conçues avec soin et passion. Pour une ambiance chaleureuse et unique.</p>
+                    {% if societe.adresse %}
+                        <p class="mb-2">
+                            <i class="fa fa-map-marker-alt text-primary mr-3"></i>
+                            {{ societe.adresse }}{% if societe.codePostal or societe.ville %}, {% endif %}
+                            {% if societe.codePostal %}{{ societe.codePostal }}{% endif %}
+                            {% if societe.ville %}{{ societe.ville }}{% endif %}
+                            {% if societe.codePostal or societe.ville %}, France{% endif %}
+                        </p>
+                    {% endif %}
+                    {% if societe.email %}
+                        <p class="mb-2"><i class="fa fa-envelope text-primary mr-3"></i>{{ societe.email }}</p>
+                    {% endif %}
+                </div>
+                <div class="col-lg-8 col-md-12">
+                    <div class="row">
+                        <div class="col-md-4 mb-5">
+                            <h5 class="font-weight-bold text-dark mb-4">Liens rapides</h5>
+                            <div class="d-flex flex-column justify-content-start">
+                                <a class="text-dark mb-2" href="{{ path('app_home') }}"><i class="fa fa-angle-right mr-2"></i>Accueil</a>
+                                <a class="text-dark mb-2" href="{{ path('app_boutique') }}"><i class="fa fa-angle-right mr-2"></i>Notre boutique</a>
+                                <a class="text-dark mb-2" href="{{ path('app_panier') }}"><i class="fa fa-angle-right mr-2"></i>Panier</a>
+                                <a class="text-dark mb-2" href="{{ path('app_faq') }}"><i class="fa fa-angle-right mr-2"></i>FAQ</a>
+                                <a class="text-dark" href="#" data-toggle="modal" data-target="#contactModal"><i class="fa fa-angle-right mr-2"></i>Nous contacter</a>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-5">
+                            <h5 class="font-weight-bold text-dark mb-4">Mentions légales</h5>
+                            <div class="d-flex flex-column justify-content-start">
+                                <a class="text-dark mb-2" href="{{ path('app_cgv') }}"><i class="fa fa-angle-right mr-2"></i>C.G.V</a>
+                                <a class="text-dark mb-2" href="{{ path('app_privacy_policy') }}"><i class="fa fa-angle-right mr-2"></i>Mentions légales</a>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-5">
+                            <h5 class="font-weight-bold text-dark mb-4">Newsletter</h5>
+                            <form action="{{ path('newsletter_subscribe') }}" method="post">
+                                <div class="form-group">
+                                    <input type="text" name="nom" class="form-control border-0 py-4" placeholder="Votre nom (optionnel)" />
+                                </div>
+                                <div class="form-group">
+                                    <input type="email" name="email" class="form-control border-0 py-4" placeholder="Votre email"
+                                           required="required" />
+                                </div>
+                                <input type="hidden" name="_token" value="{{ csrf_token('newsletter_subscribe') }}">
+                                <div>
+                                    <button class="btn btn-primary btn-block border-0 py-3" type="submit">S'abonner maintenant</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row border-top border-light mx-xl-5 py-4">
+                <div class="col-md-6 px-xl-0">
+                    <p class="mb-md-0 text-center text-md-left text-dark">
+                        &copy; <a class="text-dark font-weight-semi-bold" href="#">So'Sand</a>. Tous droits réservés. Conçu par
+                        <a class="text-dark font-weight-semi-bold" href="https://www.code65.fr">CODE 65</a><br>
+                    </p>
+                </div>
+                <div class="col-md-6 px-xl-0 text-center text-md-right">
+                    <img class="img-fluid" src="{{ asset('assets/img/payments.png') }}" alt="">
+                </div>
+            </div>
+        </div>
+        <!-- Footer End -->
+
+        <!-- Back to Top -->
+        <a href="#" class="btn btn-primary back-to-top"><i class="fa fa-angle-double-up"></i></a>
+        
+        <!-- Flash Messages Modal -->
+        <div class="modal fade" id="flashMessageModal" tabindex="-1" role="dialog" aria-labelledby="flashMessageModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content">
+                    <div class="modal-header" id="flashModalHeader">
+                        <h5 class="modal-title text-white" id="flashMessageModalLabel">Notification</h5>
+                        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body" id="flashModalBody">
+                        <!-- Message will be inserted here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        {% set flashes = app.flashes %}
+
+        {% if flashes|length > 0 %}
+            <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    const flashMessages = {{ flashes|json_encode|raw }};
+                    for (const [type, messages] of Object.entries(flashMessages)) {
+                        messages.forEach(message => {
+                            showFlashMessage(message, type);
+                        });
+                    }
+                });
+            </script>
+        {% endif %}
+
+        
+        <!-- Login Modal -->
+        <div class="modal fade" id="loginModal" tabindex="-1" role="dialog" aria-labelledby="loginModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title" id="loginModalLabel">Connexion</h5>
+                        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <form id="loginForm" method="post" action="{{ path('app_login') }}">
+                        <div class="modal-body">
+                            <div id="loginAlert" class="alert d-none"></div>
+                            
+                            <div class="form-group">
+                                <label for="inputEmailLogin">Email <span class="text-danger">*</span></label>
+                                <input type="email" name="email" id="inputEmailLogin" class="form-control" autocomplete="email" required autofocus maxlength="50" pattern="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}">
+                                <small class="form-text text-muted">Maximum 50 caractères</small>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="inputPasswordLogin">Mot de passe <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <input type="password" name="password" id="inputPasswordLogin" class="form-control" autocomplete="current-password" required maxlength="50" minlength="6">
+                                    <div class="input-group-append">
+                                        <button class="btn btn-outline-secondary" type="button" id="togglePasswordLogin">
+                                            <i class="fa fa-eye" id="eyeIconLogin"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <small class="form-text text-muted">6 à 50 caractères</small>
+                            </div>
+                            
+                            <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+                            
+                            <div class="text-center mt-3">
+                                <p class="mb-2"><a href="#" id="switchToForgotPassword" class="text-primary">Mot de passe oublié ?</a></p>
+                                <p class="mb-0">Pas de compte ? <a href="#" id="switchToRegister" class="text-primary">Créez-en un</a></p>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Annuler</button>
+                            <button type="submit" class="btn btn-primary">Se connecter</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Register Modal -->
+        <div class="modal fade" id="registerModal" tabindex="-1" role="dialog" aria-labelledby="registerModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title" id="registerModalLabel">Inscription</h5>
+                        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <form id="registerForm" method="post" action="{{ path('app_register') }}">
+                        <div class="modal-body">
+                            <div id="registerAlert" class="alert d-none"></div>
+                            
+                            <div class="form-group">
+                                <label for="registration_form_nom">Nom <span class="text-danger">*</span></label>
+                                <input type="text" id="registration_form_nom" name="registration_form[nom]" required class="form-control" maxlength="50">
+                                <small class="form-text text-muted">Maximum 50 caractères</small>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="registration_form_prenom">Prénom <span class="text-danger">*</span></label>
+                                <input type="text" id="registration_form_prenom" name="registration_form[prenom]" required class="form-control" maxlength="50">
+                                <small class="form-text text-muted">Maximum 50 caractères</small>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="registration_form_email">Email <span class="text-danger">*</span></label>
+                                <input type="email" id="registration_form_email" name="registration_form[email]" required class="form-control" maxlength="50" pattern="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}">
+                                <small class="form-text text-muted">Maximum 50 caractères (ex: nom@domaine.fr)</small>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="registration_form_plainPassword">Mot de passe <span class="text-danger">*</span></label>
+                                <div class="mb-2">
+                                    <small class="font-weight-bold">Le mot de passe doit contenir :</small>
+                                    <div class="row" id="passwordRules">
+                                        <div class="col-6">
+                                            <ul class="list-unstyled small mb-0">
+                                                <li id="rule-length"><i class="fas fa-times text-danger"></i> 6 caractères min.</li>
+                                                <li id="rule-uppercase"><i class="fas fa-times text-danger"></i> 1 majuscule</li>
+                                                <li id="rule-lowercase"><i class="fas fa-times text-danger"></i> 1 minuscule</li>
+                                            </ul>
+                                        </div>
+                                        <div class="col-6">
+                                            <ul class="list-unstyled small mb-0">
+                                                <li id="rule-number"><i class="fas fa-times text-danger"></i> 1 chiffre</li>
+                                                <li id="rule-special"><i class="fas fa-times text-danger"></i> 1 caractère spécial</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="input-group">
+                                    <input type="password" id="registration_form_plainPassword" name="registration_form[plainPassword]" required class="form-control" maxlength="50" minlength="6">
+                                    <div class="input-group-append">
+                                        <button class="btn btn-outline-secondary" type="button" id="togglePasswordRegister">
+                                            <i class="fa fa-eye" id="eyeIconRegister"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="registration_form_confirmPassword">Confirmation mot de passe <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <input type="password" id="registration_form_confirmPassword" required class="form-control" maxlength="50" minlength="6">
+                                    <div class="input-group-append">
+                                        <button class="btn btn-outline-secondary" type="button" id="togglePasswordConfirm">
+                                            <i class="fa fa-eye" id="eyeIconConfirm"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <small class="form-text text-muted">Doit être identique au mot de passe</small>
+                            </div>
+                            
+                            <div class="form-check mb-3">
+                                <input type="checkbox" class="form-check-input" id="registration_form_agreeTerms" name="registration_form[agreeTerms]" required>
+                                <label class="form-check-label" for="registration_form_agreeTerms">
+                                    J'accepte les conditions d'utilisation <span class="text-danger">*</span>
+                                </label>
+                            </div>
+                            
+                            <input type="hidden" name="registration_form[_token]" value="{{ csrf_token('registration_form') }}">
+                            
+                            <div class="text-center mt-3">
+                                <p class="mb-0">Vous avez déjà un compte ? <a href="#" id="switchToLogin" class="text-primary">Connectez-vous</a></p>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Annuler</button>
+                            <button type="submit" class="btn btn-primary" disabled>S'inscrire</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reset Password Modal -->
+        <div class="modal fade" id="resetPasswordModal" tabindex="-1" role="dialog" aria-labelledby="resetPasswordModalLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title" id="resetPasswordModalLabel">Nouveau mot de passe</h5>
+                        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <form id="resetPasswordForm" method="post">
+                        <div class="modal-body">
+                            <div id="resetPasswordAlert" class="alert d-none"></div>
+                            
+                            <p class="text-muted mb-3">Choisissez un nouveau mot de passe pour votre compte.</p>
+                            
+                            <div class="mb-3">
+                                <small class="font-weight-bold">Le mot de passe doit contenir :</small>
+                                <div class="row" id="resetPasswordRules">
+                                    <div class="col-6">
+                                        <ul class="list-unstyled small mb-0">
+                                            <li id="reset-rule-length"><i class="fas fa-times text-danger"></i> 6 caractères min.</li>
+                                            <li id="reset-rule-uppercase"><i class="fas fa-times text-danger"></i> 1 majuscule</li>
+                                            <li id="reset-rule-lowercase"><i class="fas fa-times text-danger"></i> 1 minuscule</li>
+                                        </ul>
+                                    </div>
+                                    <div class="col-6">
+                                        <ul class="list-unstyled small mb-0">
+                                            <li id="reset-rule-number"><i class="fas fa-times text-danger"></i> 1 chiffre</li>
+                                            <li id="reset-rule-special"><i class="fas fa-times text-danger"></i> 1 caractère spécial</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="reset_password">Nouveau mot de passe <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <input type="password" class="form-control" id="reset_password" name="password" required minlength="6" maxlength="50">
+                                    <div class="input-group-append">
+                                        <button class="btn btn-outline-secondary" type="button" id="togglePasswordReset">
+                                            <i class="fa fa-eye" id="eyeIconReset"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="reset_confirm_password">Confirmer le mot de passe <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <input type="password" class="form-control" id="reset_confirm_password" name="confirm_password" required minlength="6" maxlength="50">
+                                    <div class="input-group-append">
+                                        <button class="btn btn-outline-secondary" type="button" id="togglePasswordResetConfirm">
+                                            <i class="fa fa-eye" id="eyeIconResetConfirm"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <small class="form-text text-muted">Doit être identique au mot de passe</small>
+                            </div>
+                            
+                            <input type="hidden" id="reset_token" name="token" value="">
+                        </div>
+                        <div class="modal-footer">
+                            <a href="{{ path('app_home') }}" class="btn btn-secondary">Annuler</a>
+                            <button type="submit" class="btn btn-primary" disabled>Réinitialiser</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Delete Account Modal -->
+        <div class="modal fade" id="deleteAccountModal" tabindex="-1" role="dialog" aria-labelledby="deleteAccountModalLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content border-danger">
+                    <div class="modal-header bg-danger text-white">
+                        <h5 class="modal-title" id="deleteAccountModalLabel"><i class="fas fa-exclamation-triangle mr-2"></i>Supprimer mon compte</h5>
+                        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <form id="deleteAccountForm">
+                        <div class="modal-body">
+                            <div id="deleteAccountAlert" class="alert d-none"></div>
+                            
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-circle mr-2"></i>
+                                <strong>Attention !</strong> Cette action est irréversible. Toutes vos données seront définitivement supprimées.
+                            </div>
+                            
+                            <p class="mb-3">Pour confirmer la suppression de votre compte, veuillez taper la phrase suivante dans le champ ci-dessous :</p>
+                            
+                            <div class="alert alert-secondary text-center">
+                                <strong>Oui, je veux supprimer mon compte</strong>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="delete_confirmation_text">Confirmation <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="delete_confirmation_text" name="confirmation_text" required placeholder="Tapez exactement la phrase ci-dessus">
+                                <small class="form-text text-muted">Respectez la casse et la ponctuation</small>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Annuler</button>
+                            <button type="submit" class="btn btn-danger" disabled><i class="fas fa-trash mr-2"></i>Supprimer définitivement</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Forgot Password Modal -->
+        <div class="modal fade" id="forgotPasswordModal" tabindex="-1" role="dialog" aria-labelledby="forgotPasswordModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title" id="forgotPasswordModalLabel">Mot de passe oublié</h5>
+                        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <form id="forgotPasswordForm" method="post" action="{{ path('app_forgot_password_request') }}">
+                        <div class="modal-body">
+                            <div id="forgotPasswordAlert" class="alert d-none"></div>
+                            
+                            <p class="text-muted">Entrez votre adresse email pour recevoir un lien de réinitialisation de mot de passe.</p>
+                            
+                            <div class="form-group">
+                                <label for="inputEmailForgot">Adresse email <span class="text-danger">*</span></label>
+                                <input type="email" name="email" id="inputEmailForgot" class="form-control" autocomplete="email" required maxlength="50" pattern="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}">
+                                <small class="form-text text-muted">Maximum 50 caractères</small>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Annuler</button>
+                            <button type="submit" class="btn btn-primary">Envoyer le lien</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        {# Contact Modal #}
+        {% set captchaA = random(1, 9) %}
+        {% set captchaB = random(1, 9) %}
+        {% set nombres = ['zéro','un','deux','trois','quatre','cinq','six','sept','huit','neuf'] %}
+
+        <div class="modal fade" id="contactModal" tabindex="-1" role="dialog" aria-labelledby="contactModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title" id="contactModalLabel">Contact</h5>
+                        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <form method="post" action="{{ path('app_contact_send') }}" id="contactForm">
+                        <div class="modal-body">
+                            <div id="contactFormError" class="alert alert-danger" style="display: none;" role="alert"></div>
+                            <div id="contactFormSuccess" class="alert alert-success" style="display: none;" role="alert"></div>
+                            <div class="form-row">
+                                <div class="form-group col-md-6">
+                                    <label for="contact_prenom">Prénom <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="contact_prenom" name="prenom" required maxlength="50">
+                                </div>
+                                <div class="form-group col-md-6">
+                                    <label for="contact_nom">Nom <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="contact_nom" name="nom" required maxlength="50">
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group col-md-6">
+                                    <label for="contact_telephone">Téléphone <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="contact_telephone" name="telephone" required maxlength="20">
+                                </div>
+                                <div class="form-group col-md-6">
+                                    <label for="contact_email">Email <span class="text-danger">*</span></label>
+                                    <input type="email" class="form-control" id="contact_email" name="email" required maxlength="100">
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="contact_sujet">Sujet <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="contact_sujet" name="sujet" required maxlength="150">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="contact_message">Message <span class="text-danger">*</span></label>
+                                <textarea class="form-control" id="contact_message" name="message" rows="4" required></textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="contact_captcha">
+                                    Pour vérifier que vous êtes humain, combien font
+                                    <strong>{{ captchaA }}</strong> + <strong>{{ nombres[captchaB] }}</strong> ? <span class="text-danger">*</span>
+                                </label>
+                                <input type="number" class="form-control" id="contact_captcha" name="captcha_result" required>
+                                <input type="hidden" name="captcha_a" value="{{ captchaA }}">
+                                <input type="hidden" name="captcha_b" value="{{ captchaB }}">
+                            </div>
+
+                            <input type="hidden" name="_token" value="{{ csrf_token('contact_form') }}">
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Annuler</button>
+                            <button type="submit" class="btn btn-primary">Envoyer</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Addresses Management Modal -->
+        <div class="modal fade" id="addressesModal" tabindex="-1" role="dialog" aria-labelledby="addressesModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable" role="document">
+                <div class="modal-content">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title" id="addressesModalLabel">
+                            <i class="fas fa-map-marker-alt mr-2"></i>Mes adresses
+                            {% if app.user %}
+                                <small class="d-block mt-1">{{ app.user.prenom }} {{ app.user.nom }}</small>
+                                <small class="d-block mt-1"><i class="fas fa-info-circle mr-1"></i>Maximum 5 adresses</small>
+                            {% endif %}
+                        </h5>
+                        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div id="addressesAlert" class="alert d-none"></div>
+                        
+                        <!-- Liste des adresses -->
+                        <div id="addressesList">
+                            <div class="text-center py-5">
+                                <i class="fas fa-spinner fa-spin fa-3x text-primary"></i>
+                                <p class="mt-3">Chargement...</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Formulaire d'ajout/modification d'adresse -->
+                        <div id="addressForm" class="d-none mt-4">
+                            <h6 class="border-bottom pb-2 mb-3">
+                                <span id="formTitle">Nouvelle adresse</span>
+                            </h6>
+                            <form id="addressFormElement">
+                                <input type="hidden" id="address_id" value="">
+                                
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <div class="form-group">
+                                            <label for="street_number">N° <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control" id="street_number" name="street_number" required maxlength="5">
+                                            <small class="form-text text-muted">Max 5 caractères</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-9">
+                                        <div class="form-group">
+                                            <label for="street">Voie <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control" id="street" name="street" required maxlength="90" placeholder="Rue de la Paix">
+                                            <small class="form-text text-muted">Max 90 caractères</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="complement">Complément d'adresse</label>
+                                    <input type="text" class="form-control" id="complement" name="complement" maxlength="90" placeholder="Bâtiment, Étage, Appartement...">
+                                    <small class="form-text text-muted">Max 90 caractères</small>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="postal_code">Code postal <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control" id="postal_code" name="postal_code" required minlength="5" maxlength="5" pattern="[0-9]{5}" placeholder="75001">
+                                            <small class="form-text text-muted">Exactement 5 chiffres</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-8">
+                                        <div class="form-group">
+                                            <label for="city">Ville <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control" id="city" name="city" required maxlength="30" placeholder="Paris">
+                                            <small class="form-text text-muted">Max 30 caractères</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="text-right">
+                                    <button type="button" class="btn btn-secondary" id="cancelAddressBtn">Annuler</button>
+                                    <button type="submit" class="btn btn-primary"><i class="fas fa-save mr-2"></i>Enregistrer</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Fermer</button>
+                        <button type="button" class="btn btn-success" id="showAddAddressForm"><i class="fas fa-plus mr-2"></i>Nouvelle adresse</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- JavaScript Libraries -->
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.bundle.min.js"></script>
+        <script src="{{ asset('assets/lib/easing/easing.min.js') }}"></script>
+        <script src="{{ asset('assets/lib/owlcarousel/owl.carousel.min.js') }}"></script>
+
+        <!-- Template Javascript -->
+        <script src="{{ asset('assets/js/main.js') }}"></script>
+        
+        <!-- Auth Modals Javascript -->
+        <script src="{{ asset('assets/js/auth-modals.js') }}"></script>
+        
+        <!-- Addresses Management Javascript -->
+        <script src="{{ asset('assets/js/addresses.js') }}"></script>
+
+        {# Script pour ouvrir automatiquement la modale de connexion si demandé #}
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Vérifier si le paramètre login=1 est présent dans l'URL
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('login') === '1') {
+                // Ouvrir la modale de connexion
+                $('#loginModal').modal('show');
+                
+                // Nettoyer l'URL en retirant le paramètre login pour éviter de rouvrir la modale au rafraîchissement
+                const newUrl = window.location.pathname + (window.location.search.replace(/[?&]login=1/, '').replace(/^&/, '?') || '');
+                window.history.replaceState({}, '', newUrl);
+            }
+        });
+        </script>
+
+        {# Script pour afficher/masquer les mots de passe dans les modales #}
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            function setupPasswordToggle(inputId, toggleButtonId, eyeIconId) {
+                const passwordInput = document.getElementById(inputId);
+                const toggleButton = document.getElementById(toggleButtonId);
+                const eyeIcon = document.getElementById(eyeIconId);
+
+                if (!passwordInput || !toggleButton || !eyeIcon) {
+                    return;
+                }
+
+                toggleButton.addEventListener('click', function () {
+                    const isPassword = passwordInput.type === 'password';
+                    passwordInput.type = isPassword ? 'text' : 'password';
+                    eyeIcon.classList.toggle('fa-eye', !isPassword);
+                    eyeIcon.classList.toggle('fa-eye-slash', isPassword);
+                });
+            }
+
+            setupPasswordToggle('inputPasswordLogin', 'togglePasswordLogin', 'eyeIconLogin');
+            setupPasswordToggle('registration_form_plainPassword', 'togglePasswordRegister', 'eyeIconRegister');
+            setupPasswordToggle('registration_form_confirmPassword', 'togglePasswordConfirm', 'eyeIconConfirm');
+            setupPasswordToggle('reset_password', 'togglePasswordReset', 'eyeIconReset');
+            setupPasswordToggle('reset_confirm_password', 'togglePasswordResetConfirm', 'eyeIconResetConfirm');
+        });
+        </script>
+
+        
+        <!-- Favoris Javascript -->
+        <script>
+        function toggleFavori(articleId, button) {
+            // Désactiver le bouton pendant la requête
+            button.disabled = true;
+            
+            fetch('/favoris/toggle/' + articleId, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Mettre à jour l'icône du cœur
+                    const icon = button.querySelector('i');
+                    if (data.estFavori) {
+                        icon.className = 'fas fa-heart';
+                        icon.style.color = '#dc3545';
+                    } else {
+                        icon.className = 'far fa-heart';
+                        icon.style.color = '#6c757d';
+                    }
+                    
+                    // Mettre à jour le compteur dans le header
+                    const favoriCount = document.getElementById('favori-count');
+                    if (favoriCount) {
+                        favoriCount.textContent = data.nombreArticles;
+                    }
+                }
+                
+                button.disabled = false;
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                button.disabled = false;
+            });
+        }
+        </script>
+
+        {# Script pour le formulaire de contact AJAX #}
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const contactForm = document.getElementById('contactForm');
+            const contactModal = document.getElementById('contactModal');
+            const errorDiv = document.getElementById('contactFormError');
+            const successDiv = document.getElementById('contactFormSuccess');
+            const submitButton = contactForm.querySelector('button[type="submit"]');
+
+            if (contactForm) {
+                contactForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+
+                    // Masquer les messages précédents
+                    errorDiv.style.display = 'none';
+                    successDiv.style.display = 'none';
+                    errorDiv.textContent = '';
+                    successDiv.textContent = '';
+
+                    // Désactiver le bouton pendant l'envoi
+                    submitButton.disabled = true;
+                    submitButton.textContent = 'Envoi en cours...';
+
+                    // Préparer les données du formulaire
+                    const formData = new FormData(contactForm);
+
+                    // Envoyer la requête AJAX
+                    fetch(contactForm.action, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Succès : afficher le message et fermer la modale après 1.5 secondes
+                            successDiv.textContent = data.message;
+                            successDiv.style.display = 'block';
+                            
+                            // Réinitialiser le formulaire
+                            contactForm.reset();
+                            
+                            // Fermer la modale après un délai
+                            setTimeout(function() {
+                                $(contactModal).modal('hide');
+                            }, 1500);
+                        } else {
+                            // Erreur : afficher le message dans la modale
+                            errorDiv.textContent = data.message;
+                            errorDiv.style.display = 'block';
+                            
+                            // Réactiver le bouton
+                            submitButton.disabled = false;
+                            submitButton.textContent = 'Envoyer';
+                            
+                            // Faire défiler vers le haut de la modale pour voir l'erreur
+                            contactModal.querySelector('.modal-body').scrollTop = 0;
+                        }
+                    })
+                    .catch(error => {
+                        // Erreur réseau ou autre
+                        errorDiv.textContent = 'Une erreur est survenue lors de l\'envoi. Merci de réessayer.';
+                        errorDiv.style.display = 'block';
+                        
+                        // Réactiver le bouton
+                        submitButton.disabled = false;
+                        submitButton.textContent = 'Envoyer';
+                        
+                        console.error('Erreur:', error);
+                    });
+                });
+
+                // Réinitialiser le formulaire et les messages quand la modale est fermée
+                $(contactModal).on('hidden.bs.modal', function() {
+                    contactForm.reset();
+                    errorDiv.style.display = 'none';
+                    successDiv.style.display = 'none';
+                    errorDiv.textContent = '';
+                    successDiv.textContent = '';
+                    submitButton.disabled = false;
+                    submitButton.textContent = 'Envoyer';
+                });
+            }
+        });
+        </script>
+
+        {% block javascripts %}
+        {% endblock %}
+        
+        {# --- Cookie consent modal --- #}
+        <div class="modal fade" id="cookieConsentModal" tabindex="-1" role="dialog" aria-labelledby="cookieConsentLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title" id="cookieConsentLabel">Gestion des cookies</h5>
+                    </div>
+                    <div class="modal-body">
+                        <p>
+                            Ce site utilise des cookies pour mémoriser votre panier et, si vous le souhaitez,
+                            votre connexion permanente. Vous pouvez accepter ou refuser ces cookies.
+                        </p>
+                        <ul>
+                            <li>En <strong>acceptant</strong>, votre panier et votre connexion pourront être conservés entre les visites.</li>
+                            <li>En <strong>refusant</strong>, votre panier et votre connexion seront perdus à la fermeture du navigateur.</li>
+                        </ul>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" id="cookieRefuseBtn">Refuser</button>
+                        <button type="button" class="btn btn-primary" id="cookieAcceptBtn">Accepter</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            function getCookie(name) {
+                const value = `; ${document.cookie}`;
+                const parts = value.split(`; ${name}=`);
+                if (parts.length === 2) return parts.pop().split(';').shift();
+                return null;
+            }
+
+            function setCookie(name, value, days) {
+                let expires = '';
+                if (days) {
+                    const date = new Date();
+                    date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+                    expires = '; expires=' + date.toUTCString();
+                }
+                document.cookie = name + '=' + value + expires + '; path=/';
+            }
+
+            const consent = getCookie('cookie_consent');
+            const consentModal = $('#cookieConsentModal');
+
+            if (consent !== 'accepted' && consent !== 'refused') {
+                consentModal.modal('show');
+            }
+
+            const acceptBtn = document.getElementById('cookieAcceptBtn');
+            const refuseBtn = document.getElementById('cookieRefuseBtn');
+
+            if (acceptBtn) {
+                acceptBtn.addEventListener('click', function() {
+                    setCookie('cookie_consent', 'accepted', 365);
+                    consentModal.modal('hide');
+                    // Recharger pour que le back prenne en compte le consentement
+                    window.location.reload();
+                });
+            }
+
+            if (refuseBtn) {
+                refuseBtn.addEventListener('click', function() {
+                    setCookie('cookie_consent', 'refused', 365);
+                    consentModal.modal('hide');
+                    // Pas de reload nécessaire, mais on peut le faire pour homogénéiser
+                    window.location.reload();
+                });
+            }
+        });
+        </script>
+    </body>
+</html>

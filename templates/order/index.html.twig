@@ -1,0 +1,108 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Mes Commandes - SoSand{% endblock %}
+
+{% block content_right %}
+    <!-- Page Header intégré dans la colonne de droite -->
+    <div class="bg-secondary mb-4 p-4">
+        <div class="d-flex flex-column">
+            <h3 class="font-weight-semi-bold text-uppercase mb-2">Mes Commandes</h3>
+            <nav class="d-inline-flex">
+                <a href="{{ path('app_home') }}" class="text-dark">Accueil</a>
+                <span class="mx-2">-</span>
+                <span class="text-dark">Commandes</span>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-12">
+            {% if orders is empty %}
+                <div class="card border-secondary mb-5">
+                    <div class="card-body text-center py-5">
+                        <i class="fa fa-box-open fa-5x text-secondary mb-4"></i>
+                        <h3 class="mb-4">Aucune commande trouvée</h3>
+                        <p class="text-muted mb-4">Vous n'avez pas encore passé de commande.</p>
+                        <a href="{{ path('app_boutique') }}" class="btn btn-primary py-2 px-4">
+                            <i class="fa fa-shopping-bag mr-2"></i>Commencer mes achats
+                        </a>
+                    </div>
+                </div>
+            {% else %}
+                <div class="card border-secondary mb-5">
+                    <div class="card-header bg-secondary border-0">
+                        <h4 class="font-weight-semi-bold m-0">Historique de vos commandes</h4>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="bg-light">
+                                    <tr>
+                                        <th class="border-0">Date de commande</th>
+                                        <th class="border-0">Articles</th>
+                                        <th class="border-0">N° Facture</th>
+                                        <th class="border-0">Statut</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for order in orders %}
+                                        <tr>
+                                            <td class="align-middle">
+                                                {{ order.createdAt|date('d/m/Y H:i') }}
+                                            </td>
+                                            <td class="align-middle" style="max-width: 350px;">
+                                                {% if order.facture %}
+                                                    {% for ligne in order.facture.lignesFacture %}
+                                                        {{ ligne.articleDesignation }}{% if not loop.last %}, {% endif %}
+                                                    {% endfor %}
+                                                {% else %}
+                                                    <span class="text-muted">Détail indisponible</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="align-middle">
+                                                {% if order.facture %}
+                                                    <strong>{{ order.facture.numero }}</strong>
+                                                {% else %}
+                                                    <span class="text-muted">—</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="align-middle">
+                                                {% if order.status != constant('App\\Entity\\Order::STATUS_PAID') %}
+                                                    <span class="badge badge-danger">Échec</span>
+                                                {% else %}
+                                                    {% if order.isShipped %}
+                                                        <span class="badge badge-success">Expédiée</span>
+                                                    {% else %}
+                                                        <span class="badge badge-warning">En préparation</span>
+                                                    {% endif %}
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                {% if totalPages > 1 %}
+                    <nav>
+                        <ul class="pagination justify-content-center mb-4">
+                            <li class="page-item {% if currentPage <= 1 %}disabled{% endif %}">
+                                <a class="page-link" href="{{ path('app_commandes', {'page': currentPage - 1}) }}" tabindex="-1">Précédent</a>
+                            </li>
+                            {% for p in 1..totalPages %}
+                                <li class="page-item {% if p == currentPage %}active{% endif %}">
+                                    <a class="page-link" href="{{ path('app_commandes', {'page': p}) }}">{{ p }}</a>
+                                </li>
+                            {% endfor %}
+                            <li class="page-item {% if currentPage >= totalPages %}disabled{% endif %}">
+                                <a class="page-link" href="{{ path('app_commandes', {'page': currentPage + 1}) }}">Suivant</a>
+                            </li>
+                        </ul>
+                    </nav>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}
