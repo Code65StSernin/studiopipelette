@@ -2,18 +2,18 @@
 
 namespace App\Repository;
 
-use App\Entity\Parfum;
+use App\Entity\ArticleCollection;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
- * @extends ServiceEntityRepository<Parfum>
+ * @extends ServiceEntityRepository<ArticleCollection>
  */
-class ParfumRepository extends ServiceEntityRepository
+class ArticleCollectionRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
     {
-        parent::__construct($registry, Parfum::class);
+        parent::__construct($registry, ArticleCollection::class);
     }
 }
 

@@ -4,9 +4,10 @@ namespace App\Controller\Admin;
 
 use App\Entity\Article;
 use App\Entity\Order;
+use App\Entity\BtoB;
 use App\Entity\Categorie;
 use App\Entity\Couleur;
-use App\Entity\Parfum;
+use App\Entity\ArticleCollection;
 use App\Entity\Photo;
 use App\Entity\SousCategorie;
 use App\Entity\User;
@@ -24,7 +25,6 @@ use App\Entity\Faq;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Dashboard;
 use EasyCorp\Bundle\EasyAdminBundle\Config\MenuItem;
 use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractDashboardController;
-use EasyCorp\Bundle\EasyAdminBundle\Router\AdminUrlGenerator;
 use App\Repository\UserRepository;
 use App\Repository\OrderRepository;
 use App\Repository\ArticleRepository;
@@ -43,7 +43,6 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 class DashboardController extends AbstractDashboardController
 {
     public function __construct(
-        private AdminUrlGenerator $adminUrlGenerator,
         private UserRepository $userRepository,
         private OrderRepository $orderRepository,
         private ArticleRepository $articleRepository,
@@ -306,23 +305,28 @@ class DashboardController extends AbstractDashboardController
 
             $remise = $facture->getRemisePourcentage();
             $fraisLivraison = $facture->getFraisLivraison() ?? 0;
+            $btobRemise = $facture->getBtobRemiseCents() ?? 0;
 
+            // Montant des produits après remise (TTC) = total TTC - frais de livraison
+            $produitsApresRemise = max(0, $totalTtc - $fraisLivraison);
+            
             if ($remise !== null && $remise > 0) {
-                // Montant des produits après remise (TTC) = total TTC - frais de livraison
-                $produitsApresRemise = max(0, $totalTtc - $fraisLivraison);
                 $factor = 1 - ($remise / 100);
 
                 if ($factor <= 0) {
-                    $brutProduits = $produitsApresRemise;
+                    $netBtoB = $produitsApresRemise;
                 } else {
-                    $brutProduits = (int) round($produitsApresRemise / $factor);
+                    $netBtoB = (int) round($produitsApresRemise / $factor);
                 }
-
-                $caBrutCents += $brutProduits + $fraisLivraison;
             } else {
-                // Pas de remise -> CA brut = CA commercial
-                $caBrutCents += $totalTtc;
+                // Pas de remise promo -> Net BtoB = Produits après remise (qui est juste Total - Livraison)
+                $netBtoB = $produitsApresRemise;
             }
+
+            // CA Brut = Net BtoB + Remise BtoB + Frais Livraison (si on veut le Brut total)
+            // L'utilisateur dit : "CA brut c'est le CA sans la remise BtoB ni les codes promo"
+            // Donc Brut Produits + Livraison
+            $caBrutCents += $netBtoB + $btobRemise + $fraisLivraison;
         }
 
         // Si, pour une raison quelconque, aucune facture n'a été trouvée,
@@ -447,7 +451,7 @@ class DashboardController extends AbstractDashboardController
     public function configureDashboard(): Dashboard
     {
         return Dashboard::new()
-            ->setTitle('So\'Sand - Administration')
+            ->setTitle('Studio Pipelette - Administration')
             ->setFaviconPath('assets/img/favicon.ico')
             ->setLocales(['fr' => '🇫🇷 Français']);
     }
@@ -465,7 +469,7 @@ class DashboardController extends AbstractDashboardController
         yield MenuItem::section('Tables');
         yield MenuItem::linkToCrud('Catégories', 'fa fa-folder', Categorie::class);
         yield MenuItem::linkToCrud('Sous-catégories', 'fa fa-folder-open', SousCategorie::class);
-        yield MenuItem::linkToCrud('Parfums', 'fa fa-wind', Parfum::class);
+        yield MenuItem::linkToCrud('Collections', 'fa fa-gem', ArticleCollection::class);
         yield MenuItem::linkToCrud('Couleurs', 'fa fa-palette', Couleur::class);
 
         // Section CONFIGURATION
@@ -474,6 +478,7 @@ class DashboardController extends AbstractDashboardController
         yield MenuItem::linkToCrud('Carousel', 'fa fa-images', Carousel::class);
         yield MenuItem::linkToCrud('Offres', 'fa fa-bullhorn', Offre::class);
         yield MenuItem::linkToCrud('Codes promo', 'fa fa-percent', Code::class);
+        yield MenuItem::linkToCrud('BtoB', 'fa fa-briefcase', BtoB::class);
         yield MenuItem::subMenu('Comptabilité', 'fa fa-coins')->setSubItems([
             MenuItem::linkToCrud('Dépenses', 'fa fa-money-bill-wave', Depenses::class),
             MenuItem::linkToCrud('Recettes', 'fa fa-wallet', Recette::class),

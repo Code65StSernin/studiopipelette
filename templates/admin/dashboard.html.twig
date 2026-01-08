@@ -1,7 +1,7 @@
 {% extends '@EasyAdmin/page/content.html.twig' %}
 
 {% block content_title %}
-    Tableau de bord So'Sand
+    Tableau de bord Studio Pipelette
 {% endblock %}
 
 {% block page_content %}
@@ -33,15 +33,15 @@
                     <div class="card-body">
                         <h6 class="text-muted text-uppercase mb-2">Chiffres d'affaires</h6>
                         <p class="mb-1">
-                            <strong>CA brut :</strong>
+                            <strong>CA brut <i class="fa fa-info-circle tooltip-info" style="font-size: 0.8em; cursor: pointer;" data-toggle="tooltip" data-bs-toggle="tooltip" data-placement="top" data-bs-placement="top" data-trigger="click" title="Chiffre d'affaire brut"></i> :</strong>
                             {{ (stats.caBrutCents / 100)|number_format(2, ',', ' ') }} €
                         </p>
                         <p class="mb-1">
-                            <strong>CA commercial :</strong>
+                            <strong>CA commercial <i class="fa fa-info-circle tooltip-info" style="font-size: 0.8em; cursor: pointer;" data-toggle="tooltip" data-bs-toggle="tooltip" data-placement="top" data-bs-placement="top" data-trigger="click" title="Chiffre d'affaire remises commerciales déduites (codes promo)"></i> :</strong>
                             {{ (stats.caCommercialCents / 100)|number_format(2, ',', ' ') }} €
                         </p>
                         <p class="mb-0">
-                            <strong>CA encaissé :</strong>
+                            <strong>CA encaissé <i class="fa fa-info-circle tooltip-info" style="font-size: 0.8em; cursor: pointer;" data-toggle="tooltip" data-bs-toggle="tooltip" data-placement="top" data-bs-placement="top" data-trigger="click" title="CA commercial - frais de paiement Stripe"></i> :</strong>
                             {{ (stats.caEncaisseCents / 100)|number_format(2, ',', ' ') }} €
                         </p>
                         <small class="text-info d-block mt-2">
@@ -55,11 +55,11 @@
                     <div class="card-body">
                         <h6 class="text-muted text-uppercase mb-2">Résultats</h6>
                         <p class="mb-1">
-                            <strong>Résultat brut :</strong>
+                            <strong>Résultat brut <i class="fa fa-info-circle tooltip-info" style="font-size: 0.8em; cursor: pointer;" data-toggle="tooltip" data-bs-toggle="tooltip" data-placement="top" data-bs-placement="top" data-trigger="click" title="CA encaissé - URSSAF, CFP et IR"></i> :</strong>
                             {{ stats.resultatBrut|number_format(2, ',', ' ') }} €
                         </p>
                         <p class="mb-1">
-                            <strong>Résultat net :</strong>
+                            <strong>Résultat net <i class="fa fa-info-circle tooltip-info" style="font-size: 0.8em; cursor: pointer;" data-toggle="tooltip" data-bs-toggle="tooltip" data-placement="top" data-bs-placement="top" data-trigger="click" title="Résultat brut - dépenses sur la période (achats, paiements)"></i> :</strong>
                             {{ stats.resultatNet|number_format(2, ',', ' ') }} €
                         </p>
                         <small class="text-info d-block mt-2">
@@ -325,6 +325,46 @@
     {{ parent() }}
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
+        // Initialiser les tooltips Bootstrap au clic
+        document.addEventListener('DOMContentLoaded', function() {
+            // Vérifier si Bootstrap 5 est disponible
+            if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
+                // Bootstrap 5
+                var tooltipElements = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+                tooltipElements.forEach(function(element) {
+                    new bootstrap.Tooltip(element, {
+                        trigger: 'click',
+                        placement: 'top'
+                    });
+                });
+                
+                // Fermer le tooltip quand on clique ailleurs
+                document.addEventListener('click', function(e) {
+                    if (!e.target.closest('[data-bs-toggle="tooltip"]')) {
+                        tooltipElements.forEach(function(element) {
+                            var tooltip = bootstrap.Tooltip.getInstance(element);
+                            if (tooltip) {
+                                tooltip.hide();
+                            }
+                        });
+                    }
+                });
+            } else if (typeof $ !== 'undefined' && $.fn.tooltip) {
+                // Bootstrap 4 avec jQuery
+                $('[data-toggle="tooltip"]').tooltip({
+                    trigger: 'click',
+                    placement: 'top'
+                });
+                
+                // Fermer le tooltip quand on clique ailleurs
+                $(document).on('click', function(e) {
+                    if (!$(e.target).closest('[data-toggle="tooltip"]').length) {
+                        $('[data-toggle="tooltip"]').tooltip('hide');
+                    }
+                });
+            }
+        });
+        
         (function() {
             const labels = {{ salesLabels|json_encode|raw }};
             const data = {{ salesData|json_encode|raw }};

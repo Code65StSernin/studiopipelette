@@ -25,18 +25,53 @@
         {# Colonne gauche - Images #}
         <div class="col-lg-5 mb-30">
             <div id="product-carousel" class="position-relative">
-                {# Image principale #}
-                <div class="product-main-image text-center mb-3">
+                {# Image/Vidéo principale #}
+                <div class="product-main-image text-center mb-3" id="mainMediaContainer">
                     {% if article.photos|length > 0 %}
                         {% set firstPhoto = article.photos|first %}
-                        <img id="mainImage" 
-                             src="{{ asset('assets/img/articles/' ~ article.id ~ '/' ~ firstPhoto.filename) }}" 
-                             alt="{{ article.nom }}"
-                             style="max-width: 75%; height: auto; max-height: 600px;">
+                        {% if firstPhoto.isVideo %}
+                            <video id="mainVideo" 
+                                   src="{{ asset('assets/videos/articles/' ~ article.id ~ '/' ~ firstPhoto.filename) }}" 
+                                   style="max-width: 75%; height: auto; max-height: 600px; display: block;"
+                                   loop
+                                   autoplay
+                                   muted
+                                   playsinline>
+                                Votre navigateur ne supporte pas la lecture de vidéos.
+                            </video>
+                            <img id="mainImage" 
+                                 src="" 
+                                 alt="{{ article.nom }}"
+                                 style="max-width: 75%; height: auto; max-height: 600px; display: none;">
+                        {% else %}
+                            <img id="mainImage" 
+                                 src="{{ asset('assets/img/articles/' ~ article.id ~ '/' ~ firstPhoto.filename) }}" 
+                                 alt="{{ article.nom }}"
+                                 style="max-width: 75%; height: auto; max-height: 600px; display: block;">
+                            <video id="mainVideo" 
+                                   src="" 
+                                   style="max-width: 75%; height: auto; max-height: 600px; display: none;"
+                                   loop
+                                   autoplay
+                                   muted
+                                   playsinline>
+                                Votre navigateur ne supporte pas la lecture de vidéos.
+                            </video>
+                        {% endif %}
                     {% else %}
-                        <img src="{{ asset('assets/img/placeholder.jpg') }}" 
+                        <img id="mainImage" 
+                             src="{{ asset('assets/img/placeholder.jpg') }}" 
                              alt="{{ article.nom }}"
-                             style="max-width: 75%; height: auto; max-height: 600px;">
+                             style="max-width: 75%; height: auto; max-height: 600px; display: block;">
+                        <video id="mainVideo" 
+                               src="" 
+                               style="max-width: 75%; height: auto; max-height: 600px; display: none;"
+                               loop
+                               autoplay
+                               muted
+                               playsinline>
+                            Votre navigateur ne supporte pas la lecture de vidéos.
+                        </video>
                     {% endif %}
                 </div>
                 
@@ -44,13 +79,27 @@
                 {% if article.photos|length > 1 %}
                 <div class="product-thumbnails d-flex justify-content-center">
                     {% for photo in article.photos %}
-                        <div class="thumbnail-item mx-2" style="cursor: pointer;">
-                            <img src="{{ asset('assets/img/articles/thumbnails/' ~ article.id ~ '/' ~ photo.filename) }}" 
-                                 alt="{{ article.nom }}"
-                                 class="border {% if loop.first %}border-primary{% endif %}"
-                                 style="width: 80px; height: 80px; object-fit: cover;"
-                                 data-image="{{ asset('assets/img/articles/' ~ article.id ~ '/' ~ photo.filename) }}"
-                                 onclick="changeMainImage(this)">
+                        <div class="thumbnail-item mx-2" 
+                             style="cursor: pointer; position: relative;"
+                             data-type="{{ photo.isVideo ? 'video' : 'image' }}"
+                             data-media="{% if photo.isVideo %}{{ asset('assets/videos/articles/' ~ article.id ~ '/' ~ photo.filename) }}{% else %}{{ asset('assets/img/articles/' ~ article.id ~ '/' ~ photo.filename) }}{% endif %}">
+                            {% if photo.isVideo %}
+                                <div class="border {% if loop.first %}border-primary{% endif %}" 
+                                     style="width: 80px; height: 80px; object-fit: cover; background: #000; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden;">
+                                    <i class="fa fa-play-circle" style="font-size: 30px; color: white; opacity: 0.8; z-index: 2; position: relative;"></i>
+                                    <video style="width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; opacity: 0.5;"
+                                           muted
+                                           loop
+                                           playsinline>
+                                        <source src="{{ asset('assets/videos/articles/' ~ article.id ~ '/' ~ photo.filename) }}" type="video/mp4">
+                                    </video>
+                                </div>
+                            {% else %}
+                                <img src="{{ asset('assets/img/articles/thumbnails/' ~ article.id ~ '/' ~ photo.filename) }}" 
+                                     alt="{{ article.nom }}"
+                                     class="border {% if loop.first %}border-primary{% endif %}"
+                                     style="width: 80px; height: 80px; object-fit: cover;">
+                            {% endif %}
                         </div>
                     {% endfor %}
                 </div>
@@ -82,21 +131,13 @@
                     </span>
                 </h3>
                 
-                {# Temps de combustion #}
-                {% if article.tempsCombustionMin and article.tempsCombustionMax %}
-                <p class="text-muted mb-3">
-                    <strong>Temps de combustion :</strong> de {{ article.tempsCombustionMin }} à {{ article.tempsCombustionMax }}h
-                </p>
-                {% endif %}
-                
                 {# Description #}
                 <p class="mb-4">{{ article.description }}</p>
                 
                 {# Informations de base #}
-                {% if article.lieuFabrication %}
+                {% if article.origine %}
                 <div class="d-flex mb-3 align-items-center">
-                    <img src="{{ asset('assets/img/drapeauardeche.jpg') }}" alt="Drapeau Ardèche" style="width: 50px; margin-right: 15px;">
-                    <span>Fabriqué artisanalement en {{ article.lieuFabrication }}</span>
+                    <span>Origine : {{ article.origine }}</span>
                 </div>
                 {% endif %}
                 
@@ -129,7 +170,7 @@
                         <div class="alert alert-danger">
                             <strong>⚠️ Erreur de configuration</strong><br>
                             Le champ "Tailles" n'est pas au bon format. Il doit contenir :<br>
-                            <code>[{"taille":"S","prix":15.00,"combustion":25,"stock":10},{"taille":"M","prix":20.00,"combustion":40,"stock":5}]</code><br>
+                            <code>[{"taille":"S","prix":15.00,"stock":10},{"taille":"M","prix":20.00,"stock":5}]</code><br>
                             <small>Allez dans <strong>Admin > Articles</strong> pour corriger.</small>
                         </div>
                     {% endif %}
@@ -138,44 +179,6 @@
                         <strong>Aucune taille définie</strong><br>
                         Allez dans <strong>Admin > Articles</strong> pour ajouter les tailles.
                     </div>
-                {% endif %}
-                
-                {# Cire naturelle #}
-                {% if article.typeCire %}
-                <div class="d-flex mb-3">
-                    <strong class="text-dark mr-3">🕯️</strong>
-                    <span>Cire 100% naturelle de {{ article.typeCire }}</span>
-                </div>
-                {% endif %}
-                
-                {# Parfums #}
-                {% if article.parfums|length > 0 %}
-                <div class="d-flex mb-3">
-                    <strong class="text-dark mr-3">🌸</strong>
-                    <span>Parfum : 
-                        {% for parfum in article.parfums %}
-                            {{ parfum }}{% if not loop.last %}, {% endif %}
-                        {% endfor %}
-                    </span>
-                </div>
-                {% endif %}
-                
-                {# Couleurs #}
-                {% if article.couleurs|length > 0 %}
-                <div class="d-flex mb-4 align-items-center">
-                    <strong class="text-dark mr-3">🎨</strong>
-                    <span class="mr-2">Couleur{% if article.couleurs|length > 1 %}s{% endif %} :</span>
-                    <div class="d-flex align-items-center">
-                        {% for couleur in article.couleurs %}
-                            <span class="mr-3 d-flex align-items-center">
-                                {% if couleur.codeHex %}
-                                    <span class="color-square mr-1" style="background-color: {{ couleur.codeHex }};"></span>
-                                {% endif %}
-                                {{ couleur.nom }}
-                            </span>
-                        {% endfor %}
-                    </div>
-                </div>
                 {% endif %}
                 
                 {# Prix #}
@@ -190,8 +193,7 @@
                 
                 {# Accordéons #}
                 <div class="accordion mb-4" id="productAccordion">
-                    {# Composition et fabrication #}
-                    {% if article.compositionFabrication %}
+                    {# Premier accordéon : Composition et caractéristiques (Matériau, Collections, Couleurs) #}
                     <div class="card">
                         <div class="card-header" id="headingComposition">
                             <h5 class="mb-0">
@@ -199,20 +201,54 @@
                                         type="button" 
                                         data-toggle="collapse" 
                                         data-target="#collapseComposition">
-                                    <i class="fa fa-plus mr-2"></i> Composition et fabrication
+                                    <i class="fa fa-plus mr-2"></i> Composition et caractéristiques
                                 </button>
                             </h5>
                         </div>
                         <div id="collapseComposition" class="collapse" data-parent="#productAccordion">
                             <div class="card-body">
-                                {{ article.compositionFabrication|nl2br }}
+                                {# Matériau #}
+                                {% if article.materiau %}
+                                <div class="mb-3">
+                                    <strong>Matériau :</strong> {{ article.materiau }}
+                                </div>
+                                {% endif %}
+                                
+                                {# Collections #}
+                                {% if article.collections|length > 0 %}
+                                <div class="mb-3">
+                                    <strong>Collection{% if article.collections|length > 1 %}s{% endif %} :</strong>
+                                    {% for collection in article.collections %}
+                                        {{ collection }}{% if not loop.last %}, {% endif %}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                                
+                                {# Couleurs #}
+                                {% if article.couleurs|length > 0 %}
+                                <div class="mb-3">
+                                    <strong class="mr-2">Couleur{% if article.couleurs|length > 1 %}s{% endif %} :</strong>
+                                    <div class="d-flex align-items-center mt-2">
+                                        {% for couleur in article.couleurs %}
+                                            <span class="mr-3 d-flex align-items-center">
+                                                {% if couleur.codeHex %}
+                                                    <span class="color-square mr-1" style="background-color: {{ couleur.codeHex }};"></span>
+                                                {% endif %}
+                                                {{ couleur.nom }}
+                                            </span>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                {% endif %}
+                                
+                                {% if not article.materiau and article.collections|length == 0 and article.couleurs|length == 0 %}
+                                    <p class="text-muted">Aucune information disponible.</p>
+                                {% endif %}
                             </div>
                         </div>
                     </div>
-                    {% endif %}
                     
-                    {# Taille et temps de combustion #}
-                    {% if article.informationsTailleCombustion %}
+                    {# Deuxième accordéon : Informations dimensions et tailles (Composition et fabrication) #}
                     <div class="card">
                         <div class="card-header" id="headingSize">
                             <h5 class="mb-0">
@@ -220,17 +256,54 @@
                                         type="button" 
                                         data-toggle="collapse" 
                                         data-target="#collapseSize">
-                                    <i class="fa fa-plus mr-2"></i> Taille et temps de combustion
+                                    <i class="fa fa-plus mr-2"></i> Informations dimensions et tailles
                                 </button>
                             </h5>
                         </div>
                         <div id="collapseSize" class="collapse" data-parent="#productAccordion">
                             <div class="card-body">
-                                {{ article.informationsTailleCombustion|nl2br }}
+                                {# Composition et fabrication #}
+                                {% if article.compositionFabrication %}
+                                <div class="mb-3">
+                                    <strong>Composition et fabrication :</strong>
+                                    <div class="mt-2">
+                                        {{ article.compositionFabrication|nl2br }}
+                                    </div>
+                                </div>
+                                {% endif %}
+                                
+                                {% if not article.compositionFabrication %}
+                                    <p class="text-muted">Aucune information disponible.</p>
+                                {% endif %}
                             </div>
                         </div>
                     </div>
-                    {% endif %}
+                    
+                    {# Troisième accordéon : Section additionnelle (Sous-titre et contenu) #}
+                    <div class="card">
+                        <div class="card-header" id="headingAdditional">
+                            <h5 class="mb-0">
+                                <button class="btn btn-link collapsed text-dark w-100 text-left" 
+                                        type="button" 
+                                        data-toggle="collapse" 
+                                        data-target="#collapseAdditional">
+                                    <i class="fa fa-plus mr-2"></i> Section additionnelle
+                                </button>
+                            </h5>
+                        </div>
+                        <div id="collapseAdditional" class="collapse" data-parent="#productAccordion">
+                            <div class="card-body">
+                                {% if article.sousTitre %}
+                                    <h4 class="mb-3">{{ article.sousTitre }}</h4>
+                                    {% if article.sousTitreContenu %}
+                                        <p>{{ article.sousTitreContenu|nl2br }}</p>
+                                    {% endif %}
+                                {% else %}
+                                    <p class="text-muted">Aucune information disponible.</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
                     
                     {# Livraison #}
                     {% if article.informationsLivraison %}
@@ -272,34 +345,64 @@
             </div>
         </div>
     </div>
-    
-    {# Section sous-titre (Une Évasion Gourmande) #}
-    {% if article.sousTitre %}
-    <div class="row px-xl-5 mt-5">
-        <div class="col-12">
-            <div class="bg-light p-30">
-                <h3 class="mb-3">{{ article.sousTitre }}</h3>
-                <p>{{ article.sousTitreContenu|nl2br }}</p>
-            </div>
-        </div>
-    </div>
-    {% endif %}
 </div>
 
 <script>
-// Changement d'image principale au clic sur miniature
-function changeMainImage(thumbnail) {
+// Changement d'image/vidéo principale au clic sur miniature
+function changeMainMedia(thumbnailItem) {
+    const mediaType = thumbnailItem.getAttribute('data-type');
+    const mediaSrc = thumbnailItem.getAttribute('data-media');
     const mainImage = document.getElementById('mainImage');
-    const newImageSrc = thumbnail.getAttribute('data-image');
-    mainImage.src = newImageSrc;
+    const mainVideo = document.getElementById('mainVideo');
+    
+    if (mediaType === 'video') {
+        // Afficher la vidéo, cacher l'image
+        mainVideo.src = mediaSrc;
+        mainVideo.style.display = 'block';
+        mainImage.style.display = 'none';
+        // Relancer la vidéo
+        mainVideo.load();
+        mainVideo.play().catch(e => console.log('Erreur lecture vidéo:', e));
+    } else {
+        // Afficher l'image, cacher la vidéo
+        mainImage.src = mediaSrc;
+        mainImage.style.display = 'block';
+        mainVideo.style.display = 'none';
+        mainVideo.pause();
+    }
     
     // Mettre à jour les bordures
-    document.querySelectorAll('.thumbnail-item img').forEach(img => {
-        img.classList.remove('border-primary');
-        img.classList.add('border');
+    document.querySelectorAll('.thumbnail-item').forEach(item => {
+        const borderElement = item.querySelector('.border');
+        if (borderElement) {
+            borderElement.classList.remove('border-primary');
+            borderElement.classList.add('border');
+        }
     });
-    thumbnail.classList.add('border-primary');
+    const activeBorder = thumbnailItem.querySelector('.border');
+    if (activeBorder) {
+        activeBorder.classList.remove('border');
+        activeBorder.classList.add('border-primary');
+    }
 }
+
+// Ajouter les événements de clic sur les miniatures
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.thumbnail-item').forEach(item => {
+        item.addEventListener('click', function() {
+            changeMainMedia(this);
+        });
+    });
+    
+    // Démarrer automatiquement la vidéo si c'est la première
+    const firstThumbnail = document.querySelector('.thumbnail-item');
+    if (firstThumbnail && firstThumbnail.getAttribute('data-type') === 'video') {
+        const mainVideo = document.getElementById('mainVideo');
+        if (mainVideo) {
+            mainVideo.play().catch(e => console.log('Erreur lecture vidéo auto:', e));
+        }
+    }
+});
 
 // Sélection de taille et mise à jour du prix
 function selectSize(element) {
@@ -501,6 +604,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
 .thumbnail-item img:hover {
     transform: scale(1.05);
+}
+
+/* Espacement sur mobile entre le carrousel et le texte */
+@media (max-width: 991.98px) {
+    .product-thumbnails {
+        margin-bottom: 2rem;
+    }
 }
 </style>
 {% endblock %}

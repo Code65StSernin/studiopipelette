@@ -53,10 +53,13 @@ class PaiementController extends AbstractController
 
         $fraisLivraison = $livraison['mode'] === 'domicile' ? 5.90 : 0.00;
 
-        $totalProduits = (float) $panier->getTotalTTC();
+        $netBtoB = (float) $panier->getTotalTTC();
+        $montantRemiseBtoB = $this->panierService->calculerMontantRemiseBtoB($panier);
+        $totalProduitsBrut = $netBtoB + $montantRemiseBtoB;
+
         $remisePourcentage = $panier->getCodePromoPourcentage() ?? 0.0;
-        $montantRemise = $remisePourcentage > 0 ? $totalProduits * ($remisePourcentage / 100) : 0.0;
-        $totalProduitsApresRemise = max(0, $totalProduits - $montantRemise);
+        $montantRemise = $remisePourcentage > 0 ? $netBtoB * ($remisePourcentage / 100) : 0.0;
+        $totalProduitsApresRemise = max(0, $netBtoB - $montantRemise);
 
         $total = $totalProduitsApresRemise + $fraisLivraison;
 
@@ -65,7 +68,8 @@ class PaiementController extends AbstractController
             'livraison' => $livraison,
             'fraisLivraison' => $fraisLivraison,
             'total' => $total,
-            'totalProduits' => $totalProduits,
+            'totalProduits' => $totalProduitsBrut,
+            'montantRemiseBtoB' => $montantRemiseBtoB,
             'remisePourcentage' => $remisePourcentage,
             'montantRemise' => $montantRemise,
             'totalProduitsApresRemise' => $totalProduitsApresRemise,
@@ -118,17 +122,9 @@ class PaiementController extends AbstractController
             $order->setRelayAddress($livraison['point_relais_adresse'] ?? null);
         }
 
-        // Calcul du poids total de la commande à partir des articles du panier
-        $poidsTotalKg = 0.0;
-        foreach ($panier->getLignes() as $ligne) {
-            $article  = $ligne->getArticle();
-            $quantite = $ligne->getQuantite();
-            $poidsArticle = $article->getPoidsKg() ?? 0.0;
-            $poidsTotalKg += $poidsArticle * $quantite;
-        }
-        if ($poidsTotalKg > 0) {
-            $order->setMondialRelayWeightKg($poidsTotalKg);
-        }
+        // Le poids n'est plus géré par article, on utilise une valeur par défaut si nécessaire
+        // Vous pouvez ajuster cette valeur selon vos besoins
+        $order->setMondialRelayWeightKg(1.0); // Poids par défaut de 1kg
 
         $this->em->persist($order);
         $this->em->flush(); // IMPORTANT : on récupère $order->getId()
@@ -150,7 +146,7 @@ class PaiementController extends AbstractController
 
         $lineItems = [];
 
-        $societeNom = $this->societeConfig->getNom() ?? "So'Sand";
+        $societeNom = $this->societeConfig->getNom() ?? "Studio Pipelette";
         
         $lineItems[] = [
             'price_data' => [
@@ -369,6 +365,12 @@ class PaiementController extends AbstractController
         $facture->setFraisLivraison($order->getAmountShippingCents());
         $facture->setTotalTTC($order->getAmountTotalCents());
 
+        // Remise BtoB (montant en centimes), pour affichage sur la facture
+        $montantRemiseBtoB = $this->panierService->calculerMontantRemiseBtoB($panier);
+        if ($montantRemiseBtoB > 0) {
+            $facture->setBtobRemiseCents((int) round($montantRemiseBtoB * 100));
+        }
+
         if (method_exists($panier, 'getCodePromoPourcentage') && $panier->getCodePromoPourcentage() !== null) {
             $facture->setRemisePourcentage((float) $panier->getCodePromoPourcentage());
         }
@@ -436,8 +438,9 @@ class PaiementController extends AbstractController
         foreach ($panier->getLignes() as $lignePanier) {
             $article = $lignePanier->getArticle();
             $taille = $lignePanier->getTaille();
-            $quantite = $lignePanier->getQuantite();
-            $prixUnitaire = (int) ($lignePanier->getPrixUnitaire() * 100); // Prix stocké en centimes
+            $quantite = (int) ($lignePanier->getQuantite() ?? 1);
+            $prixBrut = $article?->getPrixParTaille((string) $taille) ?? $lignePanier->getPrixUnitaire() ?? 0.0;
+            $prixUnitaire = (int) round($prixBrut * 100);
 
             $ligneFacture = new LigneFacture();
             $ligneFacture->setArticleDesignation($article->getNom());

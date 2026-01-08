@@ -1,6 +1,6 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Mon Panier - SoSand{% endblock %}
+{% block title %}Mon Panier - Studio Pipelette{% endblock %}
 
 {% block content_right %}
     <!-- Page Header intégré dans la colonne de droite -->
@@ -23,7 +23,7 @@
                     <div class="card-body text-center py-5">
                         <i class="fa fa-shopping-cart fa-5x text-secondary mb-4"></i>
                         <h3 class="mb-4">Votre panier est vide</h3>
-                        <p class="text-muted mb-4">Découvrez nos magnifiques bougies artisanales</p>
+                        <p class="text-muted mb-4">Découvrez nos magnifiques bijoux artisanaux</p>
                         <a href="{{ path('app_boutique') }}" class="btn btn-primary py-2 px-4">
                             <i class="fa fa-arrow-left mr-2"></i>Continuer mes achats
                         </a>
@@ -92,7 +92,7 @@
                                             
                                             <!-- Prix unitaire -->
                                             <td class="align-middle">
-                                                {{ ligne.prixUnitaire|number_format(2, ',', ' ') }} €
+                                                {{ ligne.prixUnitaireBrut|number_format(2, ',', ' ') }} €
                                             </td>
                                             
                                             <!-- Quantité avec boutons +/- -->
@@ -127,7 +127,7 @@
                                             
                                             <!-- Sous-total -->
                                             <td class="align-middle">
-                                                <strong>{{ ligne.sousTotal|number_format(2, ',', ' ') }} €</strong>
+                                                <strong>{{ ligne.sousTotalBrut|number_format(2, ',', ' ') }} €</strong>
                                             </td>
                                             
                                             <!-- Supprimer -->
@@ -159,6 +159,17 @@
                                     <h6 class="font-weight-medium">Sous-total produits</h6>
                                     <h6 class="font-weight-medium">{{ sousTotal|number_format(2, ',', ' ') }} €</h6>
                                 </div>
+
+                                {% if montantRemiseBtoB > 0 %}
+                                    <div class="d-flex justify-content-between mb-2 text-success">
+                                        <h6 class="font-weight-medium">
+                                            Remise BtoB
+                                        </h6>
+                                        <h6 class="font-weight-medium">
+                                            - {{ montantRemiseBtoB|number_format(2, ',', ' ') }} €
+                                        </h6>
+                                    </div>
+                                {% endif %}
 
                                 {% if remisePourcentage > 0 %}
                                     <div class="d-flex justify-content-between mb-2 text-success">

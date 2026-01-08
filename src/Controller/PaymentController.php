@@ -47,7 +47,7 @@ class PaymentController extends AbstractController
                     'currency' => 'eur',
                     'unit_amount' => $amount,
                     'product_data' => [
-                        'name' => 'Commande SoSand',
+                        'name' => 'Commande Studio Pipelette',
                     ],
                 ],
             ]],

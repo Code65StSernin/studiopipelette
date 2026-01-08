@@ -34,7 +34,7 @@ class FacturePdfGenerator
 
         // 1. Générer le HTML de la facture via Twig (template dédié pour le PDF)
         // On passe un chemin relatif à partir du chroot (dossier public)
-        $backgroundUrl = '/assets/img/pdf/papier_sosand.jpg';
+        $backgroundUrl = '/assets/img/pdf/papier_sp.jpg';
 
         $adresseLivraison = $this->buildAdresseLivraison($facture);
 

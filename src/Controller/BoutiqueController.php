@@ -5,7 +5,7 @@ namespace App\Controller;
 use App\Repository\ArticleRepository;
 use App\Repository\CategorieRepository;
 use App\Repository\CouleurRepository;
-use App\Repository\ParfumRepository;
+use App\Repository\ArticleCollectionRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -20,13 +20,13 @@ class BoutiqueController extends AbstractController
         ArticleRepository $articleRepository,
         CategorieRepository $categorieRepository,
         CouleurRepository $couleurRepository,
-        ParfumRepository $parfumRepository,
+        ArticleCollectionRepository $collectionRepository,
         EntityManagerInterface $entityManager
     ): Response {
         // Récupérer les filtres depuis les paramètres GET
         $categorieId = $request->query->get('categorie');
         $couleurId = $request->query->get('couleur');
-        $parfumId = $request->query->get('parfum');
+        $collectionId = $request->query->get('collection');
         $searchQuery = $request->query->get('q');
         $page = max(1, (int) $request->query->get('page', 1));
         
@@ -42,9 +42,9 @@ class BoutiqueController extends AbstractController
            ->setParameter('actif', true)
            ->orderBy('a.id', 'DESC');
 
-        // Joindre couleurs et parfums une seule fois avec des alias fixes
+        // Joindre couleurs et collections une seule fois avec des alias fixes
         $qb->leftJoin('a.couleurs', 'c');
-        $qb->leftJoin('a.parfums', 'p');
+        $qb->leftJoin('a.collections', 'col');
         
         // Filtre par catégorie
         if ($categorieId) {
@@ -58,10 +58,10 @@ class BoutiqueController extends AbstractController
                ->setParameter('couleur', $couleurId);
         }
         
-        // Filtre par parfum (ManyToMany)
-        if ($parfumId) {
-            $qb->andWhere('p.id = :parfum')
-               ->setParameter('parfum', $parfumId);
+        // Filtre par collection (ManyToMany)
+        if ($collectionId) {
+            $qb->andWhere('col.id = :collection')
+               ->setParameter('collection', $collectionId);
         }
         
         // Filtre par recherche textuelle
@@ -69,13 +69,13 @@ class BoutiqueController extends AbstractController
             // Nettoyer la recherche
             $searchQuery = trim($searchQuery);
             
-            // Rechercher dans nom, description, couleurs et parfums
+            // Rechercher dans nom, description, couleurs et collections
             $qb->andWhere(
                 $qb->expr()->orX(
                     $qb->expr()->like('LOWER(a.nom)', ':search'),
                     $qb->expr()->like('LOWER(a.description)', ':search'),
                     $qb->expr()->like('LOWER(c.nom)', ':search'),
-                    $qb->expr()->like('LOWER(p.nom)', ':search')
+                    $qb->expr()->like('LOWER(col.nom)', ':search')
                 )
             )
             ->setParameter('search', '%' . strtolower($searchQuery) . '%');
@@ -94,20 +94,20 @@ class BoutiqueController extends AbstractController
         // Récupérer toutes les options de filtres
         $categories = $categorieRepository->findAll();
         $couleurs = $couleurRepository->findAll();
-        $parfums = $parfumRepository->findAll();
+        $collections = $collectionRepository->findAll();
         
         return $this->render('boutique/index.html.twig', [
             'articles' => $articles,
             'categories' => $categories,
             'couleurs' => $couleurs,
-            'parfums' => $parfums,
+            'collections' => $collections,
             'currentPage' => $page,
             'totalPages' => $totalPages,
             'totalArticles' => $totalArticles,
             'filters' => [
                 'categorie' => $categorieId,
                 'couleur' => $couleurId,
-                'parfum' => $parfumId,
+                'collection' => $collectionId,
                 'q' => $searchQuery,
             ],
         ]);

@@ -28,15 +28,6 @@ class Article
     #[Assert\Length(max: 255)]
     private ?string $nom = null;
 
-    #[ORM\Column(nullable: true)]
-    private ?int $tempsCombustionMin = null;
-
-    #[ORM\Column(nullable: true)]
-    private ?int $tempsCombustionMax = null;
-
-    #[ORM\Column(type: 'float', nullable: true)]
-    private ?float $poidsKg = null;
-
     #[ORM\Column(type: Types::TEXT)]
     #[Assert\NotBlank(message: 'La description est obligatoire')]
     private ?string $description = null;
@@ -48,17 +39,25 @@ class Article
     private ?string $sousTitreContenu = null;
 
     #[ORM\Column(length: 150, nullable: true)]
-    private ?string $lieuFabrication = null;
+    private ?string $origine = null;
 
     #[ORM\Column(length: 150, nullable: true)]
-    private ?string $typeCire = null;
+    private ?string $materiau = null;
 
     /**
-     * @var Collection<int, Parfum>
+     * @var Collection<int, ArticleCollection>
      */
-    #[ORM\ManyToMany(targetEntity: Parfum::class, inversedBy: 'articles')]
-    #[ORM\JoinTable(name: 'article_parfum')]
-    private Collection $parfums;
+    #[ORM\ManyToMany(targetEntity: ArticleCollection::class, inversedBy: 'articles')]
+    #[ORM\JoinTable(
+        name: 'article_collection',
+        joinColumns: [
+            new ORM\JoinColumn(name: 'article_id', referencedColumnName: 'id')
+        ],
+        inverseJoinColumns: [
+            new ORM\InverseJoinColumn(name: 'collection_id', referencedColumnName: 'id')
+        ]
+    )]
+    private Collection $collections;
 
     /**
      * @var Collection<int, Couleur>
@@ -68,8 +67,8 @@ class Article
     private Collection $couleurs;
 
     /**
-     * Collection des tailles disponibles avec leurs prix, temps de combustion et stock
-     * Format: [{"taille": "S", "prix": 15.00, "barre": 20.00, "combustion": 25, "stock": 10}, {"taille": "M", "prix": 20.00, "barre": 25.00, "combustion": 40, "stock": 5}, ...]
+     * Collection des tailles disponibles avec leurs prix et stock
+     * Format: [{"taille": "S", "prix": 15.00, "barre": 20.00, "stock": 10}, {"taille": "M", "prix": 20.00, "barre": 25.00, "stock": 5}, ...]
      * La propriété "barre" (prix barré) est optionnelle
      */
     #[ORM\Column(type: Types::JSON, nullable: true)]
@@ -78,9 +77,6 @@ class Article
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $compositionFabrication = null;
-
-    #[ORM\Column(type: Types::TEXT, nullable: true)]
-    private ?string $informationsTailleCombustion = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $informationsLivraison = null;
@@ -114,7 +110,7 @@ class Article
         $this->createdAt = new \DateTime();
         $this->actif = false;
         $this->photos = new ArrayCollection();
-        $this->parfums = new ArrayCollection();
+        $this->collections = new ArrayCollection();
         $this->couleurs = new ArrayCollection();
     }
 
@@ -179,42 +175,6 @@ class Article
         return $this;
     }
 
-    public function getTempsCombustionMin(): ?int
-    {
-        return $this->tempsCombustionMin;
-    }
-
-    public function setTempsCombustionMin(?int $tempsCombustionMin): static
-    {
-        $this->tempsCombustionMin = $tempsCombustionMin;
-
-        return $this;
-    }
-
-    public function getTempsCombustionMax(): ?int
-    {
-        return $this->tempsCombustionMax;
-    }
-
-    public function setTempsCombustionMax(?int $tempsCombustionMax): static
-    {
-        $this->tempsCombustionMax = $tempsCombustionMax;
-
-        return $this;
-    }
-
-    public function getPoidsKg(): ?float
-    {
-        return $this->poidsKg;
-    }
-
-    public function setPoidsKg(?float $poidsKg): static
-    {
-        $this->poidsKg = $poidsKg;
-
-        return $this;
-    }
-
     public function getDescription(): ?string
     {
         return $this->description;
@@ -251,50 +211,50 @@ class Article
         return $this;
     }
 
-    public function getLieuFabrication(): ?string
+    public function getOrigine(): ?string
     {
-        return $this->lieuFabrication;
+        return $this->origine;
     }
 
-    public function setLieuFabrication(?string $lieuFabrication): static
+    public function setOrigine(?string $origine): static
     {
-        $this->lieuFabrication = $lieuFabrication;
+        $this->origine = $origine;
 
         return $this;
     }
 
-    public function getTypeCire(): ?string
+    public function getMateriau(): ?string
     {
-        return $this->typeCire;
+        return $this->materiau;
     }
 
-    public function setTypeCire(?string $typeCire): static
+    public function setMateriau(?string $materiau): static
     {
-        $this->typeCire = $typeCire;
+        $this->materiau = $materiau;
 
         return $this;
     }
 
     /**
-     * @return Collection<int, Parfum>
+     * @return Collection<int, ArticleCollection>
      */
-    public function getParfums(): Collection
+    public function getCollections(): Collection
     {
-        return $this->parfums;
+        return $this->collections;
     }
 
-    public function addParfum(Parfum $parfum): static
+    public function addCollection(ArticleCollection $collection): static
     {
-        if (!$this->parfums->contains($parfum)) {
-            $this->parfums->add($parfum);
+        if (!$this->collections->contains($collection)) {
+            $this->collections->add($collection);
         }
 
         return $this;
     }
 
-    public function removeParfum(Parfum $parfum): static
+    public function removeCollection(ArticleCollection $collection): static
     {
-        $this->parfums->removeElement($parfum);
+        $this->collections->removeElement($collection);
 
         return $this;
     }
@@ -343,18 +303,6 @@ class Article
     public function setCompositionFabrication(?string $compositionFabrication): static
     {
         $this->compositionFabrication = $compositionFabrication;
-
-        return $this;
-    }
-
-    public function getInformationsTailleCombustion(): ?string
-    {
-        return $this->informationsTailleCombustion;
-    }
-
-    public function setInformationsTailleCombustion(?string $informationsTailleCombustion): static
-    {
-        $this->informationsTailleCombustion = $informationsTailleCombustion;
 
         return $this;
     }

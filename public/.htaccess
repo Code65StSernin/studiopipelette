@@ -5,6 +5,16 @@
 # to each configured DirectoryIndex file (e.g. index.php, index.html, index.pl).
 DirectoryIndex index.php
 
+# Configuration PHP pour autoriser les uploads de vidéos jusqu'à 5Mo
+# Note: Ces directives fonctionnent uniquement si PHP est exécuté en tant que module Apache
+# Si PHP est en CGI/FastCGI, modifiez directement le php.ini
+<IfModule mod_php.c>
+    php_value upload_max_filesize 10M
+    php_value post_max_size 10M
+    php_value max_execution_time 300
+    php_value max_input_time 300
+</IfModule>
+
 # By default, Apache does not evaluate symbolic links if you did not enable this
 # feature in your server configuration. Uncomment the following line if you
 # install assets as symlinks or if you experience problems related to symlinks

@@ -9,8 +9,8 @@
             <p class="mb-1"><strong>Email :</strong> {{ facture.clientEmail }}</p>
         </div>
         <div class="col-md-6 text-right">
-            <h5 class="mb-3">{{ societe.nom ?? "So'Sand" }}</h5>
-            <p class="mb-1">Bougies artisanales</p>
+            <h5 class="mb-3">{{ societe.nom ?? "Studio Pipelette" }}</h5>
+            <p class="mb-1">Bijoux artisanaux</p>
             <p class="mb-1">Livraison : <span class="badge badge-primary">
                 {% if facture.modeLivraison == 'domicile' %}
                     À domicile (+{{ (facture.fraisLivraison / 100)|format_currency('EUR') }})
@@ -59,6 +59,34 @@
                 {% endfor %}
             </tbody>
             <tfoot>
+                {% set produitsBrutCents = 0 %}
+                {% for l in facture.lignesFacture %}
+                    {% set produitsBrutCents = produitsBrutCents + l.prixTotal %}
+                {% endfor %}
+                {% set btobRemiseCents = facture.btobRemiseCents ?? 0 %}
+                {% set shippingCents = facture.fraisLivraison ?? 0 %}
+                {% set promoRemiseCents = (produitsBrutCents - btobRemiseCents) - (facture.totalTTC - shippingCents) %}
+
+                {% if facture.btobRemiseCents %}
+                    <tr>
+                        <td colspan="4" class="text-right"><strong>Remise BtoB :</strong></td>
+                        <td class="text-right"><strong>- {{ (facture.btobRemiseCents / 100)|format_currency('EUR') }}</strong></td>
+                    </tr>
+                {% endif %}
+                {% if promoRemiseCents > 0 %}
+                    <tr>
+                        <td colspan="4" class="text-right">
+                            <strong>
+                                {% if facture.remisePourcentage is not null %}
+                                    Code promo ({{ facture.remisePourcentage|number_format(0) }} %) :
+                                {% else %}
+                                    Code promo :
+                                {% endif %}
+                            </strong>
+                        </td>
+                        <td class="text-right"><strong>- {{ (promoRemiseCents / 100)|format_currency('EUR') }}</strong></td>
+                    </tr>
+                {% endif %}
                 {% if facture.fraisLivraison > 0 %}
                     <tr>
                         <td colspan="4" class="text-right"><strong>Frais de livraison :</strong></td>

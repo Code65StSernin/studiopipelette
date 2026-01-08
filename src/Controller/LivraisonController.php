@@ -39,14 +39,18 @@ class LivraisonController extends AbstractController
             return $this->redirectToRoute('app_panier');
         }
 
-        $sousTotal = (float) $panier->getTotalTTC();
+        $netBtoB = (float) $panier->getTotalTTC();
+        $montantRemiseBtoB = $this->panierService->calculerMontantRemiseBtoB($panier);
+        $sousTotalBrut = $netBtoB + $montantRemiseBtoB;
+
         $remisePourcentage = $panier->getCodePromoPourcentage() ?? 0.0;
-        $montantRemise = $remisePourcentage > 0 ? $sousTotal * ($remisePourcentage / 100) : 0.0;
-        $totalApresRemise = max(0, $sousTotal - $montantRemise);
+        $montantRemise = $remisePourcentage > 0 ? $netBtoB * ($remisePourcentage / 100) : 0.0;
+        $totalApresRemise = max(0, $netBtoB - $montantRemise);
 
         return $this->render('livraison/choix.html.twig', [
             'panier' => $panier,
-            'sousTotal' => $sousTotal,
+            'sousTotal' => $sousTotalBrut,
+            'montantRemiseBtoB' => $montantRemiseBtoB,
             'remisePourcentage' => $remisePourcentage,
             'montantRemise' => $montantRemise,
             'totalApresRemise' => $totalApresRemise,

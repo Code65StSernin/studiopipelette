@@ -9,10 +9,13 @@ use Doctrine\ORM\EntityManagerInterface;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Crud;
 use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractCrudController;
 use EasyCorp\Bundle\EasyAdminBundle\Field\AssociationField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\ChoiceField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\DateTimeField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\IdField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\ImageField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\TextField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\Field;
+use Symfony\Component\Form\Extension\Core\Type\FileType;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 class PhotoCrudController extends AbstractCrudController
@@ -43,12 +46,23 @@ class PhotoCrudController extends AbstractCrudController
             ->setRequired(true)
             ->setHelp('Sélectionnez l\'article auquel associer cette photo');
         
+        yield ChoiceField::new('type', 'Type')
+            ->setChoices([
+                'Image' => 'image',
+                'Vidéo' => 'video'
+            ])
+            ->setRequired(true)
+            ->setHelp('Sélectionnez le type de média : image ou vidéo');
+        
         if ($pageName === Crud::PAGE_INDEX) {
             yield TextField::new('filename', 'Fichier');
             yield ImageField::new('filename', 'Aperçu')
                 ->setBasePath('/') // Racine web
                 ->formatValue(function ($value, $entity) {
                     if (!$entity->getArticle() || !$value) return null;
+                    if ($entity->isVideo()) {
+                        return null; // Pas d'aperçu pour les vidéos dans la liste
+                    }
                     // Retourner le chemin complet depuis la racine web
                     return 'assets/img/articles/thumbnails/' . $entity->getArticle()->getId() . '/' . $value;
                 });
@@ -56,22 +70,45 @@ class PhotoCrudController extends AbstractCrudController
         } else {
             // Pour la création/édition
             if ($pageName === Crud::PAGE_NEW) {
-                yield ImageField::new('filename', 'Photo')
-                    ->setUploadDir('public/assets/img/articles')
-                    ->setBasePath('assets/img/articles')
-                    ->setUploadedFileNamePattern('[randomhash].[extension]')
+                // Utiliser Field avec FileType pour accepter images et vidéos
+                yield Field::new('filename', 'Fichier (Image ou Vidéo)')
+                    ->setFormType(FileType::class)
                     ->setRequired(true)
-                    ->setHelp('Formats acceptés: JPG, PNG, GIF, WEBP. L\'image sera automatiquement redimensionnée en 800x800 avec création d\'une miniature 250x250');
+                    ->setHelp('Images: JPG, PNG, GIF, WEBP (redimensionnées automatiquement). Vidéos: MP4, WEBM, OGG (max 5Mo, pas de redimensionnement).')
+                    ->setFormTypeOptions([
+                        'attr' => [
+                            'accept' => 'image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,video/ogg',
+                        ],
+                        'constraints' => [
+                            new \Symfony\Component\Validator\Constraints\File([
+                                'maxSize' => '5M',
+                                'mimeTypes' => [
+                                    'image/jpeg',
+                                    'image/png',
+                                    'image/gif',
+                                    'image/webp',
+                                    'video/mp4',
+                                    'video/webm',
+                                    'video/ogg',
+                                ],
+                                'mimeTypesMessage' => 'Veuillez uploader une image (JPG, PNG, GIF, WEBP) ou une vidéo (MP4, WEBM, OGG) de maximum 5Mo.',
+                            ])
+                        ],
+                    ])
+                    ->onlyOnForms();
             } else {
-                // En édition, afficher l'image existante
-                yield ImageField::new('filename', 'Photo actuelle')
+                // En édition, afficher le média existant
+                yield ImageField::new('filename', 'Média actuel')
                     ->setBasePath('/') // Racine web
                     ->formatValue(function ($value, $entity) {
                         if (!$entity->getArticle() || !$value) return null;
+                        if ($entity->isVideo()) {
+                            return 'assets/videos/articles/' . $entity->getArticle()->getId() . '/' . $value;
+                        }
                         // Retourner le chemin complet depuis la racine web
                         return 'assets/img/articles/thumbnails/' . $entity->getArticle()->getId() . '/' . $value;
                     })
-                    ->setHelp('Image actuellement enregistrée (miniature). Pour changer l\'image, supprimez cette photo et créez-en une nouvelle.');
+                    ->setHelp('Média actuellement enregistré. Pour changer, supprimez ce média et créez-en un nouveau.');
             }
         }
     }
@@ -81,39 +118,61 @@ class PhotoCrudController extends AbstractCrudController
         /** @var Photo $photo */
         $photo = $entityInstance;
         
-        if ($photo->getArticle() && $photo->getFilename()) {
+        // Récupérer le fichier uploadé depuis la requête
+        $request = $this->getContext()->getRequest();
+        $uploadedFile = null;
+        
+        // Chercher le fichier dans la structure de la requête EasyAdmin
+        $allFiles = $request->files->all();
+        foreach ($allFiles as $formName => $formData) {
+            if (is_array($formData) && isset($formData['filename']) && $formData['filename'] instanceof UploadedFile) {
+                $uploadedFile = $formData['filename'];
+                break;
+            }
+        }
+        
+        if ($uploadedFile instanceof UploadedFile && $photo->getArticle()) {
             $articleId = $photo->getArticle()->getId();
-            
-            // Le fichier a été uploadé par EasyAdmin dans public/assets/img/articles
             $projectDir = $this->imageService->getProjectDir();
-            $tempPath = $projectDir . '/public/assets/img/articles/' . $photo->getFilename();
             
-            if (file_exists($tempPath)) {
-                try {
-                    // Créer un UploadedFile depuis le fichier temporaire
-                    $uploadedFile = new UploadedFile(
-                        $tempPath,
-                        basename($tempPath),
-                        mime_content_type($tempPath),
-                        null,
-                        true // Mode test pour accepter le fichier déjà sur le disque
-                    );
+            try {
+                $mimeType = $uploadedFile->getMimeType();
+                $isVideo = strpos($mimeType, 'video/') === 0;
+                
+                if ($isVideo) {
+                    // Vérifier la taille du fichier vidéo (max 5Mo)
+                    $fileSize = $uploadedFile->getSize();
+                    $maxSize = 5 * 1024 * 1024; // 5Mo en octets
                     
-                    // Uploader et redimensionner avec ImageService
-                    $newFilename = $this->imageService->uploadImage($uploadedFile, $articleId);
-                    
-                    // Mettre à jour le nom du fichier
-                    $photo->setFilename($newFilename);
-                    
-                    // Supprimer le fichier temporaire
-                    if (file_exists($tempPath)) {
-                        unlink($tempPath);
+                    if ($fileSize > $maxSize) {
+                        throw new \Exception('La vidéo est trop volumineuse. Taille maximale autorisée : 5Mo. Taille actuelle : ' . round($fileSize / 1024 / 1024, 2) . 'Mo.');
                     }
-                } catch (\Exception $e) {
-                    // Log l'erreur (pour débug)
-                    error_log('Erreur upload photo: ' . $e->getMessage());
-                    throw $e;
+                    
+                    // Gérer l'upload de vidéo
+                    $videoDir = $projectDir . '/public/assets/videos/articles/' . $articleId;
+                    if (!is_dir($videoDir)) {
+                        mkdir($videoDir, 0755, true);
+                    }
+                    
+                    $newFilename = uniqid() . '_' . $uploadedFile->getClientOriginalName();
+                    $destination = $videoDir . '/' . $newFilename;
+                    
+                    // Déplacer le fichier vidéo
+                    $uploadedFile->move($videoDir, $newFilename);
+                    
+                    // Mettre à jour le type et le nom du fichier
+                    $photo->setType('video');
+                    $photo->setFilename($newFilename);
+                } else {
+                    // Uploader et redimensionner l'image avec ImageService
+                    $newFilename = $this->imageService->uploadImage($uploadedFile, $articleId);
+                    $photo->setType('image');
+                    $photo->setFilename($newFilename);
                 }
+            } catch (\Exception $e) {
+                // Log l'erreur (pour débug)
+                error_log('Erreur upload média: ' . $e->getMessage());
+                throw $e;
             }
         }
         
@@ -127,7 +186,19 @@ class PhotoCrudController extends AbstractCrudController
         
         // Supprimer les fichiers physiques avant de supprimer l'entité
         if ($photo->getArticle() && $photo->getFilename()) {
-            $this->imageService->deleteImage($photo->getFilename(), $photo->getArticle()->getId());
+            $articleId = $photo->getArticle()->getId();
+            $projectDir = $this->imageService->getProjectDir();
+            
+            if ($photo->isVideo()) {
+                // Supprimer la vidéo
+                $videoPath = $projectDir . '/public/assets/videos/articles/' . $articleId . '/' . $photo->getFilename();
+                if (file_exists($videoPath)) {
+                    unlink($videoPath);
+                }
+            } else {
+                // Supprimer l'image (et sa miniature)
+                $this->imageService->deleteImage($photo->getFilename(), $articleId);
+            }
         }
         
         parent::deleteEntity($entityManager, $photo);

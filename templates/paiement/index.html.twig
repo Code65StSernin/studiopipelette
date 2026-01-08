@@ -1,6 +1,6 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Paiement - SoSand{% endblock %}
+{% block title %}Paiement - Studio Pipelette{% endblock %}
 
 {% block content_right %}
     <div class="card border-secondary mb-4">
@@ -13,6 +13,13 @@
                 <strong>Total produits :</strong>
                 {{ totalProduits|number_format(2, ',', ' ') }} €
             </p>
+
+            {% if montantRemiseBtoB > 0 %}
+                <p class="mb-2 text-success">
+                    <strong>Remise BtoB :</strong>
+                    - {{ montantRemiseBtoB|number_format(2, ',', ' ') }} €
+                </p>
+            {% endif %}
 
             {% if remisePourcentage > 0 %}
                 <p class="mb-2 text-success">

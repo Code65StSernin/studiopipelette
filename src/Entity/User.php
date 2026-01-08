@@ -101,6 +101,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\JoinTable(name: 'user_used_codes')]
     private Collection $usedPromoCodes;
 
+    #[ORM\ManyToOne(inversedBy: 'users')]
+    private ?BtoB $btoB = null;
+
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
@@ -194,6 +197,18 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setPrenom(string $prenom): static
     {
         $this->prenom = $prenom;
+
+        return $this;
+    }
+
+    public function getBtoB(): ?BtoB
+    {
+        return $this->btoB;
+    }
+
+    public function setBtoB(?BtoB $btoB): static
+    {
+        $this->btoB = $btoB;
 
         return $this;
     }

@@ -261,7 +261,7 @@ class MondialRelayService
         
         $senderPostCode = $this->societeConfig->getCodePostal() ?? '07200';
         $senderCity = $this->societeConfig->getVille() ?? 'Saint-Sernin';
-        $senderName = $this->societeConfig->getNom() ?? "So'Sand";
+        $senderName = $this->societeConfig->getNom() ?? "Studio Pipelette";
         $senderEmail = $this->societeConfig->getEmail() ?? 'contact@code65.fr';
 
         $valueEurosStr = number_format($valueEuros, 2, '.', '');

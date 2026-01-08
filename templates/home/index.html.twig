@@ -250,6 +250,18 @@
                             </button>
                         </div>
                         <div class="card-body border-left border-right text-center p-0 pt-4 pb-3">
+                            {# Tag Collection #}
+                            {% if article.collections|length > 0 %}
+                                {% set collection = article.collections|first %}
+                                {% set collectionColors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2', '#F8B739', '#E74C3C', '#9B59B6', '#3498DB', '#1ABC9C', '#F39C12', '#E67E22', '#95A5A6'] %}
+                                {% set colorIndex = collection.id ? (collection.id % collectionColors|length) : (loop.index0 % collectionColors|length) %}
+                                {% set collectionColor = collectionColors[colorIndex] %}
+                                <div class="mb-2">
+                                    <span class="badge text-white" style="background-color: {{ collectionColor }}; padding: 5px 12px; font-size: 0.75rem; font-weight: 500;">
+                                        {{ collection.nom }}
+                                    </span>
+                                </div>
+                            {% endif %}
                             <h6 class="text-truncate mb-3">{{ article.nom }}</h6>
                             <div class="d-flex justify-content-center">
                                 {% if minPrice %}

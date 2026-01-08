@@ -61,7 +61,7 @@ class ArticleCrudController extends AbstractCrudController
         if ($tailles && is_array($tailles)) {
             foreach ($tailles as $index => $taille) {
                 if (!is_array($taille)) {
-                    throw new \Exception("Erreur dans le champ 'Tailles' : chaque élément doit être un objet avec les propriétés 'taille', 'prix', 'combustion' et 'stock'.");
+                    throw new \Exception("Erreur dans le champ 'Tailles' : chaque élément doit être un objet avec les propriétés 'taille', 'prix' et 'stock'.");
                 }
                 
                 if (!isset($taille['taille']) || !isset($taille['prix']) || !isset($taille['stock'])) {
@@ -139,28 +139,18 @@ class ArticleCrudController extends AbstractCrudController
         
         // ONGLET 2 : Composition et caractéristiques
         yield FormField::addTab('Composition et caractéristiques')->setIcon('fa fa-flask');
-        yield TextField::new('lieuFabrication', 'Lieu de fabrication')
-            ->setHelp('Ex: Fabriquée artisanalement en France')
+        yield TextField::new('origine', 'Origine')
+            ->setHelp('Ex: France, Italie, etc.')
             ->setColumns(6);
-        yield TextField::new('typeCire', 'Type de cire')
-            ->setHelp('Ex: Cire 100% naturelle de soja')
+        yield TextField::new('materiau', 'Matériau')
+            ->setHelp('Ex: Argent, Acier inoxydable, Laiton, etc.')
             ->setColumns(6);
-        yield NumberField::new('poidsKg', 'Poids (kg)')
-            ->setNumDecimals(2)
-            ->setHelp('Poids unitaire de l’article (en kg), utilisé pour le calcul du poids du colis')
-            ->setColumns(4);
-        yield AssociationField::new('parfums', 'Parfums')
-            ->setHelp('Sélectionnez un ou plusieurs parfums (ex: Citron, Orange, Melon)')
+        yield AssociationField::new('collections', 'Collections')
+            ->setHelp('Sélectionnez une ou plusieurs collections')
             ->setColumns(6);
         yield AssociationField::new('couleurs', 'Couleurs')
             ->setHelp('Sélectionnez une ou plusieurs couleurs (facultatif)')
             ->setColumns(6);
-        yield IntegerField::new('tempsCombustionMin', 'Combustion min (h)')
-            ->setHelp('Temps minimum de combustion en heures')
-            ->setColumns(3);
-        yield IntegerField::new('tempsCombustionMax', 'Combustion max (h)')
-            ->setHelp('Temps maximum de combustion en heures')
-            ->setColumns(3);
         yield TextareaField::new('compositionFabrication', 'Composition et fabrication')
             ->setHelp('Détails sur la composition et la fabrication')
             ->setColumns(12);
@@ -170,19 +160,16 @@ class ArticleCrudController extends AbstractCrudController
         yield TextareaField::new('taillesJson', 'Tailles disponibles (JSON)')
             ->onlyOnForms()
             ->setHelp('
-                <strong>Format :</strong> Tableau JSON avec pour chaque taille : <code>taille</code>, <code>prix</code>, <code>barre</code> (prix barré, optionnel), <code>combustion</code> (en heures), <code>stock</code><br>
+                <strong>Format :</strong> Tableau JSON avec pour chaque taille : <code>taille</code>, <code>prix</code>, <code>barre</code> (prix barré, optionnel), <code>stock</code><br>
                 <strong>Exemple :</strong><br>
                 <pre style="background:#f5f5f5;padding:10px;border-radius:4px;margin-top:5px;">[
-    {"taille": "S", "prix": 15.00, "barre": 20.00, "combustion": 25, "stock": 10},
-    {"taille": "M", "prix": 20.00, "barre": 25.00, "combustion": 40, "stock": 5},
-    {"taille": "L", "prix": 25.00, "combustion": 60, "stock": 3}
+    {"taille": "S", "prix": 15.00, "barre": 20.00, "stock": 10},
+    {"taille": "M", "prix": 20.00, "barre": 25.00, "stock": 5},
+    {"taille": "L", "prix": 25.00, "stock": 3}
 ]</pre>
                 <small><strong>Note :</strong> La propriété "barre" est optionnelle. Respectez bien les guillemets doubles et les virgules. Les prix doivent être des nombres décimaux (avec un point, pas de virgule).</small>
             ')
             ->setFormTypeOption('attr', ['rows' => 8, 'style' => 'font-family: monospace;'])
-            ->setColumns(12);
-        yield TextareaField::new('informationsTailleCombustion', 'Informations taille et combustion')
-            ->setHelp('Informations détaillées sur les tailles et temps de combustion')
             ->setColumns(12);
         yield TextareaField::new('informationsLivraison', 'Informations de livraison')
             ->setHelp('Délais et conditions de livraison')
@@ -220,24 +207,26 @@ class ArticleCrudController extends AbstractCrudController
         // Créer un nouvel article
         $newArticle = new Article();
         $newArticle->setNom('Copie de ' . $article->getNom());
+        
+        // Générer un slug unique pour éviter les collisions
+        $slug = $this->slugger->slug($newArticle->getNom())->lower() . '-' . uniqid();
+        $newArticle->setSlug($slug);
+
         $newArticle->setDescription($article->getDescription());
         $newArticle->setCategorie($article->getCategorie());
         $newArticle->setSousCategorie($article->getSousCategorie());
-        $newArticle->setLieuFabrication($article->getLieuFabrication());
-        $newArticle->setTypeCire($article->getTypeCire());
-        $newArticle->setTempsCombustionMin($article->getTempsCombustionMin());
-        $newArticle->setTempsCombustionMax($article->getTempsCombustionMax());
+        $newArticle->setOrigine($article->getOrigine());
+        $newArticle->setMateriau($article->getMateriau());
         $newArticle->setTailles($article->getTailles());
         $newArticle->setCompositionFabrication($article->getCompositionFabrication());
-        $newArticle->setInformationsTailleCombustion($article->getInformationsTailleCombustion());
         $newArticle->setInformationsLivraison($article->getInformationsLivraison());
         $newArticle->setSousTitre($article->getSousTitre());
         $newArticle->setSousTitreContenu($article->getSousTitreContenu());
         $newArticle->setActif(false); // Par défaut inactif
         
         // Copier les relations ManyToMany
-        foreach ($article->getParfums() as $parfum) {
-            $newArticle->addParfum($parfum);
+        foreach ($article->getCollections() as $collection) {
+            $newArticle->addCollection($collection);
         }
         foreach ($article->getCouleurs() as $couleur) {
             $newArticle->addCouleur($couleur);

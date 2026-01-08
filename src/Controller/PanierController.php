@@ -34,21 +34,29 @@ class PanierController extends AbstractController
         $panier = $this->panierService->getPanier();
         $erreursStock = $this->panierService->verifierStock();
 
-        $sousTotal = (float) $panier->getTotalTTC();
+        $netBtoB = (float) $panier->getTotalTTC();
+        $montantRemiseBtoB = $this->panierService->calculerMontantRemiseBtoB($panier);
+        
+        $sousTotalBrut = $netBtoB + $montantRemiseBtoB;
+        
         $remisePourcentage = $panier->getCodePromoPourcentage() ?? 0.0;
-        $montantRemise = $remisePourcentage > 0 ? $sousTotal * ($remisePourcentage / 100) : 0.0;
-        $totalApresRemise = max(0, $sousTotal - $montantRemise);
+        $montantRemise = $remisePourcentage > 0 ? $netBtoB * ($remisePourcentage / 100) : 0.0;
+        $totalApresRemise = max(0, $netBtoB - $montantRemise);
+
+        $btoBDiscountPercentage = $this->panierService->getBtoBDiscountPercentage();
 
         $response = $this->render('panier/index.html.twig', [
             'panier' => $panier,
             'erreursStock' => $erreursStock,
-            'sousTotal' => $sousTotal,
+            'sousTotal' => $sousTotalBrut,
+            'montantRemiseBtoB' => $montantRemiseBtoB,
             'remisePourcentage' => $remisePourcentage,
             'montantRemise' => $montantRemise,
+            'btoBDiscountPercentage' => $btoBDiscountPercentage,
+            'btoBDiscountTotal' => $montantRemiseBtoB,
             'totalApresRemise' => $totalApresRemise,
         ]);
 
-        // Ajouter le cookie de session si nécessaire
         $this->panierService->addSessionCookie($response);
 
         return $response;

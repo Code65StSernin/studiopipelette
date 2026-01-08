@@ -125,20 +125,32 @@
                     {% endfor %}
                 </tbody>
                 <tfoot>
+                    {% set produitsBrutCents = 0 %}
+                    {% for l in facture.lignesFacture %}
+                        {% set produitsBrutCents = produitsBrutCents + l.prixTotal %}
+                    {% endfor %}
+                    {% set btobRemiseCents = facture.btobRemiseCents ?? 0 %}
+                    {% set shippingCents = facture.fraisLivraison ?? 0 %}
+                    {% set promoRemiseCents = (produitsBrutCents - btobRemiseCents) - (facture.totalTTC - shippingCents) %}
+
+                    {% if facture.btobRemiseCents %}
+                    <tr class="totals-row">
+                        <td colspan="4" class="text-right"><strong>Remise BtoB :</strong></td>
+                        <td class="text-right"><strong>- {{ (facture.btobRemiseCents / 100)|number_format(2, ',', ' ') }} €</strong></td>
+                    </tr>
+                    {% endif %}
+                    {% if promoRemiseCents > 0 %}
+                        <tr class="totals-row">
+                            <td colspan="4" class="text-right"><strong>Code promo {% if facture.remisePourcentage is not null %}({{ facture.remisePourcentage|number_format(0) }} %){% endif %} :</strong></td>
+                            <td class="text-right"><strong>- {{ (promoRemiseCents / 100)|number_format(2, ',', ' ') }} €</strong></td>
+                        </tr>
+                    {% endif %}
                     <tr class="totals-row">
                         <td colspan="4" class="text-right"><strong>Frais de livraison :</strong></td>
                         <td class="text-right">
                             {{ (facture.fraisLivraison / 100)|number_format(2, ',', ' ') }} €
                         </td>
                     </tr>
-                    {% if facture.remisePourcentage is not null %}
-                        <tr class="totals-row">
-                            <td colspan="4" class="text-right"><strong>Code promo appliqué :</strong></td>
-                            <td class="text-right">
-                                {{ facture.remisePourcentage|number_format(0) }} %
-                            </td>
-                        </tr>
-                    {% endif %}
                     <tr class="totals-row">
                         <td colspan="4" class="text-right"><strong>Total TTC :</strong></td>
                         <td class="text-right"><strong>{{ (facture.totalTTC / 100)|number_format(2, ',', ' ') }} €</strong></td>

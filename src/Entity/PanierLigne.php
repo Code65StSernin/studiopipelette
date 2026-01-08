@@ -153,6 +153,24 @@ class PanierLigne
         return $stock !== null && $stock >= $this->quantite;
     }
 
+    public function getPrixUnitaireBrut(): float
+    {
+        $article = $this->getArticle();
+        $taille = $this->getTaille();
+
+        $prix = ($article && $taille) ? $article->getPrixParTaille($taille) : null;
+        if ($prix === null) {
+            $prix = $this->prixUnitaire;
+        }
+
+        return (float) ($prix ?? 0.0);
+    }
+
+    public function getSousTotalBrut(): float
+    {
+        return $this->getPrixUnitaireBrut() * (float) ($this->quantite ?? 0);
+    }
+
     public function __toString(): string
     {
         return ($this->article ? $this->article->getNom() : 'Article') . ' - Taille ' . $this->taille;

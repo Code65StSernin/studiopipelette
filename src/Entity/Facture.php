@@ -58,6 +58,9 @@ class Facture
     #[ORM\Column(type: 'integer', nullable: true)]
     private ?int $fraisLivraison = null;
 
+    #[ORM\Column(type: 'integer', nullable: true)]
+    private ?int $btobRemiseCents = null;
+
     #[ORM\Column(type: 'float', nullable: true)]
     private ?float $remisePourcentage = null;
 
@@ -230,6 +233,17 @@ class Facture
     {
         $this->fraisLivraison = $fraisLivraison;
 
+        return $this;
+    }
+
+    public function getBtobRemiseCents(): ?int
+    {
+        return $this->btobRemiseCents;
+    }
+
+    public function setBtobRemiseCents(?int $btobRemiseCents): static
+    {
+        $this->btobRemiseCents = $btobRemiseCents;
         return $this;
     }
 

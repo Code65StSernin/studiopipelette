@@ -48,6 +48,7 @@ class PanierService
             // Fusionner avec le panier session si existant
             $this->mergePanierSession($panier);
 
+            $this->applyBtoBRemise($panier);
             return $panier;
         }
 
@@ -220,7 +221,24 @@ class PanierService
             $ligne->setArticle($article);
             $ligne->setTaille($taille);
             $ligne->setQuantite($quantite);
-            $ligne->setPrixUnitaire($article->getPrixParTaille($taille) ?? 0);
+            $prixBase = $article->getPrixParTaille($taille) ?? 0;
+            $prixApplique = $prixBase;
+            $user = $panier->getUser();
+            if ($user instanceof User && $user->getBtoB()) {
+                $btob = $user->getBtoB();
+                $remise = $btob->getRemiseParCategorie();
+                if ($remise > 0) {
+                    $categorieArticleId = $article->getCategorie()?->getId();
+                    $ids = [];
+                    foreach ($btob->getCategories() as $cat) {
+                        $ids[] = $cat->getId();
+                    }
+                    if ($categorieArticleId && in_array($categorieArticleId, $ids, true)) {
+                        $prixApplique = round($prixBase * (1 - ($remise / 100)), 2);
+                    }
+                }
+            }
+            $ligne->setPrixUnitaire($prixApplique);
             
             $panier->addLigne($ligne);
         }
@@ -354,5 +372,92 @@ class PanierService
 
         return $erreurs;
     }
+
+    private function applyBtoBRemise(Panier $panier): void
+    {
+        $user = $panier->getUser();
+        if (!$user || !$user->getBtoB()) {
+            return;
+        }
+        $btob = $user->getBtoB();
+        $remise = $btob->getRemiseParCategorie();
+        if ($remise <= 0) {
+            return;
+        }
+        $ids = [];
+        foreach ($btob->getCategories() as $cat) {
+            $ids[] = $cat->getId();
+        }
+        $changed = false;
+        foreach ($panier->getLignes() as $ligne) {
+            $article = $ligne->getArticle();
+            $taille = $ligne->getTaille();
+            $base = $article->getPrixParTaille($taille) ?? $ligne->getPrixUnitaire() ?? 0;
+            $catId = $article->getCategorie()?->getId();
+            $price = $base;
+            if ($catId && in_array($catId, $ids, true)) {
+                $price = round($base * (1 - ($remise / 100)), 2);
+            }
+            if ($ligne->getPrixUnitaire() !== $price) {
+                $ligne->setPrixUnitaire($price);
+                $changed = true;
+            }
+        }
+        if ($changed) {
+            $this->entityManager->flush();
+        }
+    }
+
+    /**
+     * Calcule le montant total de la remise BtoB appliquée au panier (en euros).
+     * Ne modifie pas les prix, utilisé pour l'affichage.
+     */
+    public function calculerMontantRemiseBtoB(Panier $panier): float
+    {
+        $user = $panier->getUser();
+        if (!$user || !$user->getBtoB()) {
+            return 0.0;
+        }
+
+        $btob = $user->getBtoB();
+        $remise = $btob->getRemiseParCategorie();
+        if ($remise <= 0) {
+            return 0.0;
+        }
+
+        $ids = [];
+        foreach ($btob->getCategories() as $cat) {
+            $ids[] = $cat->getId();
+        }
+
+        $montant = 0.0;
+        foreach ($panier->getLignes() as $ligne) {
+            $article = $ligne->getArticle();
+            $taille = $ligne->getTaille();
+            $quantite = $ligne->getQuantite() ?? 1;
+
+            $base = $article->getPrixParTaille($taille) ?? $ligne->getPrixUnitaire() ?? 0;
+            $catId = $article->getCategorie()?->getId();
+            if ($catId && in_array($catId, $ids, true)) {
+                $prixRemise = round($base * (1 - ($remise / 100)), 2);
+                $diff = max(0, $base - $prixRemise);
+                $montant += $diff * $quantite;
+            }
+        }
+
+        return round($montant, 2);
+    }
+
+    public function getBtoBDiscountPercentage(): float
+    {
+        $user = $this->security->getUser();
+        if (!$user instanceof User || !$user->getBtoB()) {
+            return 0.0;
+        }
+
+        $remise = (float) $user->getBtoB()->getRemiseParCategorie();
+        return $remise > 0 ? $remise : 0.0;
+    }
 }
+
 

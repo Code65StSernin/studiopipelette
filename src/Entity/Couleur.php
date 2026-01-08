@@ -34,9 +34,16 @@ class Couleur
     #[ORM\ManyToMany(targetEntity: Article::class, mappedBy: 'couleurs')]
     private Collection $articles;
 
+    /**
+     * @var Collection<int, ArticleCollection>
+     */
+    #[ORM\ManyToMany(targetEntity: ArticleCollection::class, mappedBy: 'couleurs')]
+    private Collection $collections;
+
     public function __construct()
     {
         $this->articles = new ArrayCollection();
+        $this->collections = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -91,6 +98,30 @@ class Couleur
         if ($this->articles->removeElement($article)) {
             $article->removeCouleur($this);
         }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, ArticleCollection>
+     */
+    public function getCollections(): Collection
+    {
+        return $this->collections;
+    }
+
+    public function addCollection(ArticleCollection $collection): static
+    {
+        if (!$this->collections->contains($collection)) {
+            $this->collections->add($collection);
+        }
+
+        return $this;
+    }
+
+    public function removeCollection(ArticleCollection $collection): static
+    {
+        $this->collections->removeElement($collection);
 
         return $this;
     }

@@ -1,6 +1,6 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Choix du mode de livraison - SoSand{% endblock %}
+{% block title %}Choix du mode de livraison - Studio Pipelette{% endblock %}
 
 {# ===============================
    Code postal pour Mondial Relay
@@ -59,6 +59,13 @@
                             <strong>{{ sousTotal|number_format(2, ',', ' ') }} €</strong>
                         </p>
                     </div>
+
+                    {% if montantRemiseBtoB > 0 %}
+                        <div class="d-flex justify-content-between mb-2 text-success">
+                            <p class="mb-0">Remise BtoB :</p>
+                            <p class="mb-0">- {{ montantRemiseBtoB|number_format(2, ',', ' ') }} €</p>
+                        </div>
+                    {% endif %}
 
                     {% if remisePourcentage > 0 %}
                         <div class="d-flex justify-content-between mb-2 text-success">

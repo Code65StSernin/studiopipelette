@@ -20,6 +20,9 @@ class Photo
     #[Assert\NotBlank(message: 'Le nom du fichier est obligatoire')]
     private ?string $filename = null;
 
+    #[ORM\Column(length: 20, nullable: false, options: ['default' => 'image'])]
+    private ?string $type = 'image';
+
     #[ORM\ManyToOne(targetEntity: Article::class, inversedBy: 'photos')]
     #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
     #[Assert\NotBlank(message: 'L\'article est obligatoire')]
@@ -88,6 +91,36 @@ class Photo
     public function getThumbnailPath(): string
     {
         return '/assets/img/articles/thumbnails/' . $this->article->getId() . '/' . $this->filename;
+    }
+
+    public function getType(): ?string
+    {
+        return $this->type;
+    }
+
+    public function setType(string $type): static
+    {
+        $this->type = $type;
+
+        return $this;
+    }
+
+    public function isVideo(): bool
+    {
+        return $this->type === 'video';
+    }
+
+    public function isImage(): bool
+    {
+        return $this->type === 'image';
+    }
+
+    /**
+     * Retourne le chemin de la vidéo
+     */
+    public function getVideoPath(): string
+    {
+        return '/assets/videos/articles/' . $this->article->getId() . '/' . $this->filename;
     }
 
     public function __toString(): string

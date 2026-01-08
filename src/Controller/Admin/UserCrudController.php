@@ -7,6 +7,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Crud;
 use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractCrudController;
 use EasyCorp\Bundle\EasyAdminBundle\Field\ArrayField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\AssociationField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\BooleanField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\DateTimeField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\EmailField;
@@ -42,6 +43,8 @@ class UserCrudController extends AbstractCrudController
         yield EmailField::new('email', 'Email');
         yield TextField::new('nom', 'Nom');
         yield TextField::new('prenom', 'Prénom');
+        yield AssociationField::new('btoB', 'Client BtoB')
+            ->setHelp('Associer cet utilisateur à un client BtoB (optionnel)');
         yield ArrayField::new('roles', 'Rôles');
         yield BooleanField::new('isVerified', 'Email vérifié');
         yield DateTimeField::new('createdAt', 'Date de création')->onlyOnIndex();
