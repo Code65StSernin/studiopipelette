@@ -99,6 +99,13 @@ class Article
     #[ORM\Column]
     private ?bool $actif = false;
 
+    #[ORM\Column(length: 20)]
+    private ?string $visibilite = self::VISIBILITY_BOTH;
+
+    public const VISIBILITY_ONLINE = 'online';
+    public const VISIBILITY_SHOP = 'shop';
+    public const VISIBILITY_BOTH = 'both';
+
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
     private ?\DateTimeInterface $createdAt = null;
 
@@ -327,6 +334,18 @@ class Article
     public function setActif(bool $actif): static
     {
         $this->actif = $actif;
+
+        return $this;
+    }
+
+    public function getVisibilite(): ?string
+    {
+        return $this->visibilite;
+    }
+
+    public function setVisibilite(string $visibilite): static
+    {
+        $this->visibilite = $visibilite;
 
         return $this;
     }

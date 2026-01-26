@@ -2,8 +2,10 @@
 
 namespace App\Controller;
 
+use App\Entity\Article;
 use App\Entity\LigneVente;
 use App\Entity\Vente;
+use App\Repository\ArticleRepository;
 use App\Repository\CategorieVenteRepository;
 use App\Repository\SousCategorieVenteRepository;
 use App\Repository\TarifRepository;
@@ -22,31 +24,63 @@ class CaisseController extends AbstractController
         Request $request,
         CategorieVenteRepository $categorieVenteRepository,
         SousCategorieVenteRepository $sousCategorieVenteRepository,
-        TarifRepository $tarifRepository
+        TarifRepository $tarifRepository,
+        ArticleRepository $articleRepository,
+        \App\Repository\CategorieRepository $categorieRepository
     ): Response {
         $categorieId = $request->query->get('categorie');
         $sousCategorieId = $request->query->get('sous_categorie');
+        $categorieShopId = $request->query->get('categorie_shop');
         
         $currentCategorie = null;
         $currentSousCategorie = null;
+        $currentShopCategory = null;
         $items = [];
         $isSousCategorieView = false;
+        $isShopCategoryView = false;
         $isTarifView = false;
+        $isArticleView = false;
 
-        if ($sousCategorieId) {
+        if ($categorieId) {
+            $currentCategorie = $categorieVenteRepository->find($categorieId);
+        }
+
+        if ($currentCategorie && !$currentCategorie->isPrestation()) {
+            // Mode VENTE : on utilise directement les catégories/articles de la boutique
+            if ($categorieShopId) {
+                $currentShopCategory = $categorieRepository->find($categorieShopId);
+                if ($currentShopCategory) {
+                    $items = $articleRepository->findBy([
+                        'categorie' => $currentShopCategory,
+                        'actif' => true,
+                        'visibilite' => [Article::VISIBILITY_SHOP, Article::VISIBILITY_BOTH]
+                    ], ['nom' => 'ASC']);
+                    $isArticleView = true;
+                }
+            } else {
+                // Affichage des catégories de la boutique
+                $items = $categorieRepository->findBy([], ['nom' => 'ASC']);
+                $isShopCategoryView = true;
+            }
+        } elseif ($sousCategorieId) {
+            // Mode PRESTATION (détail sous-catégorie)
             $currentSousCategorie = $sousCategorieVenteRepository->find($sousCategorieId);
             if ($currentSousCategorie) {
                 $currentCategorie = $currentSousCategorie->getCategorie();
-                $items = $tarifRepository->findBy(['sousCategorieVente' => $currentSousCategorie]);
-                $isTarifView = true;
+                
+                if ($currentCategorie && $currentCategorie->isPrestation()) {
+                    $items = $tarifRepository->findBy(['sousCategorieVente' => $currentSousCategorie]);
+                    $isTarifView = true;
+                }
             }
         } elseif ($categorieId) {
-            $currentCategorie = $categorieVenteRepository->find($categorieId);
+            // Mode PRESTATION (liste sous-catégories)
             if ($currentCategorie) {
                 $items = $sousCategorieVenteRepository->findBy(['categorie' => $currentCategorie]);
                 $isSousCategorieView = true;
             }
         } else {
+            // Accueil Caisse : liste des catégories de vente
             $items = $categorieVenteRepository->findAll();
         }
 
@@ -54,8 +88,11 @@ class CaisseController extends AbstractController
             'items' => $items,
             'currentCategorie' => $currentCategorie,
             'currentSousCategorie' => $currentSousCategorie,
+            'currentShopCategory' => $currentShopCategory,
             'isSousCategorieView' => $isSousCategorieView,
+            'isShopCategoryView' => $isShopCategoryView,
             'isTarifView' => $isTarifView,
+            'isArticleView' => $isArticleView,
         ]);
     }
 
@@ -100,6 +137,7 @@ class CaisseController extends AbstractController
         Request $request, 
         UserRepository $userRepository, 
         TarifRepository $tarifRepository, 
+        ArticleRepository $articleRepository,
         EntityManagerInterface $entityManager
     ): JsonResponse
     {
@@ -135,9 +173,44 @@ class CaisseController extends AbstractController
             $ligneVente->setQuantite(1); // Assuming 1 per item in the cart array as structured in JS
 
             if (isset($itemData['id'])) {
-                $tarif = $tarifRepository->find($itemData['id']);
-                if ($tarif) {
-                    $ligneVente->setTarif($tarif);
+                // On ne lie le Tarif que si c'est une prestation (type = tarif ou non défini)
+                // Pour les articles boutique (type = article), on ne lie pas de Tarif car l'ID correspond à un Article
+                $type = $itemData['type'] ?? 'tarif';
+                
+                if ($type === 'tarif') {
+                    $tarif = $tarifRepository->find($itemData['id']);
+                    if ($tarif) {
+                        $ligneVente->setTarif($tarif);
+                    }
+                } elseif ($type === 'article') {
+                    $article = $articleRepository->find($itemData['id']);
+                    $taille = $itemData['taille'] ?? null;
+                    
+                    if ($article && $taille) {
+                        $isForced = $itemData['isForced'] ?? false;
+                        
+                        // On vérifie le stock actuel
+                        $tailles = $article->getTailles();
+                        $stockActuel = 0;
+                        if ($tailles) {
+                            foreach ($tailles as $t) {
+                                if (isset($t['taille']) && $t['taille'] === $taille) {
+                                    $stockActuel = $t['stock'] ?? 0;
+                                    break;
+                                }
+                            }
+                        }
+
+                        // Si stock > 0 ET ce n'est pas une vente forcée, on décrémente
+                        if ($stockActuel > 0 && !$isForced) {
+                            try {
+                                $article->decrementerStock($taille, 1);
+                                $entityManager->persist($article);
+                            } catch (\RuntimeException $e) {
+                                return new JsonResponse(['status' => 'error', 'message' => $e->getMessage()], 400);
+                            }
+                        }
+                    }
                 }
             }
 

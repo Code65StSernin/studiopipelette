@@ -28,6 +28,10 @@ class SousCategorieVente
     #[ORM\JoinColumn(nullable: false)]
     private ?CategorieVente $categorie = null;
 
+    #[ORM\ManyToOne(targetEntity: Categorie::class)]
+    #[ORM\JoinColumn(nullable: true)]
+    private ?Categorie $categorieStock = null;
+
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
     private ?\DateTimeInterface $createdAt = null;
 
@@ -99,6 +103,18 @@ class SousCategorieVente
     public function setCategorie(?CategorieVente $categorie): static
     {
         $this->categorie = $categorie;
+
+        return $this;
+    }
+
+    public function getCategorieStock(): ?Categorie
+    {
+        return $this->categorieStock;
+    }
+
+    public function setCategorieStock(?Categorie $categorieStock): static
+    {
+        $this->categorieStock = $categorieStock;
 
         return $this;
     }

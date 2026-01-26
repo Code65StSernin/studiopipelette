@@ -1,6 +1,6 @@
 {% extends 'caisse/layout.html.twig' %}
 
-{% block title %}Caisse - {{ isTarifView ? currentSousCategorie.nom : (isSousCategorieView ? currentCategorie.nom : 'Catégories') }}{% endblock %}
+{% block title %}Caisse - {{ (isTarifView or isArticleView) ? (currentSousCategorie ? currentSousCategorie.nom : (currentShopCategory ? currentShopCategory.nom : '')) : ((isSousCategorieView or isShopCategoryView) ? currentCategorie.nom : 'Catégories') }}{% endblock %}
 
 {% block body %}
     <div class="row h-100 g-0">
@@ -9,7 +9,13 @@
                 <h1>
                     {% if isTarifView %}
                          <span class="text-muted">Sous-catégorie :</span> {{ currentSousCategorie.nom }}
-                    {% elseif isSousCategorieView %}
+                    {% elseif isArticleView %}
+                        {% if currentShopCategory %}
+                            <span class="text-muted">Catégorie Boutique :</span> {{ currentShopCategory.nom }}
+                        {% elseif currentSousCategorie %}
+                            <span class="text-muted">Sous-catégorie :</span> {{ currentSousCategorie.nom }}
+                        {% endif %}
+                    {% elseif isSousCategorieView or isShopCategoryView %}
                         <span class="text-muted">Catégorie :</span> {{ currentCategorie.nom }}
                     {% else %}
                         Catégories de vente
@@ -19,32 +25,78 @@
                      <a href="{{ path('app_caisse', {'categorie': currentCategorie.id}) }}" class="btn btn-secondary">
                         <i class="fas fa-arrow-left"></i> Retour aux sous-catégories
                     </a>
-                {% elseif isSousCategorieView %}
+                {% elseif isArticleView %}
+                    {% if currentShopCategory %}
+                        <a href="{{ path('app_caisse', {'categorie': currentCategorie.id}) }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Retour aux catégories
+                        </a>
+                    {% else %}
+                        <a href="{{ path('app_caisse', {'categorie': currentCategorie.id}) }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Retour aux sous-catégories
+                        </a>
+                    {% endif %}
+                {% elseif isSousCategorieView or isShopCategoryView %}
                     <a href="{{ path('app_caisse') }}" class="btn btn-secondary">
                         <i class="fas fa-arrow-left"></i> Retour aux catégories
                     </a>
                 {% endif %}
             </div>
 
-            <div class="{{ (isSousCategorieView or isTarifView) ? 'row row-cols-auto g-4' : 'row row-cols-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 g-4' }}">
+            <div class="{{ (isSousCategorieView or isShopCategoryView or isTarifView or isArticleView) ? 'row row-cols-auto g-4' : 'row row-cols-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 g-4' }}">
                 {% for item in items %}
                     <div class="col">
                         {% set link = '#' %}
-                        {% if not isSousCategorieView and not isTarifView %}
+                        {% if not isSousCategorieView and not isShopCategoryView and not isTarifView and not isArticleView %}
                             {% set link = path('app_caisse', {'categorie': item.id}) %}
                         {% elseif isSousCategorieView %}
                             {% set link = path('app_caisse', {'sous_categorie': item.id}) %}
+                        {% elseif isShopCategoryView %}
+                            {% set link = path('app_caisse', {'categorie': currentCategorie.id, 'categorie_shop': item.id}) %}
                         {% endif %}
                         
                         {% set onclick = '' %}
+                        {% set ondblclick = '' %}
+                        {% set cardClass = '' %}
+                        {% set opacityStyle = '' %}
+                        {% set imageClass = '' %}
+                        {% set imageStyle = '' %}
+                        {% set isOutOfStock = false %}
+                        {% set outOfStockAction = '' %}
+                        
                         {% if isTarifView %}
-                            {% set onclick = "addToCart(" ~ item.id ~ ", '" ~ item.nom|escape('js') ~ "', " ~ item.tarif ~ "); return false;" %}
+                            {% set onclick = "addToCart(" ~ item.id ~ ", '" ~ item.nom|escape('js') ~ "', " ~ item.tarif ~ ", 'tarif', null);" %}
+                        {% elseif isArticleView %}
+                            {% set firstTaille = item.tailles|first %}
+                            {% if firstTaille %}
+                                {% if firstTaille.stock is defined and firstTaille.stock <= 0 %}
+                                    {# Rupture de stock : grisé, désactivé, bouton de vente forcée #}
+                                    {% set isOutOfStock = true %}
+                                    {% set onclick = "" %}
+                                    {% set outOfStockAction = "openPinModal(" ~ item.id ~ ", '" ~ item.nom|escape('js') ~ "', " ~ firstTaille.prix ~ ", 'article', '" ~ firstTaille.taille|escape('js') ~ "');" %}
+                                    {% set imageClass = 'grayscale' %}
+                                    {% set imageStyle = 'opacity: 0.5;' %}
+                                {% else %}
+                                    {% set onclick = "addToCart(" ~ item.id ~ ", '" ~ item.nom|escape('js') ~ "', " ~ firstTaille.prix ~ ", 'article', '" ~ firstTaille.taille|escape('js') ~ "');" %}
+                                {% endif %}
+                            {% endif %}
                         {% endif %}
 
-                        <a href="{{ link }}" 
-                           class="card {{ (isSousCategorieView or isTarifView) ? 'border-0' : 'h-100 border-0' }} text-decoration-none shadow-sm item-card position-relative"
-                           style="{{ isTarifView ? 'width: 200px; height: 200px;' : (isSousCategorieView ? 'width: 250px; height: 250px;' : '') }}"
+                        {% if link != '#' %}
+                            {% set onclick = "window.location.href='" ~ link ~ "';" %}
+                        {% endif %}
+
+                        <div role="button" 
+                           class="card {{ (isSousCategorieView or isShopCategoryView or isTarifView or isArticleView) ? 'border-0' : 'h-100 border-0' }} text-decoration-none shadow-sm item-card position-relative {{ cardClass }}"
+                           style="cursor: pointer; {{ (isTarifView or isArticleView) ? 'width: 200px; height: 200px;' : ((isSousCategorieView or isShopCategoryView) ? 'width: 250px; height: 250px;' : '') }} {{ opacityStyle }}"
                            {% if onclick %}onclick="{{ onclick }}"{% endif %}>
+                            
+                            {% if isOutOfStock %}
+                                <button class="btn btn-danger position-absolute top-50 start-50 translate-middle shadow rounded-circle d-flex align-items-center justify-content-center" 
+                                        style="z-index: 10; width: 60px; height: 60px; opacity: 1;"
+                                        onclick="event.preventDefault(); event.stopPropagation(); {{ outOfStockAction }}">
+                                    <i class="fas fa-ban fa-2x"></i>
+                                </button>
+                            {% endif %}
                             
                             {% set imagePath = null %}
                             {% set bgColor = null %}
@@ -57,6 +109,15 @@
                                  {% else %}
                                      {% set bgColor = currentSousCategorie.couleur %}
                                  {% endif %}
+                            {% elseif isArticleView %}
+                                {% set photo = item.photos|first %}
+                                {% if photo %}
+                                    {% set imagePath = photo.thumbnailPath %}
+                                {% else %}
+                                    {% set bgColor = '#e9ecef' %}
+                                {% endif %}
+                            {% elseif isShopCategoryView %}
+                                {% set bgColor = '#D19C97' %} {# Couleur "Primary" du thème (rose/rouge) #}
                             {% else %}
                                 {% if item.image %}
                                      {% set folder = isSousCategorieView ? 'sous_categories' : 'categories' %}
@@ -67,34 +128,60 @@
                             {% endif %}
 
                             {% if imagePath %}
-                                <div class="card-img-top d-flex align-items-center justify-content-center bg-white" style="{{ (isSousCategorieView or isTarifView) ? 'height: 100%;' : 'height: 150px;' }} overflow: hidden;">
+                                <div class="card-img-top d-flex align-items-center justify-content-center bg-white {{ imageClass }}" style="{{ (isSousCategorieView or isShopCategoryView or isTarifView or isArticleView) ? 'height: 100%;' : 'height: 150px;' }} overflow: hidden; {{ imageStyle }}">
                                      <img src="{{ imagePath }}" 
                                           alt="{{ item.nom }}" 
                                           class="img-fluid" 
-                                          style="{{ (isSousCategorieView or isTarifView) ? 'width: 100%; height: 100%; object-fit: cover;' : 'max-height: 100%; max-width: 100%;' }}">
+                                          style="{{ (isSousCategorieView or isShopCategoryView or isTarifView or isArticleView) ? 'width: 100%; height: 100%; object-fit: cover;' : 'max-height: 100%; max-width: 100%;' }}">
                                 </div>
                             {% else %}
-                                <div class="card-img-top" style="{{ (isSousCategorieView or isTarifView) ? 'height: 100%;' : 'height: 150px;' }} background-color: {{ bgColor }};"></div>
+                                <div class="card-img-top {{ imageClass }}" style="{{ (isSousCategorieView or isShopCategoryView or isTarifView or isArticleView) ? 'height: 100%;' : 'height: 150px;' }} background-color: {{ bgColor }}; {{ imageStyle }}">
+                                    {% if isArticleView and not imagePath %}
+                                        <div class="d-flex align-items-center justify-content-center h-100 text-muted">
+                                            <i class="fas fa-box fa-3x"></i>
+                                        </div>
+                                    {% elseif isShopCategoryView %}
+                                        <div class="d-flex align-items-center justify-content-center h-100 text-white">
+                                            <i class="fas fa-tags fa-3x"></i>
+                                        </div>
+                                    {% endif %}
+                                </div>
                             {% endif %}
                             
                             {% if isTarifView %}
                                 <div class="position-absolute top-0 end-0 m-2 badge bg-primary fs-5 shadow">
                                     {{ item.tarif }} €
                                 </div>
+                            {% elseif isArticleView %}
+                                {% set firstTaille = item.tailles|first %}
+                                {% if firstTaille %}
+                                    <div class="position-absolute top-0 end-0 m-2 badge bg-primary fs-5 shadow">
+                                        {{ firstTaille.prix }} €
+                                    </div>
+                                {% endif %}
                             {% endif %}
                             
-                            <div class="card-img-overlay d-flex {{ (isSousCategorieView or isTarifView) ? 'align-items-end pb-3' : 'align-items-center' }} justify-content-center p-2">
+                            <div class="card-img-overlay d-flex {{ (isSousCategorieView or isShopCategoryView or isTarifView or isArticleView) ? 'align-items-end pb-3' : 'align-items-center' }} justify-content-center p-2 flex-column">
                                 <h6 class="card-title mb-0 fw-bold text-white text-center" style="font-variant: small-caps; text-shadow: 0 0 4px rgba(0,0,0,0.9), 0 0 8px rgba(0,0,0,0.5);">{{ item.nom }}</h6>
+                                {% if isSousCategorieView and item.categorieStock is defined and item.categorieStock %}
+                                    <small class="text-white text-center mt-1" style="text-shadow: 0 0 4px rgba(0,0,0,0.9);">
+                                        <i class="fas fa-link me-1"></i>{{ item.categorieStock.nom }}
+                                    </small>
+                                {% endif %}
                             </div>
-                        </a>
+                        </div>
                     </div>
                 {% else %}
                     <div class="col-12">
                         <div class="alert alert-info">
                             {% if isTarifView %}
                                 Aucun tarif disponible pour cette sous-catégorie.
+                            {% elseif isArticleView %}
+                                Aucun article disponible pour cette catégorie.
                             {% elseif isSousCategorieView %}
                                 Aucune sous-catégorie disponible pour cette catégorie.
+                            {% elseif isShopCategoryView %}
+                                Aucune catégorie boutique trouvée.
                             {% else %}
                                 Aucune catégorie de vente configurée.
                             {% endif %}
@@ -167,218 +254,222 @@
         </div>
     </div>
 
-    <script>
-        let total = 0;
-        let currentClient = null;
-        let cartItems = [];
-        
-        function addToCart(id, name, price) {
-            const emptyMsg = document.getElementById('empty-cart-msg');
-            if (emptyMsg) {
-                emptyMsg.remove();
-            }
+    <!-- Modal PIN pour vente forcée -->
+    <div class="modal fade" id="pinModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Vente forcée</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <p class="small text-muted mb-2">Article en rupture de stock. Code PIN requis :</p>
+            <input type="password" id="pinInput" class="form-control text-center fs-4" maxlength="4" placeholder="****">
+            <div id="pinError" class="text-danger small mt-2 d-none">Code incorrect</div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-primary w-100" id="pinConfirmBtn">Valider</button>
+          </div>
+        </div>
+      </div>
+    </div>
 
-            const priceNumber = parseFloat(price);
-            total += priceNumber;
-            
-            // Add to internal cart
-            const cartItem = {
-                id: id,
-                name: name,
-                price: priceNumber,
-                timestamp: Date.now()
-            };
-            cartItems.push(cartItem);
-            
-            document.getElementById('cart-total').textContent = total.toLocaleString('fr-FR', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' €';
-            
-            const itemsContainer = document.getElementById('cart-items');
-            const itemElement = document.createElement('div');
-            itemElement.className = 'list-group-item d-flex justify-content-between align-items-center mb-2 shadow-sm rounded border-0';
-            itemElement.dataset.price = priceNumber.toString();
-            itemElement.dataset.timestamp = cartItem.timestamp;
-            itemElement.innerHTML = `
-                <span class="text-truncate me-2" style="max-width: 60%;" title="${name}">${name}</span>
-                <span class="badge bg-primary rounded-pill">${priceNumber.toLocaleString('fr-FR', {minimumFractionDigits: 2, maximumFractionDigits: 2})} €</span>
-            `;
-            
-            itemElement.style.opacity = '0';
-            itemElement.style.transform = 'translateX(20px)';
-            itemElement.style.transition = 'all 0.3s ease';
-            
-            itemsContainer.appendChild(itemElement);
-            
-            itemElement.offsetHeight;
-            
-            itemElement.style.opacity = '1';
-            itemElement.style.transform = 'translateX(0)';
-            
-            const container = itemsContainer.parentElement;
-            container.scrollTop = container.scrollHeight;
+<script>
+    let cart = [];
+    let clientSelect = null;
 
-            itemElement.addEventListener('click', function () {
-                const priceValue = parseFloat(this.dataset.price || '0');
-                const timestamp = parseInt(this.dataset.timestamp || '0');
-                
-                total -= priceValue;
-                if (total < 0) {
-                    total = 0;
-                }
-                
-                // Remove from internal cart
-                const index = cartItems.findIndex(item => item.timestamp === timestamp);
-                if (index > -1) {
-                    cartItems.splice(index, 1);
-                }
-                
-                document.getElementById('cart-total').textContent = total.toLocaleString('fr-FR', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' €';
-
-                this.remove();
-
-                const containerItems = document.getElementById('cart-items');
-                if (!containerItems.querySelector('.list-group-item')) {
-                    const empty = document.createElement('div');
-                    empty.id = 'empty-cart-msg';
-                    empty.className = 'text-center text-muted mt-5';
-                    empty.innerHTML = `
-                        <i class="fas fa-shopping-basket fa-3x mb-3"></i>
-                        <p>Votre panier est vide</p>
-                    `;
-                    containerItems.appendChild(empty);
-                }
-                
-                checkPaymentVisibility();
-            });
-            
-            checkPaymentVisibility();
-        }
-
-        function checkPaymentVisibility() {
-            const paymentActions = document.getElementById('payment-actions');
-            const cashInterface = document.getElementById('cash-interface');
-            
-            // Si l'interface espèces est visible, on ne touche à rien sauf si conditions invalides
-            if (!cashInterface.classList.contains('d-none')) {
-                 if (total <= 0 || !currentClient) {
-                     hideCashInterface(); // Reset si conditions plus remplies
-                 }
-                 return;
-            }
-
-            if (total > 0 && currentClient) {
-                paymentActions.classList.remove('d-none');
-            } else {
-                paymentActions.classList.add('d-none');
-            }
-        }
-
-        function showCashInterface() {
-            document.getElementById('payment-actions').classList.add('d-none');
-            document.getElementById('cash-interface').classList.remove('d-none');
-            setTimeout(() => document.getElementById('cash-received').focus(), 100);
-        }
-
-        function hideCashInterface() {
-            document.getElementById('cash-interface').classList.add('d-none');
-            document.getElementById('payment-actions').classList.remove('d-none');
-            // Reset fields
-            document.getElementById('cash-received').value = '';
-            document.getElementById('cash-change').textContent = '0,00 €';
-            document.getElementById('cash-change').classList.remove('text-danger');
-        }
-
-        // Cash calculation
-        document.getElementById('cash-received').addEventListener('input', function() {
-            const received = parseFloat(this.value) || 0;
-            const change = received - total;
-            const changeElement = document.getElementById('cash-change');
-            
-            if (change >= 0) {
-                changeElement.textContent = change.toLocaleString('fr-FR', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' €';
-                changeElement.classList.remove('text-danger');
-            } else {
-                changeElement.textContent = "Manque " + Math.abs(change).toLocaleString('fr-FR', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' €';
-                changeElement.classList.add('text-danger');
-            }
-        });
-
-        function validatePayment(method) {
-            if (method === 'Espece') {
-                const received = parseFloat(document.getElementById('cash-received').value) || 0;
-                if (received < total) {
-                    alert('Le montant perçu est insuffisant.');
-                    return;
-                }
-            }
-
-            if (!currentClient) {
-                alert('Veuillez sélectionner un client.');
-                return;
-            }
-
-            // Send to server
-            fetch('{{ path('app_caisse_valider') }}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize Client Search with TomSelect
+        if(document.getElementById('client-select')) {
+            clientSelect = new TomSelect('#client-select', {
+                valueField: 'value',
+                labelField: 'label',
+                searchField: 'label',
+                load: function(query, callback) {
+                    var url = '{{ path("app_caisse_client_search") }}?q=' + encodeURIComponent(query);
+                    fetch(url)
+                        .then(response => response.json())
+                        .then(json => {
+                            callback(json);
+                        }).catch(()=>{
+                            callback();
+                        });
                 },
-                body: JSON.stringify({
-                    client: currentClient,
-                    total: total,
-                    method: method,
-                    items: cartItems
-                })
-            }).then(response => {
-                if (response.ok) {
-                    // Success handling
-                    alert('Vente validée (' + method + ') !');
-                    location.reload(); 
-                } else {
-                    alert('Erreur lors de la validation.');
+                placeholder: 'Rechercher un client...',
+                maxOptions: 50
+            });
+        }
+    });
+
+    function addToCart(id, name, price, type, taille, isForced = false) {
+        cart.push({
+            id: id, 
+            name: name, 
+            price: parseFloat(price), 
+            type: type || 'tarif', 
+            taille: taille,
+            isForced: isForced
+        });
+        updateCartDisplay();
+    }
+
+    function removeFromCart(index) {
+        cart.splice(index, 1);
+        updateCartDisplay();
+    }
+
+    function updateCartDisplay() {
+        const cartItemsContainer = document.getElementById('cart-items');
+        const emptyMsg = document.getElementById('empty-cart-msg');
+        const totalEl = document.getElementById('cart-total');
+        const paymentActions = document.getElementById('payment-actions');
+        
+        cartItemsContainer.innerHTML = '';
+        let total = 0;
+
+        if (cart.length === 0) {
+            if(emptyMsg) emptyMsg.classList.remove('d-none');
+            if(paymentActions) paymentActions.classList.add('d-none');
+        } else {
+            if(emptyMsg) emptyMsg.classList.add('d-none');
+            if(paymentActions) paymentActions.classList.remove('d-none');
+
+            cart.forEach((item, index) => {
+                total += item.price;
+                const itemEl = document.createElement('a');
+                itemEl.className = 'list-group-item list-group-item-action d-flex justify-content-between align-items-center';
+                
+                let forcedBadge = '';
+                if (item.isForced) {
+                    forcedBadge = '<span class="badge bg-danger ms-2" title="Vente forcée (Stock 0)">!</span>';
                 }
-            }).catch(err => {
-                console.error(err);
-                alert('Erreur de communication avec le serveur.');
+                
+                itemEl.innerHTML = `
+                    <div>
+                        <div class="fw-bold">${item.name} ${forcedBadge}</div>
+                        <div class="text-muted small">${item.price.toFixed(2)} €</div>
+                    </div>
+                    <button class="btn btn-sm btn-outline-danger" onclick="removeFromCart(${index})">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                `;
+                cartItemsContainer.appendChild(itemEl);
             });
         }
 
-        document.addEventListener('DOMContentLoaded', function () {
-            const clientSelect = document.getElementById('client-select');
-            if (clientSelect && typeof TomSelect !== 'undefined') {
-                new TomSelect('#client-select', {
-                    valueField: 'value',
-                    labelField: 'label',
-                    searchField: 'label',
-                    create: false,
-                    onChange: function(value) {
-                        currentClient = value;
-                        checkPaymentVisibility();
-                    },
-                    load: function (query, callback) {
+        if(totalEl) totalEl.textContent = total.toFixed(2) + ' €';
+    }
 
-                        if (!query.length) {
-                            return callback();
-                        }
-                        const url = '{{ path('app_caisse_client_search') }}?q=' + encodeURIComponent(query);
-                        fetch(url, { headers: { 'Accept': 'application/json' } })
-                            .then(response => response.json())
-                            .then(json => callback(json))
-                            .catch(() => callback());
-                    }
-                });
-            }
+    function showCashInterface() {
+        const actions = document.getElementById('payment-actions');
+        const interface = document.getElementById('cash-interface');
+        const input = document.getElementById('cash-received');
+        
+        if(actions) actions.classList.add('d-none');
+        if(interface) interface.classList.remove('d-none');
+        if(input) input.focus();
+    }
+
+    function hideCashInterface() {
+        const actions = document.getElementById('payment-actions');
+        const interface = document.getElementById('cash-interface');
+        
+        if(interface) interface.classList.add('d-none');
+        if(actions) actions.classList.remove('d-none');
+    }
+
+    // Calculate change logic
+    const cashInput = document.getElementById('cash-received');
+    if(cashInput) {
+        cashInput.addEventListener('input', function(e) {
+            const received = parseFloat(e.target.value) || 0;
+            const total = cart.reduce((sum, item) => sum + item.price, 0);
+            const change = received - total;
+            const changeEl = document.getElementById('cash-change');
+            if(changeEl) changeEl.textContent = (change > 0 ? change.toFixed(2) : '0.00') + ' €';
         });
-    </script>
+    }
 
-    <style>
-        .item-card {
-            transition: transform 0.2s, box-shadow 0.2s;
-            cursor: pointer;
-            overflow: hidden;
+    function validatePayment(method) {
+        if (cart.length === 0) return;
+        
+        const clientId = clientSelect ? clientSelect.getValue() : null;
+        if (!clientId) {
+            alert('Veuillez sélectionner un client.');
+            return;
         }
-        .item-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+
+        const total = cart.reduce((sum, item) => sum + item.price, 0);
+
+        const data = {
+            client: clientId,
+            total: total,
+            method: method,
+            items: cart
+        };
+
+        fetch('{{ path("app_caisse_valider") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                alert('Vente validée avec succès !');
+                cart = [];
+                updateCartDisplay();
+                if(clientSelect) clientSelect.clear();
+                if (method === 'Espece') hideCashInterface();
+            } else {
+                alert('Erreur: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Une erreur est survenue lors de la validation.');
+        });
+    }
+
+    let pendingItem = null;
+
+    function openPinModal(id, name, price, type, taille) {
+        pendingItem = {id, name, price, type, taille};
+        const modalEl = document.getElementById('pinModal');
+        const modal = new bootstrap.Modal(modalEl);
+        document.getElementById('pinInput').value = '';
+        document.getElementById('pinError').classList.add('d-none');
+        modal.show();
+        
+        // Focus input after modal is shown
+        modalEl.addEventListener('shown.bs.modal', function () {
+            document.getElementById('pinInput').focus();
+        }, {once: true});
+    }
+
+    document.getElementById('pinConfirmBtn').addEventListener('click', function() {
+        const pin = document.getElementById('pinInput').value;
+        if (pin === '1234') {
+            if (pendingItem) {
+                // Pass true for isForced
+                addToCart(pendingItem.id, pendingItem.name, pendingItem.price, pendingItem.type, pendingItem.taille, true);
+                pendingItem = null;
+            }
+            const modalEl = document.getElementById('pinModal');
+            const modal = bootstrap.Modal.getInstance(modalEl);
+            modal.hide();
+        } else {
+            document.getElementById('pinError').classList.remove('d-none');
         }
-    </style>
+    });
+
+    // Allow Enter key in PIN input
+    document.getElementById('pinInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            document.getElementById('pinConfirmBtn').click();
+        }
+    });
+</script>
 {% endblock %}

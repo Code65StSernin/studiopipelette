@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Entity\Article;
 use App\Repository\ArticleRepository;
 use App\Repository\CategorieRepository;
 use App\Repository\CouleurRepository;
@@ -39,7 +40,9 @@ class BoutiqueController extends AbstractController
         $qb->select('DISTINCT a')
            ->from('App\Entity\Article', 'a')
            ->where('a.actif = :actif')
+           ->andWhere('a.visibilite IN (:visibilities)')
            ->setParameter('actif', true)
+           ->setParameter('visibilities', [Article::VISIBILITY_ONLINE, Article::VISIBILITY_BOTH])
            ->orderBy('a.id', 'DESC');
 
         // Joindre couleurs et collections une seule fois avec des alias fixes

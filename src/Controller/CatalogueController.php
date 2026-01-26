@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Entity\Article;
 use App\Repository\ArticleRepository;
 use App\Repository\CategorieRepository;
 use App\Repository\SousCategorieRepository;
@@ -25,7 +26,11 @@ class CatalogueController extends AbstractController
         
         // Récupérer tous les articles actifs de cette catégorie
         $articles = $articleRepository->findBy(
-            ['categorie' => $categorie, 'actif' => true],
+            [
+                'categorie' => $categorie, 
+                'actif' => true,
+                'visibilite' => [Article::VISIBILITY_ONLINE, Article::VISIBILITY_BOTH]
+            ],
             ['id' => 'DESC']
         );
         
@@ -50,7 +55,11 @@ class CatalogueController extends AbstractController
         
         // Récupérer tous les articles actifs de cette sous-catégorie
         $articles = $articleRepository->findBy(
-            ['sousCategorie' => $sousCategorie, 'actif' => true],
+            [
+                'sousCategorie' => $sousCategorie, 
+                'actif' => true,
+                'visibilite' => [Article::VISIBILITY_ONLINE, Article::VISIBILITY_BOTH]
+            ],
             ['id' => 'DESC']
         );
         

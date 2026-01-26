@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Entity\Article;
 use App\Repository\ArticleRepository;
 use App\Repository\CodeRepository;
 use App\Service\PanierService;
@@ -70,8 +71,8 @@ class PanierController extends AbstractController
     {
         $article = $articleRepository->find($id);
 
-        if (!$article) {
-            $this->addFlash('danger', 'Article introuvable');
+        if (!$article || !$article->isActif() || $article->getVisibilite() === Article::VISIBILITY_SHOP) {
+            $this->addFlash('danger', 'Article introuvable ou non disponible');
             return $this->redirectToRoute('app_home');
         }
 

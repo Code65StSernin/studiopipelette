@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Entity\Article;
 use App\Repository\ArticleRepository;
 use App\Repository\CategorieRepository;
 use App\Repository\SousCategorieRepository;
@@ -17,7 +18,10 @@ class SitemapController extends AbstractController
         CategorieRepository $categorieRepository,
         SousCategorieRepository $sousCategorieRepository
     ): Response {
-        $articles = $articleRepository->findBy(['actif' => true]);
+        $articles = $articleRepository->findBy([
+            'actif' => true,
+            'visibilite' => [Article::VISIBILITY_ONLINE, Article::VISIBILITY_BOTH]
+        ]);
         $categories = $categorieRepository->findAll();
         $sousCategories = $sousCategorieRepository->findAll();
 

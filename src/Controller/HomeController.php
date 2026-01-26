@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Entity\Article;
 use App\Repository\ArticleRepository;
 use App\Repository\SousCategorieRepository;
 use App\Repository\CarouselRepository;
@@ -33,7 +34,10 @@ final class HomeController extends AbstractController
         
         // Récupérer les 4 derniers articles actifs pour la section "Bougies tendance"
         $featuredArticles = $articleRepository->findBy(
-            ['actif' => true],
+            [
+                'actif' => true,
+                'visibilite' => [Article::VISIBILITY_ONLINE, Article::VISIBILITY_BOTH]
+            ],
             ['id' => 'DESC'],
             4
         );
@@ -45,7 +49,8 @@ final class HomeController extends AbstractController
         foreach ($sousCategories as $sousCategorie) {
             $articleCount = $articleRepository->count([
                 'sousCategorie' => $sousCategorie,
-                'actif' => true
+                'actif' => true,
+                'visibilite' => [Article::VISIBILITY_ONLINE, Article::VISIBILITY_BOTH]
             ]);
             
             $sousCategoriesWithCount[] = [

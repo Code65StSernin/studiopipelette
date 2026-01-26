@@ -2,6 +2,7 @@
 
 namespace App\Form;
 
+use App\Entity\Categorie;
 use App\Entity\CategorieVente;
 use App\Entity\SousCategorieVente;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
@@ -26,6 +27,14 @@ class SousCategorieVenteType extends AbstractType
                 'class' => CategorieVente::class,
                 'choice_label' => 'nom',
                 'label' => 'Catégorie Parente',
+                'attr' => ['class' => 'form-select']
+            ])
+            ->add('categorieStock', EntityType::class, [
+                'class' => Categorie::class,
+                'choice_label' => 'nom',
+                'label' => 'Catégorie Stock (pour la vente)',
+                'required' => false,
+                'placeholder' => 'Sélectionnez une catégorie stock (si vente)',
                 'attr' => ['class' => 'form-select']
             ])
             ->add('imageFile', FileType::class, [

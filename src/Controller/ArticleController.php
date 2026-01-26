@@ -20,7 +20,7 @@ class ArticleController extends AbstractController
         }
         
         // Vérifier que l'article est actif (sauf pour les admins)
-        if (!$article->isActif() && !$this->isGranted('ROLE_ADMIN')) {
+        if ((!$article->isActif() || $article->getVisibilite() === Article::VISIBILITY_SHOP) && !$this->isGranted('ROLE_ADMIN')) {
             throw $this->createNotFoundException('Article non disponible');
         }
         

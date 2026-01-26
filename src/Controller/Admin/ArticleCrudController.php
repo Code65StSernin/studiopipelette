@@ -13,6 +13,7 @@ use Symfony\Component\HttpFoundation\RedirectResponse;
 use EasyCorp\Bundle\EasyAdminBundle\Field\ArrayField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\AssociationField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\BooleanField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\ChoiceField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\CollectionField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\DateTimeField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\IdField;
@@ -133,6 +134,21 @@ class ArticleCrudController extends AbstractCrudController
         yield TextareaField::new('description', 'Description')
             ->setHelp('Description détaillée du produit')
             ->setColumns(12);
+
+        yield ChoiceField::new('visibilite', 'Visibilité')
+            ->setChoices([
+                'En ligne' => Article::VISIBILITY_ONLINE,
+                'En boutique' => Article::VISIBILITY_SHOP,
+                'Les deux' => Article::VISIBILITY_BOTH,
+            ])
+            ->renderAsBadges([
+                Article::VISIBILITY_ONLINE => 'info',
+                Article::VISIBILITY_SHOP => 'warning',
+                Article::VISIBILITY_BOTH => 'success',
+            ])
+            ->setHelp('Détermine où l\'article est visible')
+            ->setColumns(6);
+
         yield BooleanField::new('actif', 'Article actif')
             ->setHelp('Si décoché, l\'article ne sera pas visible sur le site')
             ->setColumns(6);
@@ -222,6 +238,7 @@ class ArticleCrudController extends AbstractCrudController
         $newArticle->setInformationsLivraison($article->getInformationsLivraison());
         $newArticle->setSousTitre($article->getSousTitre());
         $newArticle->setSousTitreContenu($article->getSousTitreContenu());
+        $newArticle->setVisibilite($article->getVisibilite());
         $newArticle->setActif(false); // Par défaut inactif
         
         // Copier les relations ManyToMany
