@@ -1,0 +1,90 @@
+{% extends 'caisse/layout.html.twig' %}
+
+{% block title %}Historique des Ventes{% endblock %}
+
+{% block body %}
+    <div class="container-fluid p-4">
+        <h1 class="mb-4">Historique des Ventes</h1>
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <form method="get" class="row g-3 align-items-end">
+                    <div class="col-md-3">
+                        <label for="start_date" class="form-label">Date de début</label>
+                        <input type="date" class="form-control" id="start_date" name="start_date" value="{{ startDate }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="end_date" class="form-label">Date de fin</label>
+                        <input type="date" class="form-control" id="end_date" name="end_date" value="{{ endDate }}">
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-filter me-2"></i>Filtrer
+                        </button>
+                    </div>
+                    <div class="col-md-2">
+                        <a href="{{ path('app_vente_index') }}" class="btn btn-secondary w-100">
+                            <i class="fas fa-undo me-2"></i>Réinitialiser
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Date</th>
+                                <th>Client</th>
+                                <th>Mode Paiement</th>
+                                <th>Articles</th>
+                                <th class="text-end">Montant Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for vente in ventes %}
+                                <tr>
+                                    <td>{{ vente.dateVente|date('d/m/Y H:i') }}</td>
+                                    <td>
+                                        {% if vente.client %}
+                                            {{ vente.client.prenom }} {{ vente.client.nom }}
+                                        {% else %}
+                                            <span class="text-muted">Client inconnu</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ vente.modePaiement == 'CB' ? 'success' : (vente.modePaiement == 'Espece' ? 'warning' : 'info') }}">
+                                            {{ vente.modePaiement }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <ul class="list-unstyled mb-0 small">
+                                            {% for ligne in vente.ligneVentes %}
+                                                <li>
+                                                    {{ ligne.quantite }}x {{ ligne.nom }}
+                                                    <span class="text-muted">({{ ligne.prixUnitaire }} €)</span>
+                                                </li>
+                                            {% endfor %}
+                                        </ul>
+                                    </td>
+                                    <td class="text-end fw-bold">
+                                        {{ vente.montantTotal|number_format(2, ',', ' ') }} €
+                                    </td>
+                                </tr>
+                            {% else %}
+                                <tr>
+                                    <td colspan="5" class="text-center py-4 text-muted">
+                                        Aucune vente trouvée pour cette période.
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

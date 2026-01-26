@@ -1,0 +1,203 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Réservation - Choix du créneau{% endblock %}
+
+{% block content_right %}
+    <style>
+        .tarif-page {
+            min-height: 100vh;
+        }
+        .card-custom {
+            border: 1px solid #e0e0e0;
+            transition: transform 0.2s;
+            background-color: #fff;
+            color: #333;
+        }
+        .card-custom:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .card-header-custom {
+            background-color: #d4807e; /* Vieux rose */
+            color: white;
+            font-weight: 600;
+        }
+        .creneau-option {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            transition: all 0.2s;
+            color: #333; /* Dark text for readability */
+            cursor: pointer;
+        }
+        .creneau-option:hover {
+            background-color: #ffe6e6;
+            border-color: #d4807e;
+        }
+        .creneau-radio:checked + span {
+            font-weight: bold;
+            color: #d4807e;
+        }
+        .btn-primary-custom {
+            background-color: #d3573b;
+            border-color: #d3573b;
+            color: white;
+        }
+        .btn-primary-custom:hover {
+            background-color: #b54631;
+            border-color: #b54631;
+        }
+        .selected-slot {
+            background-color: #fff0f3 !important;
+            border-color: #d4807e !important;
+        }
+        .text-theme {
+            color: #d4807e !important;
+        }
+    </style>
+
+    <div class="tarif-page container-fluid py-4">
+        <div class="container">
+            <h1 class="section-title text-center mb-5"><span>Choisissez votre créneau</span></h1>
+
+{% for label, messages in app.flashes %}
+    {% for message in messages %}
+        <div class="alert alert-{{ label }}">
+            {{ message }}
+        </div>
+    {% endfor %}
+{% endfor %}
+
+            <div class="mb-4">
+    {% if creneaux|length > 0 %}
+        <h3 class="mb-3 text-theme">Créneaux disponibles :</h3>
+        <form method="post" action="{{ path('app_reservation_confirmer') }}" id="creneaux-form">
+            <input type="hidden" name="prestations" value="{{ prestationsIds|join(',') }}">
+            
+            <div class="row">
+                {% for date, jourData in creneaux %}
+                    <div class="col-md-4 mb-4">
+                        <div class="card card-custom creneau-card h-100">
+                            <div class="card-header card-header-custom text-center h5">
+                                {{ jourData.date|format_datetime(locale='fr', timezone='Europe/Paris', pattern='eeee d MMMM') }}
+                            </div>
+                            <div class="card-body" style="max-height: 400px; overflow-y: auto; position: relative;">
+                                {% for creneau in jourData.creneaux %}
+                                    <label class="creneau-option d-block p-2 rounded mb-2">
+                                        <input type="radio" name="creneau" value="{{ jourData.date|date('Y-m-d', timezone='Europe/Paris') }}_{{ creneau.heure }}" required class="form-check-input creneau-radio me-2">
+                                        <span>{{ creneau.heure }} - {{ creneau.heureFin }}</span>
+                                    </label>
+                                {% else %}
+                                    <p class="text-muted text-center">Aucun créneau ce jour-là.</p>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <div class="d-flex justify-content-between mt-4">
+                <a href="{{ path('app_reservation') }}" class="btn btn-secondary">Retour</a>
+                <button type="submit" class="btn btn-primary-custom btn-lg">Confirmer la réservation</button>
+            </div>
+        </form>
+    {% else %}
+        <div class="alert alert-warning">
+            <h4>Aucun créneau disponible</h4>
+            <p>Malheureusement, aucun créneau n'est disponible pour les prestations sélectionnées dans les prochaines semaines.</p>
+        </div>
+    {% endif %}
+
+    {% if creneauPropose %}
+        <div class="mt-5">
+            <h3 class="mb-3 text-theme">Votre créneau proposé (disponible) :</h3>
+            <div class="card card-custom">
+                <div class="card-body">
+                    <label class="creneau-option d-block p-2 rounded mb-2" style="background-color: #e8f5e9; border-color: #81c784;">
+                        <input type="radio" name="creneau" value="{{ creneauPropose.date }}_{{ creneauPropose.heure }}" required class="form-check-input creneau-radio me-2" form="creneaux-form">
+                        <span>Le {{ creneauPropose.date|date('d/m/Y') }} à {{ creneauPropose.heure }}</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<div class="my-5">
+    <h3 class="mb-3 text-theme">Proposer un autre créneau</h3>
+    <p class="text-muted">Si aucun des créneaux ci-dessus ne vous convient, vous pouvez proposer une date et une heure.</p>
+    <form method="post" action="{{ path('app_reservation_proposer_creneau') }}" id="proposer-creneau-form">
+        <input type="hidden" name="prestations" value="{{ prestationsIds|join(',') }}">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label for="date_proposition">Date</label>
+                    <input type="date" id="date_proposition" name="date_proposition" class="form-control" required>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label for="heure_proposition">Heure</label>
+                    <input type="time" id="heure_proposition" name="heure_proposition" class="form-control" required>
+                </div>
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary-custom mt-3">Vérifier la disponibilité</button>
+    </form>
+</div>
+
+<div class="mb-4">
+    <h3>Prestations sélectionnées :</h3>
+    <ul class="list-unstyled">
+        {% for tarif in tarifs %}
+            <li class="mb-2">
+                <strong>{{ tarif.nom }}</strong> - 
+                <span class="text-muted">{{ tarif.dureeMinutes }}min · {{ tarif.tarif }} €</span>
+            </li>
+        {% endfor %}
+    </ul>
+    <p class="text-muted">Durée totale : <strong>{{ dureeTotale }} minutes</strong></p>
+</div>
+
+<a href="{{ path('app_reservation') }}" class="btn btn-primary">Retour au choix des prestations</a>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function(){
+            document.querySelectorAll('.creneau-option').forEach(function(option){
+                option.addEventListener('click', function(e){
+                    if (e.target.type !== 'radio') {
+                        const radio = this.querySelector('input[type="radio"]');
+                        if (radio) {
+                            radio.checked = true;
+                            // Mettre à jour visuellement
+                            // Reset borders
+                            document.querySelectorAll('.creneau-card').forEach(function(card){
+                                card.style.borderColor = '#e0e0e0';
+                            });
+                            // Highlight parent card
+                            const parentCard = this.closest('.creneau-card');
+                            if (parentCard) {
+                                parentCard.style.borderColor = '#d4807e';
+                            }
+                        }
+                    }
+                });
+            });
+
+            // Si l'utilisateur n'est pas connecté, on intercepte la soumission pour ouvrir la modale
+            const forms = ['creneaux-form', 'proposer-creneau-form'];
+            forms.forEach(function(id) {
+                const form = document.getElementById(id);
+                if (form) {
+                    form.addEventListener('submit', function(e) {
+                        {% if not app.user %}
+                            e.preventDefault();
+                            $('#loginModal').modal('show');
+                        {% endif %}
+                    });
+                }
+            });
+        });
+    </script>
+{% endblock %}

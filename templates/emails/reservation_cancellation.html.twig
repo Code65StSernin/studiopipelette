@@ -1,0 +1,16 @@
+<h1>Annulation de votre réservation</h1>
+
+<p>Bonjour {{ reservation.clientName }},</p>
+
+<p>
+    Nous vous confirmons l'annulation de votre rendez-vous prévu le <strong>{{ reservation.dateStart|date('d/m/Y', 'Europe/Paris') }} à {{ reservation.dateStart|date('H:i', 'Europe/Paris') }}</strong>.
+</p>
+
+<p>
+    Si vous souhaitez reprendre rendez-vous, n'hésitez pas à visiter notre site.
+</p>
+
+<p>
+    Cordialement,<br>
+    L'équipe Studio Pipelette
+</p>

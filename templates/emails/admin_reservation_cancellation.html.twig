@@ -1,0 +1,18 @@
+<h1>Annulation de réservation</h1>
+
+<p>Une réservation a été annulée par le client.</p>
+
+<p>
+    <strong>Client :</strong> {{ reservation.clientName }}<br>
+</p>
+
+<p>
+    <strong>Date initialement prévue :</strong> {{ reservation.dateStart|date('d/m/Y', 'Europe/Paris') }} à {{ reservation.dateStart|date('H:i', 'Europe/Paris') }}<br>
+</p>
+
+<h3>Prestations annulées :</h3>
+<ul>
+    {% for prestation in reservation.prestations %}
+        <li>{{ prestation.nom }}</li>
+    {% endfor %}
+</ul>

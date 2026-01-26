@@ -99,6 +99,12 @@ class Societe
     #[ORM\Column(type: 'float', nullable: true)]
     private ?float $pourcentageIr = null;
 
+    #[ORM\Column(type: 'float', nullable: true)]
+    private ?float $totalSite = null;
+
+    #[ORM\Column(type: 'float', nullable: true)]
+    private ?float $pourcentageMensuel = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -424,6 +430,30 @@ class Societe
     public function setPourcentageIr(?float $pourcentageIr): self
     {
         $this->pourcentageIr = $pourcentageIr;
+
+        return $this;
+    }
+
+    public function getTotalSite(): ?float
+    {
+        return $this->totalSite;
+    }
+
+    public function setTotalSite(?float $totalSite): self
+    {
+        $this->totalSite = $totalSite;
+
+        return $this;
+    }
+
+    public function getPourcentageMensuel(): ?float
+    {
+        return $this->pourcentageMensuel;
+    }
+
+    public function setPourcentageMensuel(?float $pourcentageMensuel): self
+    {
+        $this->pourcentageMensuel = $pourcentageMensuel;
 
         return $this;
     }

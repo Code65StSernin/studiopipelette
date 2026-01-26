@@ -1,0 +1,46 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Créneaux - Calendrier{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link href="/assets/fullcalendar-6.1.20/main.min.css" rel="stylesheet">
+{% endblock %}
+
+{% block content_right %}
+    <style>
+        .section-title {
+            color: #d4807e;
+            border-bottom: 2px solid #d4807e;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+    </style>
+    <div class="container mt-4">
+        <h1 class="section-title">Créneaux (semaine)</h1>
+        <div id="calendar"></div>
+    </div>
+{% endblock %}
+
+{% block body %}
+    <script src="/assets/fullcalendar-6.1.20/index.global.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var calendarEl = document.getElementById('calendar');
+            var calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'timeGridWeek',
+                initialDate: '{{ "now"|date("Y-m-d") }}',
+                nowIndicator: true,
+                slotMinTime: '07:00:00',
+                slotMaxTime: '20:00:00',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'timeGridWeek,timeGridDay'
+                },
+                events: []
+            });
+            calendar.render();
+        });
+    </script>
+{% endblock %}

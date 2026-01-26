@@ -3,6 +3,12 @@
 namespace App\Controller\Admin;
 
 use App\Entity\Article;
+use App\Entity\DispoPrestation;
+use App\Entity\Tarif;
+use App\Entity\ContraintePrestation;
+use App\Entity\Reservation;
+use App\Entity\UnavailabilityRule;
+use App\Entity\Calendrier;
 use App\Entity\Order;
 use App\Entity\BtoB;
 use App\Entity\Categorie;
@@ -33,6 +39,7 @@ use App\Repository\LigneFactureRepository;
 use App\Repository\FactureRepository;
 use App\Repository\DepensesRepository;
 use App\Repository\RecetteRepository;
+use App\Repository\ReservationRepository;
 use App\Service\SocieteConfig;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
@@ -384,6 +391,23 @@ class DashboardController extends AbstractDashboardController
         $resultatBrut = $caEncaisseEuros - $chargesAPayer;      // CA encaissé - charges (URSSAF + IR)
         $resultatNet  = $resultatBrut - $depensesTotal;         // Résultat brut - dépenses
 
+        // Etalement site
+        $totalSite = $this->societeConfig->getTotalSite() ?? 0;
+        $pourcentageMensuel = $this->societeConfig->getPourcentageMensuel() ?? 0;
+        $montantRemboursement = $caPortCompris * ($pourcentageMensuel / 100);
+        $caTotalEuros = $revenueTotalCents / 100;
+        $totalRembourseCalcul = $caTotalEuros * ($pourcentageMensuel / 100);
+        
+        $remboursementsAnticipes = (float) $this->depensesRepository->createQueryBuilder('d')
+            ->select('COALESCE(SUM(d.montant), 0)')
+            ->andWhere('d.remboursementAnticipe = :true')
+            ->setParameter('true', true)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        $totalRembourse = $totalRembourseCalcul + $remboursementsAnticipes;
+        $resteARegler = max(0, $totalSite - $totalRembourse);
+
         // Somme des recettes pointées sur la période
         $recettesPointees = (float) $this->recetteRepository->createQueryBuilder('r')
             ->select('COALESCE(SUM(r.montant), 0)')
@@ -425,6 +449,11 @@ class DashboardController extends AbstractDashboardController
             'chargesAPayer' => $chargesAPayer,
             'fraisPaiementCb' => $fraisPaiementCb,
             'outOfStockSizes' => $outOfStockSizes,
+            'totalSite' => $totalSite,
+            'pourcentageMensuel' => $pourcentageMensuel,
+            'montantRemboursement' => $montantRemboursement,
+            'totalRembourse' => $totalRembourse,
+            'resteARegler' => $resteARegler,
         ];
 
         $recentOrders = $this->orderRepository->createQueryBuilder('o')
@@ -447,6 +476,9 @@ class DashboardController extends AbstractDashboardController
             'outOfStockArticles' => $outOfStockArticles,
         ]);
     }
+
+    // Calendar route is handled by AdminCalendarController
+
 
     public function configureDashboard(): Dashboard
     {
@@ -471,6 +503,16 @@ class DashboardController extends AbstractDashboardController
         yield MenuItem::linkToCrud('Sous-catégories', 'fa fa-folder-open', SousCategorie::class);
         yield MenuItem::linkToCrud('Collections', 'fa fa-gem', ArticleCollection::class);
         yield MenuItem::linkToCrud('Couleurs', 'fa fa-palette', Couleur::class);
+        yield MenuItem::linkToCrud('Tarifs', 'fa fa-tags', Tarif::class);
+        yield MenuItem::subMenu('Exceptions', 'fa fa-exclamation-triangle')->setSubItems([
+            MenuItem::linkToCrud('Suspension des prestations', 'fa fa-calendar-alt', DispoPrestation::class),
+            MenuItem::linkToCrud('Contraintes de prestations', 'fa fa-lock', ContraintePrestation::class),
+        ]);
+        yield MenuItem::subMenu('Calendrier', 'fa fa-calendar')->setSubItems([
+            MenuItem::linkToCrud('Réservations', 'fa fa-book', Reservation::class),
+            MenuItem::linkToRoute('Créneaux', 'fa fa-clock', 'admin_calendar'),
+            MenuItem::linkToCrud('Règles d\'indisponibilité', 'fa fa-ban', UnavailabilityRule::class),
+        ]);
 
         // Section CONFIGURATION
         yield MenuItem::section('Configuration');

@@ -1,0 +1,123 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Mes Réservations - Studio Pipelette{% endblock %}
+
+{% block content_right %}
+    <style>
+        .bg-secondary-custom {
+            background-color: #f8f9fa !important;
+        }
+        .text-primary-custom {
+            color: #d4807e !important;
+        }
+        .btn-primary-custom {
+            background-color: #d3573b;
+            border-color: #d3573b;
+            color: white;
+        }
+        .btn-primary-custom:hover {
+            background-color: #b54631;
+            border-color: #b54631;
+            color: white;
+        }
+        .badge-success-custom {
+            background-color: #a16877;
+            color: white;
+        }
+        .badge-secondary-custom {
+            background-color: #6c757d;
+            color: white;
+        }
+        .card-header-custom {
+            background-color: #a16877 !important;
+            color: white !important;
+        }
+    </style>
+    <!-- Page Header intégré dans la colonne de droite -->
+    <div class="bg-secondary-custom mb-4 p-4">
+        <div class="d-flex flex-column">
+            <h3 class="font-weight-semi-bold text-uppercase mb-2" style="color: #a16877;">Mes Réservations</h3>
+            <nav class="d-inline-flex">
+                <a href="{{ path('app_home') }}" class="text-dark">Accueil</a>
+                <span class="mx-2">-</span>
+                <span class="text-dark">Réservations</span>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-12">
+            {% if reservations is empty %}
+                <div class="card border-0 shadow-sm mb-5">
+                    <div class="card-body text-center py-5">
+                        <i class="fa fa-calendar-alt fa-5x text-secondary mb-4"></i>
+                        <h3 class="mb-4">Aucune réservation trouvée</h3>
+                        <p class="text-muted mb-4">Vous n'avez pas encore de réservation.</p>
+                        <a href="{{ path('app_reservation') }}" class="btn btn-primary-custom py-2 px-4">
+                            <i class="fa fa-calendar-plus mr-2"></i>Prendre rendez-vous
+                        </a>
+                    </div>
+                </div>
+            {% else %}
+                <div class="card border-0 shadow-sm mb-5">
+                    <div class="card-header card-header-custom border-0">
+                        <h4 class="font-weight-semi-bold m-0">Historique de vos rendez-vous</h4>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="bg-light">
+                                    <tr>
+                                        <th class="border-0">Date & Heure</th>
+                                        <th class="border-0">Prestations</th>
+                                        <th class="border-0">Prix</th>
+                                        <th class="border-0">Statut</th>
+                                        <th class="border-0 text-center">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for reservation in reservations %}
+                                        {% set isPast = reservation.dateStart < date() %}
+                                        <tr>
+                                            <td class="align-middle">
+                                                {{ reservation.dateStart|date('d/m/Y') }}<br>
+                                                <small>{{ reservation.dateStart|date('H:i') }} - {{ reservation.dateEnd|date('H:i') }}</small>
+                                            </td>
+                                            <td class="align-middle">
+                                                <ul class="list-unstyled mb-0">
+                                                    {% for prestation in reservation.prestations %}
+                                                        <li>- {{ prestation.nom }}</li>
+                                                    {% endfor %}
+                                                </ul>
+                                            </td>
+                                            <td class="align-middle">{{ reservation.totalPrice }} €</td>
+                                            <td class="align-middle">
+                                                {% if isPast %}
+                                                    <span class="badge badge-secondary-custom">Passée</span>
+                                                {% else %}
+                                                    <span class="badge badge-success-custom">À venir</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="align-middle text-center">
+                                                {% if not isPast %}
+                                                    <form method="post" action="{{ path('app_reservation_annuler', {'id': reservation.id}) }}" onsubmit="return confirm('Êtes-vous sûr de vouloir annuler cette réservation ?');">
+                                                        <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ reservation.id) }}">
+                                                        <button class="btn btn-sm btn-outline-danger">
+                                                            <i class="fa fa-times"></i> Annuler
+                                                        </button>
+                                                    </form>
+                                                {% else %}
+                                                    -
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}

@@ -41,26 +41,6 @@
                 {% endfor %}
             </tbody>
             <tfoot>
-                {% set produitsBrutCents = 0 %}
-                {% for l in facture.lignesFacture %}
-                    {% set produitsBrutCents = produitsBrutCents + l.prixTotal %}
-                {% endfor %}
-                {% set btobRemiseCents = facture.btobRemiseCents ?? 0 %}
-                {% set shippingCents = facture.fraisLivraison ?? 0 %}
-                {% set promoRemiseCents = (produitsBrutCents - btobRemiseCents) - (facture.totalTTC - shippingCents) %}
-
-                {% if facture.btobRemiseCents %}
-                    <tr>
-                        <td colspan="4" style="border:1px solid #ddd; padding:8px; text-align:right;"><strong>Remise BtoB :</strong></td>
-                        <td style="border:1px solid #ddd; padding:8px; text-align:right;"><strong>- {{ (facture.btobRemiseCents / 100)|number_format(2, ',', ' ') }} €</strong></td>
-                    </tr>
-                {% endif %}
-                {% if promoRemiseCents > 0 %}
-                    <tr>
-                        <td colspan="4" style="border:1px solid #ddd; padding:8px; text-align:right;"><strong>Code promo {% if facture.remisePourcentage is not null %}({{ facture.remisePourcentage|number_format(0) }} %){% endif %} :</strong></td>
-                        <td style="border:1px solid #ddd; padding:8px; text-align:right;"><strong>- {{ (promoRemiseCents / 100)|number_format(2, ',', ' ') }} €</strong></td>
-                    </tr>
-                {% endif %}
                 {% if facture.fraisLivraison > 0 %}
                     <tr>
                         <td colspan="4" style="border:1px solid #ddd; padding:8px; text-align:right;"><strong>Frais de livraison :</strong></td>

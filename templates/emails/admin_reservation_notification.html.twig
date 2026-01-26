@@ -1,0 +1,23 @@
+<h1>Nouvelle réservation</h1>
+
+<p>Une nouvelle réservation a été effectuée sur le site.</p>
+
+<p>
+    <strong>Client :</strong> {{ reservation.clientName }}<br>
+    <strong>Email :</strong> {{ reservation.clientEmail }}<br>
+    <strong>Téléphone :</strong> {{ reservation.clientPhone }}<br>
+</p>
+
+<p>
+    <strong>Date :</strong> {{ reservation.dateStart|date('d/m/Y', 'Europe/Paris') }}<br>
+    <strong>Heure :</strong> {{ reservation.dateStart|date('H:i', 'Europe/Paris') }}<br>
+</p>
+
+<h3>Détail des prestations :</h3>
+<ul>
+    {% for prestation in reservation.prestations %}
+        <li>{{ prestation.nom }} - {{ prestation.tarif }} €</li>
+    {% endfor %}
+</ul>
+
+<p><strong>Prix total estimé :</strong> {{ reservation.totalPrice }} €</p>

@@ -1,0 +1,50 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Tarifs des soins{% endblock %}
+
+{% block content_right %}
+    <style>
+        .table thead th {
+            background-color: #a16877;
+            color: white;
+            border: none;
+        }
+        .section-title span {
+            color: #d4807e;
+        }
+        .tarifs-intro {
+            font-style: italic;
+            color: #666;
+        }
+    </style>
+    <div class="container mt-4">
+        <h1 class="section-title"><span>Tarifs des prestations de coiffure</span></h1>
+
+        <p class="tarifs-intro"><ul><li>Pour les couleurs, les cheveux doivent être propres de, au moins 48 heures, afin de protéger le cuir chevelu des picotements dûs à la couleur.
+        </li><li>Pour les mèches et brushings, les cheveux ne doivent pas être sales ou avoir de produits de type huiles ou sérums capilaires. De plus, une pâtine peut-être indispensable selon le diagnostique vu en amont. Vous avez la possibilité de demander un devis.</li>
+        <li>Pour les coiffures évènementielles, les cheveux doivent être lavés la veille du rendez-vous pour assurer une tenue optimale. Assurez-vous de porter un chemisier ou un vêtement facile à enfiler/enlever le jour J.</li></p>
+
+        <div class="table-responsive mt-4">
+            <table class="table table-striped table-white">
+                <thead>
+                    <tr>
+                        <th>Nom</th>
+                        <th>Tarif</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for t in tarifs %}
+                    <tr>
+                        <td>{{ t.nom }}</td>
+                        <td>{{ t.tarif }} €</td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="2">Aucun tarif disponible.</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}

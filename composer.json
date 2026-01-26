@@ -12,6 +12,8 @@
         "doctrine/orm": "^3.5",
         "dompdf/dompdf": "^3.1",
         "easycorp/easyadmin-bundle": "^4.27",
+        "intervention/image": "^3.11",
+        "knplabs/knp-paginator-bundle": "*",
         "phpdocumentor/reflection-docblock": "^5.6",
         "phpoffice/phpword": "^1.4",
         "phpstan/phpdoc-parser": "^2.3",
@@ -103,6 +105,8 @@
         }
     },
     "require-dev": {
+        "doctrine/doctrine-fixtures-bundle": "^4.3",
+        "fakerphp/faker": "^1.24",
         "phpunit/phpunit": "^12.5",
         "symfony/browser-kit": "7.4.*",
         "symfony/css-selector": "7.4.*",

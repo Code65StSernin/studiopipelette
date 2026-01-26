@@ -26,6 +26,9 @@ class Depenses
     #[ORM\Column(type: 'boolean')]
     private bool $pointage = false;
 
+    #[ORM\Column(type: 'boolean')]
+    private bool $remboursementAnticipe = false;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -75,6 +78,18 @@ class Depenses
     public function setPointage(bool $pointage): self
     {
         $this->pointage = $pointage;
+
+        return $this;
+    }
+
+    public function isRemboursementAnticipe(): bool
+    {
+        return $this->remboursementAnticipe;
+    }
+
+    public function setRemboursementAnticipe(bool $remboursementAnticipe): self
+    {
+        $this->remboursementAnticipe = $remboursementAnticipe;
 
         return $this;
     }

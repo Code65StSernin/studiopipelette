@@ -1,0 +1,46 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Règle d'indisponibilité{% endblock %}
+
+{% block content_right %}
+    <style>
+        .btn-primary-custom {
+            background-color: #d3573b;
+            border-color: #d3573b;
+            color: white;
+        }
+        .btn-primary-custom:hover {
+            background-color: #b04630;
+            border-color: #b04630;
+            color: white;
+        }
+        .section-title {
+            color: #d4807e;
+            border-bottom: 2px solid #d4807e;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+    </style>
+    <div class="container mt-4">
+        <h1 class="section-title">{{ rule is defined ? 'Modifier la règle' : 'Créer une règle' }}</h1>
+
+        {{ form_start(form) }}
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">{{ form_row(form.name) }}</div>
+                    <div class="mb-3">{{ form_row(form.recurrenceType) }}</div>
+                    <div class="mb-3">{{ form_row(form.startDate) }}</div>
+                    <div class="mb-3">{{ form_row(form.endDate) }}</div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">{{ form_row(form.daysOfWeek) }}</div>
+                    <div class="mb-3">{{ form_row(form.timeStart) }}</div>
+                    <div class="mb-3">{{ form_row(form.timeEnd) }}</div>
+                    <div class="mb-3">{{ form_row(form.active) }}</div>
+                </div>
+            </div>
+            <div class="mt-3">{{ form_widget(form.save, {'attr': {'class': 'btn btn-primary-custom'}}) }}</div>
+        {{ form_end(form) }}
+    </div>
+{% endblock %}
+

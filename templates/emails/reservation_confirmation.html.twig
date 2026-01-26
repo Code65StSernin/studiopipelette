@@ -1,0 +1,30 @@
+<h1>Confirmation de votre réservation</h1>
+
+<p>Bonjour {{ reservation.clientName }},</p>
+
+<p>
+    Nous avons le plaisir de vous confirmer votre rendez-vous chez Studio Pipelette.
+</p>
+
+<p>
+    <strong>Date :</strong> {{ reservation.dateStart|date('d/m/Y', 'Europe/Paris') }}<br>
+    <strong>Heure :</strong> {{ reservation.dateStart|date('H:i', 'Europe/Paris') }}<br>
+</p>
+
+<h3>Détail des prestations :</h3>
+<ul>
+    {% for prestation in reservation.prestations %}
+        <li>{{ prestation.nom }} - {{ prestation.tarif }} €</li>
+    {% endfor %}
+</ul>
+
+<p><strong>Prix total estimé :</strong> {{ reservation.totalPrice }} €</p>
+
+<p>
+    Si vous souhaitez modifier ou annuler votre réservation, merci de nous contacter au plus vite.
+</p>
+
+<p>
+    Cordialement,<br>
+    L'équipe Studio Pipelette
+</p>

@@ -1,0 +1,384 @@
+{% extends 'caisse/layout.html.twig' %}
+
+{% block title %}Caisse - {{ isTarifView ? currentSousCategorie.nom : (isSousCategorieView ? currentCategorie.nom : 'Catégories') }}{% endblock %}
+
+{% block body %}
+    <div class="row h-100 g-0">
+        <div class="col-9 pe-3">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1>
+                    {% if isTarifView %}
+                         <span class="text-muted">Sous-catégorie :</span> {{ currentSousCategorie.nom }}
+                    {% elseif isSousCategorieView %}
+                        <span class="text-muted">Catégorie :</span> {{ currentCategorie.nom }}
+                    {% else %}
+                        Catégories de vente
+                    {% endif %}
+                </h1>
+                {% if isTarifView %}
+                     <a href="{{ path('app_caisse', {'categorie': currentCategorie.id}) }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Retour aux sous-catégories
+                    </a>
+                {% elseif isSousCategorieView %}
+                    <a href="{{ path('app_caisse') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Retour aux catégories
+                    </a>
+                {% endif %}
+            </div>
+
+            <div class="{{ (isSousCategorieView or isTarifView) ? 'row row-cols-auto g-4' : 'row row-cols-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 g-4' }}">
+                {% for item in items %}
+                    <div class="col">
+                        {% set link = '#' %}
+                        {% if not isSousCategorieView and not isTarifView %}
+                            {% set link = path('app_caisse', {'categorie': item.id}) %}
+                        {% elseif isSousCategorieView %}
+                            {% set link = path('app_caisse', {'sous_categorie': item.id}) %}
+                        {% endif %}
+                        
+                        {% set onclick = '' %}
+                        {% if isTarifView %}
+                            {% set onclick = "addToCart(" ~ item.id ~ ", '" ~ item.nom|escape('js') ~ "', " ~ item.tarif ~ "); return false;" %}
+                        {% endif %}
+
+                        <a href="{{ link }}" 
+                           class="card {{ (isSousCategorieView or isTarifView) ? 'border-0' : 'h-100 border-0' }} text-decoration-none shadow-sm item-card position-relative"
+                           style="{{ isTarifView ? 'width: 200px; height: 200px;' : (isSousCategorieView ? 'width: 250px; height: 250px;' : '') }}"
+                           {% if onclick %}onclick="{{ onclick }}"{% endif %}>
+                            
+                            {% set imagePath = null %}
+                            {% set bgColor = null %}
+                            
+                            {% if isTarifView %}
+                                 {% if item.image %}
+                                     {% set imagePath = asset('uploads/images/tarifs/' ~ item.image) %}
+                                 {% elseif currentSousCategorie.image %}
+                                     {% set imagePath = asset('uploads/images/sous_categories/' ~ currentSousCategorie.image) %}
+                                 {% else %}
+                                     {% set bgColor = currentSousCategorie.couleur %}
+                                 {% endif %}
+                            {% else %}
+                                {% if item.image %}
+                                     {% set folder = isSousCategorieView ? 'sous_categories' : 'categories' %}
+                                     {% set imagePath = asset('uploads/images/' ~ folder ~ '/' ~ item.image) %}
+                                {% else %}
+                                     {% set bgColor = item.couleur %}
+                                {% endif %}
+                            {% endif %}
+
+                            {% if imagePath %}
+                                <div class="card-img-top d-flex align-items-center justify-content-center bg-white" style="{{ (isSousCategorieView or isTarifView) ? 'height: 100%;' : 'height: 150px;' }} overflow: hidden;">
+                                     <img src="{{ imagePath }}" 
+                                          alt="{{ item.nom }}" 
+                                          class="img-fluid" 
+                                          style="{{ (isSousCategorieView or isTarifView) ? 'width: 100%; height: 100%; object-fit: cover;' : 'max-height: 100%; max-width: 100%;' }}">
+                                </div>
+                            {% else %}
+                                <div class="card-img-top" style="{{ (isSousCategorieView or isTarifView) ? 'height: 100%;' : 'height: 150px;' }} background-color: {{ bgColor }};"></div>
+                            {% endif %}
+                            
+                            {% if isTarifView %}
+                                <div class="position-absolute top-0 end-0 m-2 badge bg-primary fs-5 shadow">
+                                    {{ item.tarif }} €
+                                </div>
+                            {% endif %}
+                            
+                            <div class="card-img-overlay d-flex {{ (isSousCategorieView or isTarifView) ? 'align-items-end pb-3' : 'align-items-center' }} justify-content-center p-2">
+                                <h6 class="card-title mb-0 fw-bold text-white text-center" style="font-variant: small-caps; text-shadow: 0 0 4px rgba(0,0,0,0.9), 0 0 8px rgba(0,0,0,0.5);">{{ item.nom }}</h6>
+                            </div>
+                        </a>
+                    </div>
+                {% else %}
+                    <div class="col-12">
+                        <div class="alert alert-info">
+                            {% if isTarifView %}
+                                Aucun tarif disponible pour cette sous-catégorie.
+                            {% elseif isSousCategorieView %}
+                                Aucune sous-catégorie disponible pour cette catégorie.
+                            {% else %}
+                                Aucune catégorie de vente configurée.
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="col-3 border-start bg-light rounded shadow-sm">
+            <div class="sticky-top p-3" style="top: 20px; max-height: calc(100vh - 40px); display: flex; flex-direction: column;">
+                <h3 class="mb-3 text-center"><i class="fas fa-shopping-cart me-2"></i>Panier</h3>
+                
+                <div class="flex-grow-1 overflow-auto mb-3" style="min-height: 200px;">
+                     <div id="cart-items" class="list-group">
+                        <!-- Items will be added here -->
+                        <div id="empty-cart-msg" class="text-center text-muted mt-5">
+                            <i class="fas fa-shopping-basket fa-3x mb-3"></i>
+                            <p>Votre panier est vide</p>
+                        </div>
+                     </div>
+                </div>
+                
+                <div class="card bg-primary text-white mt-auto">
+                    <div class="card-body text-center">
+                        <h5 class="card-title">Total à payer</h5>
+                        <p class="card-text display-6 fw-bold mb-2" id="cart-total">0,00 €</p>
+                        <div class="mt-2 text-start">
+                            <label for="client-select" class="form-label mb-1 text-white-50">Client</label>
+                            <select id="client-select" placeholder="Rechercher un client..." autocomplete="off"></select>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="payment-actions" class="mt-3 d-none">
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-success btn-lg" onclick="validatePayment('CB')">
+                            <i class="fas fa-credit-card me-2"></i>CB
+                        </button>
+                        <button class="btn btn-warning btn-lg text-white" onclick="showCashInterface()">
+                            <i class="fas fa-money-bill-wave me-2"></i>Espèces
+                        </button>
+                        <button class="btn btn-info btn-lg text-white" onclick="validatePayment('Cheque')">
+                            <i class="fas fa-money-check me-2"></i>Chèque
+                        </button>
+                    </div>
+                </div>
+
+                <div id="cash-interface" class="card bg-warning text-white mt-3 d-none">
+                    <div class="card-body">
+                        <h5 class="card-title">Paiement Espèces</h5>
+                        <div class="mb-3">
+                            <label class="form-label">Montant perçu</label>
+                            <div class="input-group input-group-lg">
+                                <input type="number" id="cash-received" class="form-control" step="0.01" placeholder="0.00">
+                                <span class="input-group-text">€</span>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">A rendre</label>
+                            <div class="display-6 fw-bold" id="cash-change">0,00 €</div>
+                        </div>
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-light btn-lg fw-bold" onclick="validatePayment('Espece')">Valider</button>
+                            <button class="btn btn-outline-light" onclick="hideCashInterface()">Annuler</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let total = 0;
+        let currentClient = null;
+        let cartItems = [];
+        
+        function addToCart(id, name, price) {
+            const emptyMsg = document.getElementById('empty-cart-msg');
+            if (emptyMsg) {
+                emptyMsg.remove();
+            }
+
+            const priceNumber = parseFloat(price);
+            total += priceNumber;
+            
+            // Add to internal cart
+            const cartItem = {
+                id: id,
+                name: name,
+                price: priceNumber,
+                timestamp: Date.now()
+            };
+            cartItems.push(cartItem);
+            
+            document.getElementById('cart-total').textContent = total.toLocaleString('fr-FR', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' €';
+            
+            const itemsContainer = document.getElementById('cart-items');
+            const itemElement = document.createElement('div');
+            itemElement.className = 'list-group-item d-flex justify-content-between align-items-center mb-2 shadow-sm rounded border-0';
+            itemElement.dataset.price = priceNumber.toString();
+            itemElement.dataset.timestamp = cartItem.timestamp;
+            itemElement.innerHTML = `
+                <span class="text-truncate me-2" style="max-width: 60%;" title="${name}">${name}</span>
+                <span class="badge bg-primary rounded-pill">${priceNumber.toLocaleString('fr-FR', {minimumFractionDigits: 2, maximumFractionDigits: 2})} €</span>
+            `;
+            
+            itemElement.style.opacity = '0';
+            itemElement.style.transform = 'translateX(20px)';
+            itemElement.style.transition = 'all 0.3s ease';
+            
+            itemsContainer.appendChild(itemElement);
+            
+            itemElement.offsetHeight;
+            
+            itemElement.style.opacity = '1';
+            itemElement.style.transform = 'translateX(0)';
+            
+            const container = itemsContainer.parentElement;
+            container.scrollTop = container.scrollHeight;
+
+            itemElement.addEventListener('click', function () {
+                const priceValue = parseFloat(this.dataset.price || '0');
+                const timestamp = parseInt(this.dataset.timestamp || '0');
+                
+                total -= priceValue;
+                if (total < 0) {
+                    total = 0;
+                }
+                
+                // Remove from internal cart
+                const index = cartItems.findIndex(item => item.timestamp === timestamp);
+                if (index > -1) {
+                    cartItems.splice(index, 1);
+                }
+                
+                document.getElementById('cart-total').textContent = total.toLocaleString('fr-FR', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' €';
+
+                this.remove();
+
+                const containerItems = document.getElementById('cart-items');
+                if (!containerItems.querySelector('.list-group-item')) {
+                    const empty = document.createElement('div');
+                    empty.id = 'empty-cart-msg';
+                    empty.className = 'text-center text-muted mt-5';
+                    empty.innerHTML = `
+                        <i class="fas fa-shopping-basket fa-3x mb-3"></i>
+                        <p>Votre panier est vide</p>
+                    `;
+                    containerItems.appendChild(empty);
+                }
+                
+                checkPaymentVisibility();
+            });
+            
+            checkPaymentVisibility();
+        }
+
+        function checkPaymentVisibility() {
+            const paymentActions = document.getElementById('payment-actions');
+            const cashInterface = document.getElementById('cash-interface');
+            
+            // Si l'interface espèces est visible, on ne touche à rien sauf si conditions invalides
+            if (!cashInterface.classList.contains('d-none')) {
+                 if (total <= 0 || !currentClient) {
+                     hideCashInterface(); // Reset si conditions plus remplies
+                 }
+                 return;
+            }
+
+            if (total > 0 && currentClient) {
+                paymentActions.classList.remove('d-none');
+            } else {
+                paymentActions.classList.add('d-none');
+            }
+        }
+
+        function showCashInterface() {
+            document.getElementById('payment-actions').classList.add('d-none');
+            document.getElementById('cash-interface').classList.remove('d-none');
+            setTimeout(() => document.getElementById('cash-received').focus(), 100);
+        }
+
+        function hideCashInterface() {
+            document.getElementById('cash-interface').classList.add('d-none');
+            document.getElementById('payment-actions').classList.remove('d-none');
+            // Reset fields
+            document.getElementById('cash-received').value = '';
+            document.getElementById('cash-change').textContent = '0,00 €';
+            document.getElementById('cash-change').classList.remove('text-danger');
+        }
+
+        // Cash calculation
+        document.getElementById('cash-received').addEventListener('input', function() {
+            const received = parseFloat(this.value) || 0;
+            const change = received - total;
+            const changeElement = document.getElementById('cash-change');
+            
+            if (change >= 0) {
+                changeElement.textContent = change.toLocaleString('fr-FR', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' €';
+                changeElement.classList.remove('text-danger');
+            } else {
+                changeElement.textContent = "Manque " + Math.abs(change).toLocaleString('fr-FR', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' €';
+                changeElement.classList.add('text-danger');
+            }
+        });
+
+        function validatePayment(method) {
+            if (method === 'Espece') {
+                const received = parseFloat(document.getElementById('cash-received').value) || 0;
+                if (received < total) {
+                    alert('Le montant perçu est insuffisant.');
+                    return;
+                }
+            }
+
+            if (!currentClient) {
+                alert('Veuillez sélectionner un client.');
+                return;
+            }
+
+            // Send to server
+            fetch('{{ path('app_caisse_valider') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    client: currentClient,
+                    total: total,
+                    method: method,
+                    items: cartItems
+                })
+            }).then(response => {
+                if (response.ok) {
+                    // Success handling
+                    alert('Vente validée (' + method + ') !');
+                    location.reload(); 
+                } else {
+                    alert('Erreur lors de la validation.');
+                }
+            }).catch(err => {
+                console.error(err);
+                alert('Erreur de communication avec le serveur.');
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const clientSelect = document.getElementById('client-select');
+            if (clientSelect && typeof TomSelect !== 'undefined') {
+                new TomSelect('#client-select', {
+                    valueField: 'value',
+                    labelField: 'label',
+                    searchField: 'label',
+                    create: false,
+                    onChange: function(value) {
+                        currentClient = value;
+                        checkPaymentVisibility();
+                    },
+                    load: function (query, callback) {
+
+                        if (!query.length) {
+                            return callback();
+                        }
+                        const url = '{{ path('app_caisse_client_search') }}?q=' + encodeURIComponent(query);
+                        fetch(url, { headers: { 'Accept': 'application/json' } })
+                            .then(response => response.json())
+                            .then(json => callback(json))
+                            .catch(() => callback());
+                    }
+                });
+            }
+        });
+    </script>
+
+    <style>
+        .item-card {
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+            overflow: hidden;
+        }
+        .item-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+        }
+    </style>
+{% endblock %}

@@ -1,0 +1,53 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Confirmer votre réservation{% endblock %}
+
+{% block body %}
+<style>
+    .card-header-custom {
+        background-color: #a16877;
+        color: white;
+        font-weight: 600;
+    }
+    .btn-primary-custom {
+        background-color: #d3573b;
+        border-color: #d3573b;
+        color: white;
+    }
+    .btn-primary-custom:hover {
+        background-color: #b54631;
+        border-color: #b54631;
+    }
+</style>
+<div class="container mt-5">
+    <h1 style="color: #a16877;">Confirmer votre réservation</h1>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-header card-header-custom">
+            Récapitulatif de votre réservation
+        </div>
+        <div class="card-body">
+            <p><strong>Date :</strong> {{ date|date('d/m/Y') }}</p>
+            <p><strong>Heure :</strong> {{ heure }}</p>
+            <p><strong>Durée totale :</strong> {{ duree }} minutes</p>
+            <p><strong>Prestations :</strong></p>
+            <ul>
+                {% for tarif in tarifs %}
+                    <li>{{ tarif.nom }} ({{ tarif.dureeMinutes }} min) - {{ tarif.tarif }} €</li>
+                {% endfor %}
+            </ul>
+            <p class="h5 mt-3" style="color: #d3573b;"><strong>Prix total :</strong> {{ totalPrice }} €</p>
+        </div>
+    </div>
+
+    <div class="mt-4">
+        <h2 style="color: #a16877;">Vos informations</h2>
+        {{ form_start(form) }}
+            {{ form_widget(form) }}
+            <input type="hidden" name="creneau" value="{{ date }}_{{ heure }}">
+            <input type="hidden" name="prestations" value="{{ prestationsIds|join(',') }}">
+            <button type="submit" class="btn btn-primary-custom mt-3 btn-lg">Confirmer la réservation</button>
+        {{ form_end(form) }}
+    </div>
+</div>
+{% endblock %}

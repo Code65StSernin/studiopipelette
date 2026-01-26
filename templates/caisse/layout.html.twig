@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Caisse{% endblock %}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" rel="stylesheet">
+    <!-- Google Web Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+
+    <style>
+        body {
+            background-color: white;
+            margin: 0;
+            padding: 0;
+            font-family: 'Poppins', sans-serif;
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar Styling */
+        .sidebar {
+            width: 250px;
+            background-color: #1e3a8a; /* Dark Blue */
+            color: white;
+            display: flex;
+            flex-direction: column;
+            transition: width 0.3s ease;
+            overflow-x: hidden;
+            flex-shrink: 0;
+            min-height: 100vh;
+        }
+
+        .sidebar.collapsed {
+            width: 80px;
+        }
+
+        .menu-item {
+            display: flex;
+            align-items: center;
+            padding: 15px 20px;
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+            transition: background 0.2s;
+            white-space: nowrap;
+            cursor: pointer;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+        }
+
+        .menu-item:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .menu-item i.menu-icon {
+            min-width: 40px;
+            font-size: 1.2rem;
+            text-align: center;
+        }
+
+        .menu-text {
+            margin-left: 10px;
+            opacity: 1;
+            transition: opacity 0.2s;
+            flex-grow: 1;
+        }
+        
+        .arrow-icon {
+            font-size: 0.8rem;
+            transition: transform 0.3s;
+        }
+
+        .sidebar.collapsed .menu-text,
+        .sidebar.collapsed .arrow-icon {
+            opacity: 0;
+            width: 0;
+            display: none;
+        }
+
+        .toggle-btn {
+            margin-top: auto; /* Push to bottom */
+            background: rgba(0, 0, 0, 0.2);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Content Area */
+        .main-content {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        
+        /* Accordion Submenu Styles */
+        .submenu {
+            display: none;
+            background-color: #172554; /* Slightly darker blue */
+            flex-direction: column;
+        }
+        
+        .submenu.open {
+            display: flex;
+        }
+        
+        .submenu-item {
+            display: block;
+            padding: 12px 20px 12px 70px; /* Indented */
+            color: #dbeafe;
+            text-decoration: none;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: background 0.2s;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .submenu-item:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .sidebar.collapsed .submenu {
+            display: none !important;
+        }
+        
+        a { text-decoration: none; color: inherit; }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar" id="sidebar">
+        <a href="{{ path('app_home') }}" class="menu-item" style="background-color: rgba(0, 0, 0, 0.3);">
+            <i class="fas fa-arrow-left menu-icon"></i>
+            <span class="menu-text">Retour au site</span>
+        </a>
+        <a href="{{ path('app_vente_index') }}" class="menu-item" style="{% if app.request.get('_route') starts with 'app_vente_' %}background-color: rgba(255, 255, 255, 0.2);{% endif %}">
+            <i class="fas fa-shopping-cart menu-icon"></i>
+            <span class="menu-text">Ventes</span>
+        </a>
+        <a href="{{ path('app_client_index') }}" class="menu-item" style="{% if app.request.get('_route') starts with 'app_client_' %}background-color: rgba(255, 255, 255, 0.2);{% endif %}">
+            <i class="fas fa-users menu-icon"></i>
+            <span class="menu-text">Clients</span>
+        </a>
+        <a href="#" class="menu-item">
+            <i class="fas fa-box menu-icon"></i>
+            <span class="menu-text">Produits</span>
+        </a>
+        <a href="#" class="menu-item">
+            <i class="fas fa-calendar-alt menu-icon"></i>
+            <span class="menu-text">Planning</span>
+        </a>
+        <a href="{{ path('app_caisse') }}" class="menu-item" style="{% if app.request.get('_route') == 'app_caisse' %}background-color: rgba(255, 255, 255, 0.2);{% endif %}">
+            <i class="fas fa-cash-register menu-icon"></i>
+            <span class="menu-text">Caisse</span>
+        </a>
+        
+        <!-- Paramètres Accordion -->
+        <div class="menu-item" onclick="toggleSubmenu(this)">
+            <i class="fas fa-cogs menu-icon"></i>
+            <span class="menu-text">Paramètres</span>
+            <i class="fas fa-chevron-down arrow-icon"></i>
+        </div>
+        <div class="submenu {% if app.request.get('_route') starts with 'categorie_vente_' or app.request.get('_route') starts with 'sous_categorie_vente_' %}open{% endif %}">
+            <div class="submenu-item">Paramètres généraux</div>
+            <div class="submenu-item">Utilisateurs</div>
+            <div class="submenu-item">Impression</div>
+            <div class="submenu-item">Horaires</div>
+            <a href="{{ path('categorie_vente_index') }}" class="submenu-item" style="{% if app.request.get('_route') starts with 'categorie_vente_' %}background-color: rgba(255,255,255,0.1); color: white;{% endif %}">Catégories</a>
+            <a href="{{ path('sous_categorie_vente_index') }}" class="submenu-item" style="{% if app.request.get('_route') starts with 'sous_categorie_vente_' %}background-color: rgba(255,255,255,0.1); color: white;{% endif %}">Sous-catégories</a>
+        </div>
+
+        <div class="menu-item toggle-btn" onclick="toggleSidebar()">
+            <i class="fas fa-chevron-left menu-icon" id="toggle-icon"></i>
+            <span class="menu-text">Réduire</span>
+        </div>
+    </div>
+
+    <div class="main-content">
+        {% for message in app.flashes('success') %}
+            <div class="alert alert-success">
+                {{ message }}
+            </div>
+        {% endfor %}
+        {% block body %}
+        <!-- Content will go here -->
+        {% endblock %}
+    </div>
+
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const toggleIcon = document.getElementById('toggle-icon');
+            
+            sidebar.classList.toggle('collapsed');
+            
+            // Close submenus when collapsing
+            if (sidebar.classList.contains('collapsed')) {
+                toggleIcon.classList.remove('fa-chevron-left');
+                toggleIcon.classList.add('fa-chevron-right');
+                
+                // Close all open submenus
+                document.querySelectorAll('.submenu.open').forEach(el => {
+                    el.classList.remove('open');
+                });
+                document.querySelectorAll('.arrow-icon').forEach(el => {
+                    el.style.transform = 'rotate(0deg)';
+                });
+            } else {
+                toggleIcon.classList.remove('fa-chevron-right');
+                toggleIcon.classList.add('fa-chevron-left');
+            }
+        }
+
+        function toggleSubmenu(element) {
+            const sidebar = document.getElementById('sidebar');
+            if (sidebar.classList.contains('collapsed')) {
+                // If collapsed, expand sidebar first, then open submenu
+                toggleSidebar();
+            }
+
+            const submenu = element.nextElementSibling;
+            const arrow = element.querySelector('.arrow-icon');
+            
+            if (submenu && submenu.classList.contains('submenu')) {
+                submenu.classList.toggle('open');
+                if (submenu.classList.contains('open')) {
+                    arrow.style.transform = 'rotate(180deg)';
+                } else {
+                    arrow.style.transform = 'rotate(0deg)';
+                }
+            }
+        }
+    </script>
+</body>
+</html>

@@ -19,6 +19,10 @@ class SecurityController extends AbstractController
             return $this->redirectToRoute('app_home');
         }
 
+        if ($request->isMethod('GET')) {
+            return $this->redirectToRoute('app_home', ['login' => '1']);
+        }
+
         // Récupérer la dernière erreur de login (s'il y en a une)
         $error = $authenticationUtils->getLastAuthenticationError();
         // Dernier email saisi par l'utilisateur

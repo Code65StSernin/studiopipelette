@@ -59,6 +59,13 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     )]
     private ?string $prenom = null;
 
+    #[ORM\Column(length: 20, nullable: true)]
+    #[Assert\Length(
+        max: 20,
+        maxMessage: 'Le téléphone ne peut pas dépasser {{ limit }} caractères'
+    )]
+    private ?string $telephone = null;
+
     #[ORM\Column]
     private bool $isVerified = false;
 
@@ -103,6 +110,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     #[ORM\ManyToOne(inversedBy: 'users')]
     private ?BtoB $btoB = null;
+
+    #[ORM\Column(options: ['default' => false])]
+    private ?bool $clientDepotVente = false;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $image = null;
 
     public function __construct()
     {
@@ -201,6 +214,18 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
+    public function getTelephone(): ?string
+    {
+        return $this->telephone;
+    }
+
+    public function setTelephone(?string $telephone): static
+    {
+        $this->telephone = $telephone;
+
+        return $this;
+    }
+
     public function getBtoB(): ?BtoB
     {
         return $this->btoB;
@@ -209,6 +234,30 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setBtoB(?BtoB $btoB): static
     {
         $this->btoB = $btoB;
+
+        return $this;
+    }
+
+    public function isClientDepotVente(): ?bool
+    {
+        return $this->clientDepotVente;
+    }
+
+    public function setClientDepotVente(bool $clientDepotVente): static
+    {
+        $this->clientDepotVente = $clientDepotVente;
+
+        return $this;
+    }
+
+    public function getImage(): ?string
+    {
+        return $this->image;
+    }
+
+    public function setImage(?string $image): static
+    {
+        $this->image = $image;
 
         return $this;
     }

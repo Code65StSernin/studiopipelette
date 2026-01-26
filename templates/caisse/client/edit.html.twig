@@ -1,0 +1,13 @@
+{% extends 'caisse/layout.html.twig' %}
+
+{% block title %}Modifier le client{% endblock %}
+
+{% block body %}
+    <h1 class="mb-4">Modifier le client</h1>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            {{ include('caisse/client/_form.html.twig', {'button_label': 'Mettre à jour'}) }}
+        </div>
+    </div>
+{% endblock %}

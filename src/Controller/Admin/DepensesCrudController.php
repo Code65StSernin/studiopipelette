@@ -49,5 +49,8 @@ class DepensesCrudController extends AbstractCrudController
 
         yield BooleanField::new('pointage', 'Pointée')
             ->setHelp('Cocher lorsque la dépense est pointée en comptabilité.');
+
+        yield BooleanField::new('remboursementAnticipe', 'Remboursement anticipé')
+            ->setHelp('Cocher si cette dépense correspond à un remboursement anticipé du site.');
     }
 }

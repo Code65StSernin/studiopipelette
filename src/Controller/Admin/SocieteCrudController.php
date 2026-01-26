@@ -98,6 +98,7 @@ class SocieteCrudController extends AbstractCrudController
             ->setColumns(6);
         yield TextField::new('smtpPassword', 'Mot de passe SMTP')
             ->setColumns(6);
+
         yield TextField::new('smtpFromEmail', 'Email d\'expédition')
             ->setColumns(12);
 
@@ -112,6 +113,16 @@ class SocieteCrudController extends AbstractCrudController
         yield NumberField::new('pourcentageIr', 'Pourcentage IR (%)')
             ->setColumns(4)
             ->setHelp('Pourcentage d\'impôt sur le revenu à appliquer au CA');
+
+        // Onglet 7 : Etalement site
+        yield FormField::addTab('Etalement du site')->setIcon('fa fa-money-bill-wave');
+        yield NumberField::new('totalSite', 'Coût total du site (€)')
+            ->setNumDecimals(2)
+            ->setColumns(6);
+        yield NumberField::new('pourcentageMensuel', 'Pourcentage mensuel (%)')
+            ->setNumDecimals(2)
+            ->setColumns(6)
+            ->setHelp('Pourcentage du CA port compris prélevé chaque mois pour le remboursement');
     }
 }
 

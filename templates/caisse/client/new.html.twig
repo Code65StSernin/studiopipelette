@@ -1,0 +1,13 @@
+{% extends 'caisse/layout.html.twig' %}
+
+{% block title %}Nouveau client{% endblock %}
+
+{% block body %}
+    <h1 class="mb-4">Nouveau client</h1>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            {{ include('caisse/client/_form.html.twig') }}
+        </div>
+    </div>
+{% endblock %}

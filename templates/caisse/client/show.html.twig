@@ -1,0 +1,114 @@
+{% extends 'caisse/layout.html.twig' %}
+
+{% block title %}Fiche Client : {{ client.nom }} {{ client.prenom }}{% endblock %}
+
+{% block body %}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>{{ client.nom }} {{ client.prenom }}</h1>
+        <div>
+            <a href="{{ path('app_client_edit', {'id': client.id}) }}" class="btn btn-primary">
+                <i class="fas fa-edit"></i> Modifier
+            </a>
+            <a href="{{ path('app_client_index') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Retour
+            </a>
+        </div>
+    </div>
+
+    <div class="card mb-4 shadow-sm">
+        <div class="card-body">
+            <h5 class="card-title">Informations</h5>
+            <p class="card-text">
+                <strong>Email :</strong> {{ client.email }}<br>
+                <strong>Téléphone :</strong> {{ client.telephone|default('Non renseigné') }}<br>
+                <strong>Date de création :</strong> {{ client.createdAt ? client.createdAt|date('d/m/Y H:i') : 'N/A' }}
+            </p>
+        </div>
+    </div>
+
+    <div class="row">
+        {# Achats Caisse #}
+        <div class="col-md-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-cash-register"></i> Achats Caisse</h5>
+                </div>
+                <div class="card-body">
+                    {% if ventes.getTotalItemCount > 0 %}
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Montant</th>
+                                        <th>Paiement</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for vente in ventes %}
+                                        <tr>
+                                            <td>{{ vente.dateVente|date('d/m/Y H:i') }}</td>
+                                            <td>{{ vente.montantTotal|number_format(2, ',', ' ') }} €</td>
+                                            <td>{{ vente.modePaiement }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="navigation mt-2">
+                            {{ knp_pagination_render(ventes) }}
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center my-3">Aucun achat en caisse.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        {# Achats Boutique #}
+        <div class="col-md-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-shopping-cart"></i> Achats Boutique</h5>
+                </div>
+                <div class="card-body">
+                    {% if orders.getTotalItemCount > 0 %}
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Montant</th>
+                                        <th>Statut</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for order in orders %}
+                                        <tr>
+                                            <td>{{ order.createdAt|date('d/m/Y H:i') }}</td>
+                                            <td>{{ (order.amountTotalCents / 100)|number_format(2, ',', ' ') }} €</td>
+                                            <td>
+                                                {% if order.status == 'paid' %}
+                                                    <span class="badge bg-success">Payé</span>
+                                                {% elseif order.status == 'pending' %}
+                                                    <span class="badge bg-warning text-dark">En attente</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">{{ order.status }}</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="navigation mt-2">
+                            {{ knp_pagination_render(orders) }}
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center my-3">Aucun achat en boutique.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

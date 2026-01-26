@@ -13,6 +13,7 @@ use EasyCorp\Bundle\EasyAdminBundle\Field\DateTimeField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\EmailField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\IdField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\TextField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\ImageField;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 class UserCrudController extends AbstractCrudController
@@ -43,6 +44,13 @@ class UserCrudController extends AbstractCrudController
         yield EmailField::new('email', 'Email');
         yield TextField::new('nom', 'Nom');
         yield TextField::new('prenom', 'Prénom');
+        yield TextField::new('telephone', 'Téléphone');
+        yield BooleanField::new('clientDepotVente', 'Client Dépôt-Vente');
+        yield ImageField::new('image', 'Photo de profil')
+            ->setBasePath('uploads/users')
+            ->setUploadDir('public/uploads/users')
+            ->setUploadedFileNamePattern('[randomhash].[extension]')
+            ->setRequired(false);
         yield AssociationField::new('btoB', 'Client BtoB')
             ->setHelp('Associer cet utilisateur à un client BtoB (optionnel)');
         yield ArrayField::new('roles', 'Rôles');

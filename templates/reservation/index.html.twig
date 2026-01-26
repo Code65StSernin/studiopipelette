@@ -1,0 +1,149 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Réservation - Choix des prestations{% endblock %}
+
+{% block content_right %}
+    <style>
+        .prestation-item { cursor: pointer; transition: background-color 0.2s; }
+        .prestation-item:hover { background-color: #f8f9fa; }
+        .prestation-item.selected { background-color: #fff0f3; border-left: 4px solid #d4807e !important; }
+        .text-primary-custom { color: #d4807e !important; }
+        .btn-primary-custom {
+            background-color: #d3573b;
+            border-color: #d3573b;
+            color: white;
+        }
+        .btn-primary-custom:hover {
+            background-color: #b04630;
+            border-color: #b04630;
+            color: white;
+        }
+        .section-title span {
+            background-color: #a16877; /* Parme */
+            color: white;
+            padding: 5px 15px;
+        }
+        
+        /* Sticky Footer Styles */
+        #sticky-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: rgba(255, 255, 255, 0.98);
+            box-shadow: 0 -4px 12px rgba(0,0,0,0.1);
+            padding: 20px 0;
+            z-index: 1050; /* Above most things */
+            transform: translateY(100%);
+            transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+            border-top: 1px solid #eee;
+        }
+        #sticky-footer.visible {
+            transform: translateY(0);
+        }
+        /* Extra padding at bottom of page so content isn't hidden */
+        .tarif-page { padding-bottom: 120px; }
+    </style>
+
+    <div class="tarif-page container-fluid py-4">
+        <div class="container">
+            <h1 class="section-title text-uppercase text-center mb-5"><span class="pr-3">Réserver en ligne</span></h1>
+
+            <p class="lead text-muted text-center mb-5">Choisissez une ou plusieurs prestations ci-dessous, puis cliquez sur <strong>Suivant</strong> pour sélectionner la date et l'horaire.</p>
+
+            <form id="prestations-form" method="post" action="{{ path('app_reservation_creneaux') }}">
+                <div class="list-group mb-4 shadow-sm">
+                    {% for t in tarifs %}
+                        <label class="list-group-item d-flex justify-content-between align-items-center prestation-item border-left-0 border-right-0 rounded-0 py-4">
+                            <div class="d-flex align-items-center">
+                                <input type="checkbox" name="prestations[]" value="{{ t.id }}" class="prestation-cb form-check-input me-3 ml-2" style="transform: scale(1.2);">
+                                <div class="pl-5">
+                                    <div class="h5 mb-1 text-dark">{{ t.nom }}</div>
+                                    <div class="small text-muted"><i class="far fa-clock text-primary-custom mr-1"></i> {{ t.dureeMinutes }}min · <span class="font-weight-bold text-primary-custom">{{ t.tarif }} €</span></div>
+                                </div>
+                            </div>
+                        </label>
+                    {% else %}
+                        <div class="alert alert-secondary">Aucun tarif disponible.</div>
+                    {% endfor %}
+                </div>
+
+                <div class="d-flex justify-content-end">
+                    <button type="submit" class="btn btn-primary-custom btn-lg px-5">Suivant</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Sticky Footer HTML -->
+    <div id="sticky-footer">
+        <div class="container d-flex justify-content-between align-items-center">
+            <div class="font-weight-bold text-dark">
+                <span id="selected-count" class="text-primary-custom h4 mr-2">0</span> prestation(s) sélectionnée(s)
+            </div>
+            <button type="button" class="btn btn-primary-custom btn-lg px-5 shadow" id="sticky-submit-btn">
+                Suivant <i class="fas fa-arrow-right ml-2"></i>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function(){
+            const checkboxes = document.querySelectorAll('.prestation-cb');
+            const stickyFooter = document.getElementById('sticky-footer');
+            const selectedCountSpan = document.getElementById('selected-count');
+            const stickyBtn = document.getElementById('sticky-submit-btn');
+            const form = document.getElementById('prestations-form');
+            const mainSubmitBtn = form ? form.querySelector('button[type="submit"]') : null;
+
+            function updateState() {
+                let count = 0;
+                checkboxes.forEach(function(cb){
+                    const label = cb.closest('.prestation-item');
+                    if (cb.checked) {
+                        label.classList.add('selected');
+                        count++;
+                    } else {
+                        label.classList.remove('selected');
+                    }
+                });
+
+                if (selectedCountSpan) selectedCountSpan.textContent = count;
+                
+                if (stickyFooter) {
+                    if (count > 0) {
+                        stickyFooter.classList.add('visible');
+                    } else {
+                        stickyFooter.classList.remove('visible');
+                    }
+                }
+            }
+
+            checkboxes.forEach(function(cb){
+                cb.addEventListener('change', updateState);
+            });
+            
+            // Initial check
+            updateState();
+
+            // Sticky button click triggers form submit
+            if (stickyBtn && mainSubmitBtn) {
+                stickyBtn.addEventListener('click', function() {
+                    // Click the real submit button to trigger existing listeners (like login check)
+                    mainSubmitBtn.click();
+                });
+            }
+
+            // Si l'utilisateur n'est pas connecté, on intercepte la soumission pour ouvrir la modale
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    {% if not app.user %}
+                        e.preventDefault();
+                        $('#loginModal').modal('show');
+                    {% endif %}
+                });
+            }
+        });
+    </script>
+
+{% endblock %}

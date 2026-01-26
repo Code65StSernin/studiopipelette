@@ -107,27 +107,53 @@
 
         <div class="row mb-2">
             <div class="col-md-12 d-flex justify-content-between align-items-end">
-                <!-- Charges calculées -->
-                <div class="d-flex flex-wrap align-items-end">
-                    <div class="form-group mb-2 mr-3 px-1">
-                        <label class="mr-2 mb-0 text-white-50" for="chargesSociales">Charges sociales (URSSAF + CPF) :</label>
-                        <input id="chargesSociales" type="text" class="form-control form-control-sm bg-dark text-white border-secondary" 
-                               value="{{ stats.chargesSociales|number_format(2, ',', ' ') }} €" readonly style="min-width: 180px;">
+                <div class="d-flex flex-column">
+                    <!-- Charges calculées -->
+                    <div class="d-flex flex-wrap align-items-end">
+                        <div class="form-group mb-2 mr-3 px-1">
+                            <label class="mr-2 mb-0 text-white-50" for="chargesSociales">Charges sociales (URSSAF + CPF) :</label>
+                            <input id="chargesSociales" type="text" class="form-control form-control-sm bg-dark text-white border-secondary" 
+                                   value="{{ stats.chargesSociales|number_format(2, ',', ' ') }} €" readonly style="min-width: 180px;">
+                        </div>
+                        <div class="form-group mb-2 mr-3 px-1">
+                            <label class="mr-2 mb-0 text-white-50" for="impotRevenu">Impôt sur le revenu :</label>
+                            <input id="impotRevenu" type="text" class="form-control form-control-sm bg-dark text-white border-secondary" 
+                                   value="{{ stats.impotRevenu|number_format(2, ',', ' ') }} €" readonly style="min-width: 180px;">
+                        </div>
+                        <div class="form-group mb-2 mr-3 px-1">
+                            <label class="mr-2 mb-0 text-white-50" for="chargesAPayer"><strong>Charges à payer :</strong></label>
+                            <input id="chargesAPayer" type="text" class="form-control form-control-sm bg-dark text-white border-warning" 
+                                   value="{{ stats.chargesAPayer|number_format(2, ',', ' ') }} €" readonly style="min-width: 180px; font-weight: bold;">
+                        </div>
+                        <div class="form-group mb-2 mr-3 px-1">
+                            <label class="mr-2 mb-0 text-white-50" for="fraisPaiementCb">Frais paiement CB :</label>
+                            <input id="fraisPaiementCb" type="text" class="form-control form-control-sm bg-dark text-white border-secondary" 
+                                   value="{{ stats.fraisPaiementCb|number_format(2, ',', ' ') }} €" readonly style="min-width: 180px;">
+                        </div>
                     </div>
-                    <div class="form-group mb-2 mr-3 px-1">
-                        <label class="mr-2 mb-0 text-white-50" for="impotRevenu">Impôt sur le revenu :</label>
-                        <input id="impotRevenu" type="text" class="form-control form-control-sm bg-dark text-white border-secondary" 
-                               value="{{ stats.impotRevenu|number_format(2, ',', ' ') }} €" readonly style="min-width: 180px;">
-                    </div>
-                    <div class="form-group mb-2 mr-3 px-1">
-                        <label class="mr-2 mb-0 text-white-50" for="chargesAPayer"><strong>Charges à payer :</strong></label>
-                        <input id="chargesAPayer" type="text" class="form-control form-control-sm bg-dark text-white border-warning" 
-                               value="{{ stats.chargesAPayer|number_format(2, ',', ' ') }} €" readonly style="min-width: 180px; font-weight: bold;">
-                    </div>
-                    <div class="form-group mb-2 mr-3 px-1">
-                        <label class="mr-2 mb-0 text-white-50" for="fraisPaiementCb">Frais paiement CB :</label>
-                        <input id="fraisPaiementCb" type="text" class="form-control form-control-sm bg-dark text-white border-secondary" 
-                               value="{{ stats.fraisPaiementCb|number_format(2, ',', ' ') }} €" readonly style="min-width: 180px;">
+
+                    <!-- Etalement site -->
+                    <div class="d-flex flex-wrap align-items-end mt-2">
+                        <div class="form-group mb-2 mr-3 px-1">
+                            <label class="mr-2 mb-0 text-white-50" for="totalSite">Coût total site :</label>
+                            <input id="totalSite" type="text" class="form-control form-control-sm bg-dark text-white border-secondary" 
+                                   value="{{ stats.totalSite|number_format(2, ',', ' ') }} €" readonly style="min-width: 140px;">
+                        </div>
+                        <div class="form-group mb-2 mr-3 px-1">
+                            <label class="mr-2 mb-0 text-white-50" for="montantRemboursement">Remboursement (période) :</label>
+                            <input id="montantRemboursement" type="text" class="form-control form-control-sm bg-dark text-white border-secondary" 
+                                   value="{{ stats.montantRemboursement|number_format(2, ',', ' ') }} €" readonly style="min-width: 140px;">
+                        </div>
+                        <div class="form-group mb-2 mr-3 px-1">
+                            <label class="mr-2 mb-0 text-white-50" for="totalRembourse">Total remboursé :</label>
+                            <input id="totalRembourse" type="text" class="form-control form-control-sm bg-dark text-white border-secondary" 
+                                   value="{{ stats.totalRembourse|number_format(2, ',', ' ') }} €" readonly style="min-width: 140px;">
+                        </div>
+                        <div class="form-group mb-2 mr-3 px-1">
+                            <label class="mr-2 mb-0 text-white-50" for="resteARegler"><strong>Reste à régler :</strong></label>
+                            <input id="resteARegler" type="text" class="form-control form-control-sm bg-dark text-white border-warning" 
+                                   value="{{ stats.resteARegler|number_format(2, ',', ' ') }} €" readonly style="min-width: 140px; font-weight: bold;">
+                        </div>
                     </div>
                 </div>
 

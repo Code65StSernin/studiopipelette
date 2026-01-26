@@ -28,9 +28,13 @@ class BtoB
     #[ORM\JoinTable(name: 'btob_categorie')]
     private Collection $categories;
 
+    #[ORM\OneToMany(mappedBy: 'btoB', targetEntity: User::class)]
+    private Collection $users;
+
     public function __construct()
     {
         $this->categories = new ArrayCollection();
+        $this->users = new ArrayCollection();
     }
 
     public function getId(): ?int

@@ -60,5 +60,9 @@ class SocieteConfig
     public function getPourcentageUrssaf(): ?float { return $this->get()?->getPourcentageUrssaf(); }
     public function getPourcentageCpf(): ?float    { return $this->get()?->getPourcentageCpf(); }
     public function getPourcentageIr(): ?float     { return $this->get()?->getPourcentageIr(); }
+
+    // Etalement site
+    public function getTotalSite(): ?float         { return $this->get()?->getTotalSite(); }
+    public function getPourcentageMensuel(): ?float { return $this->get()?->getPourcentageMensuel(); }
 }
 
