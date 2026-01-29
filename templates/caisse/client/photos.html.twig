@@ -1,0 +1,45 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Photos de {{ client.prenom }} {{ client.nom }}{% endblock %}
+
+{% block body %}
+    <div class="container mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>Photos de {{ client.prenom }} {{ client.nom }}</h1>
+            <a href="{{ path('app_client_show', {'id': client.id}) }}" class="btn btn-secondary">Retour à la fiche</a>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">Ajouter des photos</div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="photos" class="form-label">Sélectionner des photos</label>
+                        <input type="file" class="form-control" id="photos" name="photos[]" multiple accept="image/*">
+                    </div>
+                    <button type="submit" class="btn btn-primary">Uploader</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="row row-cols-1 row-cols-md-3 row-cols-lg-4 g-4">
+            {% for photo in client.photos %}
+                <div class="col">
+                    <div class="card h-100">
+                        <img src="{{ asset('assets/img/clients/thumbnails/' ~ client.id ~ '/' ~ photo.filename) }}" class="card-img-top" alt="Photo client">
+                        <div class="card-body text-center">
+                            <form method="post" action="{{ path('app_client_photo_delete', {'id': photo.id}) }}" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette photo ?');">
+                                <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ photo.id) }}">
+                                <button class="btn btn-danger btn-sm">Supprimer</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            {% else %}
+                <div class="col-12">
+                    <div class="alert alert-info">Aucune photo pour ce client.</div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+{% endblock %}

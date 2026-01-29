@@ -7,14 +7,15 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Attribute\Route;
+use App\Service\SocieteConfig;
 
 class CaisseSecurityController extends AbstractController
 {
     #[Route('/caisse/login-pin', name: 'app_caisse_login_pin')]
-    public function loginPin(Request $request): Response
+    public function loginPin(Request $request, SocieteConfig $societeConfig): Response
     {
-        // Si déjà validé, on redirige (sauf si AJAX où on renvoie succès)
-        if ($request->getSession()->get('caisse_pin_validated')) {
+        // Si GET et déjà validé, on redirige (sauf si AJAX où on renvoie succès)
+        if ($request->isMethod('GET') && $request->getSession()->get('caisse_pin_validated')) {
             if ($request->isXmlHttpRequest()) {
                 return new JsonResponse(['success' => true]);
             }
@@ -24,11 +25,14 @@ class CaisseSecurityController extends AbstractController
         $error = null;
 
         if ($request->isMethod('POST')) {
-            $pin = $request->request->get('pin');
+            // Sécurise: on invalide systématiquement la session avant vérification
+            $session = $request->getSession();
+            $session->remove('caisse_pin_validated');
+            $pin = trim((string)$request->request->get('pin'));
             
-            // Code PIN en dur : 1234
-            if ($pin === '1234') {
-                $request->getSession()->set('caisse_pin_validated', true);
+            // Vérification du code PIN via configuration
+            if ($pin !== '' && hash_equals($societeConfig->getAdminPin(), $pin)) {
+                $session->set('caisse_pin_validated', true);
                 
                 if ($request->isXmlHttpRequest()) {
                     return new JsonResponse(['success' => true]);
@@ -50,5 +54,18 @@ class CaisseSecurityController extends AbstractController
         return $this->render('security/login_pin.html.twig', [
             'error' => $error,
         ]);
+    }
+
+    #[Route('/caisse/check-pin', name: 'app_caisse_check_pin', methods: ['POST'])]
+    public function checkPin(Request $request, SocieteConfig $societeConfig): JsonResponse
+    {
+        $data = json_decode($request->getContent(), true);
+        $pin = isset($data['pin']) ? trim((string)$data['pin']) : '';
+
+        if ($pin !== '' && hash_equals($societeConfig->getAdminPin(), $pin)) {
+            return new JsonResponse(['success' => true]);
+        }
+
+        return new JsonResponse(['success' => false], 403);
     }
 }

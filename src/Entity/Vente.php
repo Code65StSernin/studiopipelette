@@ -29,6 +29,9 @@ class Vente
     #[ORM\Column(length: 20)]
     private ?string $modePaiement = null;
 
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    private ?string $commentaire = null;
+
     #[ORM\OneToMany(mappedBy: 'vente', targetEntity: LigneVente::class, orphanRemoval: true, cascade: ['persist'])]
     private Collection $ligneVentes;
 
@@ -87,6 +90,18 @@ class Vente
     public function setModePaiement(string $modePaiement): self
     {
         $this->modePaiement = $modePaiement;
+
+        return $this;
+    }
+
+    public function getCommentaire(): ?string
+    {
+        return $this->commentaire;
+    }
+
+    public function setCommentaire(?string $commentaire): self
+    {
+        $this->commentaire = $commentaire;
 
         return $this;
     }

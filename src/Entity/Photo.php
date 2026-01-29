@@ -24,9 +24,12 @@ class Photo
     private ?string $type = 'image';
 
     #[ORM\ManyToOne(targetEntity: Article::class, inversedBy: 'photos')]
-    #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
-    #[Assert\NotBlank(message: 'L\'article est obligatoire')]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'CASCADE')]
     private ?Article $article = null;
+
+    #[ORM\ManyToOne(targetEntity: User::class, inversedBy: 'photos')]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'CASCADE')]
+    private ?User $client = null;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
     private ?\DateTimeInterface $createdAt = null;
@@ -65,6 +68,18 @@ class Photo
         return $this;
     }
 
+    public function getClient(): ?User
+    {
+        return $this->client;
+    }
+
+    public function setClient(?User $client): static
+    {
+        $this->client = $client;
+
+        return $this;
+    }
+
     public function getCreatedAt(): ?\DateTimeInterface
     {
         return $this->createdAt;
@@ -82,7 +97,12 @@ class Photo
      */
     public function getImagePath(): string
     {
-        return '/assets/img/articles/' . $this->article->getId() . '/' . $this->filename;
+        if ($this->article) {
+            return '/assets/img/articles/' . $this->article->getId() . '/' . $this->filename;
+        } elseif ($this->client) {
+            return '/assets/img/clients/' . $this->client->getId() . '/' . $this->filename;
+        }
+        return '';
     }
 
     /**
@@ -90,7 +110,12 @@ class Photo
      */
     public function getThumbnailPath(): string
     {
-        return '/assets/img/articles/thumbnails/' . $this->article->getId() . '/' . $this->filename;
+        if ($this->article) {
+            return '/assets/img/articles/thumbnails/' . $this->article->getId() . '/' . $this->filename;
+        } elseif ($this->client) {
+            return '/assets/img/clients/thumbnails/' . $this->client->getId() . '/' . $this->filename;
+        }
+        return '';
     }
 
     public function getType(): ?string
@@ -120,7 +145,10 @@ class Photo
      */
     public function getVideoPath(): string
     {
-        return '/assets/videos/articles/' . $this->article->getId() . '/' . $this->filename;
+        if ($this->article) {
+            return '/assets/videos/articles/' . $this->article->getId() . '/' . $this->filename;
+        }
+        return '';
     }
 
     public function __toString(): string

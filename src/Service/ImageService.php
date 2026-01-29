@@ -9,12 +9,16 @@ class ImageService
     private string $projectDir;
     private string $uploadDir;
     private string $thumbnailDir;
+    private string $clientUploadDir;
+    private string $clientThumbnailDir;
 
     public function __construct(string $projectDir)
     {
         $this->projectDir = $projectDir;
         $this->uploadDir = $projectDir . '/public/assets/img/articles';
         $this->thumbnailDir = $projectDir . '/public/assets/img/articles/thumbnails';
+        $this->clientUploadDir = $projectDir . '/public/assets/img/clients';
+        $this->clientThumbnailDir = $projectDir . '/public/assets/img/clients/thumbnails';
         
         // Créer les répertoires s'ils n'existent pas
         if (!is_dir($this->uploadDir)) {
@@ -22,6 +26,12 @@ class ImageService
         }
         if (!is_dir($this->thumbnailDir)) {
             mkdir($this->thumbnailDir, 0777, true);
+        }
+        if (!is_dir($this->clientUploadDir)) {
+            mkdir($this->clientUploadDir, 0777, true);
+        }
+        if (!is_dir($this->clientThumbnailDir)) {
+            mkdir($this->clientThumbnailDir, 0777, true);
         }
     }
 
@@ -78,6 +88,142 @@ class ImageService
     }
 
     /**
+     * Upload et redimensionne une photo client (1500x1500 max)
+     * @param UploadedFile $file
+     * @param int $clientId
+     * @return string Nom du fichier uploadé
+     */
+    public function uploadClientPhoto(UploadedFile $file, int $clientId): string
+    {
+        // Augmenter la mémoire temporairement pour les grosses images
+        ini_set('memory_limit', '256M');
+
+        // Créer les répertoires pour ce client
+        $clientDir = $this->clientUploadDir . '/' . $clientId;
+        // On utilise aussi un dossier thumbnail pour l'affichage liste si besoin
+        $clientThumbnailDir = $this->clientThumbnailDir . '/' . $clientId;
+        
+        if (!is_dir($clientDir)) {
+            mkdir($clientDir, 0777, true);
+        }
+        if (!is_dir($clientThumbnailDir)) {
+            mkdir($clientThumbnailDir, 0777, true);
+        }
+        
+        // Générer un nom unique
+        $filename = uniqid() . '_' . time() . '.' . $file->guessExtension();
+        
+        // Charger l'image source
+        try {
+            $sourceImage = $this->loadImage($file->getPathname(), $file->getMimeType());
+        } catch (\Exception $e) {
+            throw new \Exception('Erreur lors du chargement de l\'image : ' . $e->getMessage());
+        }
+        
+        if (!$sourceImage) {
+            throw new \Exception('Format d\'image non supporté ou fichier corrompu. MimeType: ' . $file->getMimeType());
+        }
+        
+        // Redimensionner à 1500x1500 max (homothétie)
+        try {
+            $resizedImage = $this->resizeImageInside($sourceImage, 1500, 1500);
+            
+            // Sauvegarder l'image redimensionnée
+            $this->saveImage($resizedImage, $clientDir . '/' . $filename);
+            
+            // Créer la miniature 300x300 (carrée pour l'admin/liste)
+            $thumbnail = $this->resizeImage($sourceImage, 300, 300);
+            $this->saveImage($thumbnail, $clientThumbnailDir . '/' . $filename);
+            
+            // Libérer la mémoire
+            imagedestroy($sourceImage);
+            imagedestroy($resizedImage);
+            imagedestroy($thumbnail);
+        } catch (\Exception $e) {
+            // Nettoyage en cas d'erreur
+            if (isset($sourceImage) && $sourceImage instanceof \GdImage) imagedestroy($sourceImage);
+            if (isset($resizedImage) && $resizedImage instanceof \GdImage) imagedestroy($resizedImage);
+            if (isset($thumbnail) && $thumbnail instanceof \GdImage) imagedestroy($thumbnail);
+            throw new \Exception('Erreur lors du redimensionnement : ' . $e->getMessage());
+        }
+        
+        return $filename;
+    }
+
+    /**
+     * Pivote une photo client de 90 degrés (sens horaire)
+     */
+    public function rotateClientPhoto(string $filename, int $clientId): void
+    {
+        $imagePath = $this->clientUploadDir . '/' . $clientId . '/' . $filename;
+        if (!file_exists($imagePath)) {
+            throw new \Exception("Fichier non trouvé : $imagePath");
+        }
+
+        $extension = strtolower(pathinfo($imagePath, PATHINFO_EXTENSION));
+        $mimeType = match ($extension) {
+            'jpg', 'jpeg' => 'image/jpeg',
+            'png' => 'image/png',
+            'gif' => 'image/gif',
+            'webp' => 'image/webp',
+            default => null
+        };
+
+        if (!$mimeType) {
+            throw new \Exception("Type de fichier non supporté pour la rotation");
+        }
+        
+        $source = $this->loadImage($imagePath, $mimeType);
+        if (!$source) {
+             throw new \Exception("Impossible de charger l'image : $imagePath");
+        }
+
+        // -90 pour 90 degrés sens horaire (imagerotate tourne en sens anti-horaire)
+        // On utilise une couleur transparente pour le fond (utile pour PNG/WebP)
+        $transparent = imagecolorallocatealpha($source, 0, 0, 0, 127);
+        $rotated = imagerotate($source, -90, $transparent);
+        
+        // Préserver la transparence
+        imagealphablending($rotated, false);
+        imagesavealpha($rotated, true);
+        
+        // Sauvegarder l'image pivotée (écrase l'originale)
+        $this->saveImage($rotated, $imagePath);
+        
+        // Mettre à jour la miniature
+        $thumbnailPath = $this->clientThumbnailDir . '/' . $clientId . '/' . $filename;
+        
+        // On régénère la miniature à partir de l'image DÉJÀ pivotée
+        // On utilise resizeImage qui fait un crop carré centré
+        $thumbnail = $this->resizeImage($rotated, 300, 300);
+        $this->saveImage($thumbnail, $thumbnailPath);
+
+        imagedestroy($source);
+        imagedestroy($rotated);
+        imagedestroy($thumbnail);
+    }
+
+    /**
+     * Supprime une photo client
+     */
+    public function deleteClientPhoto(string $filename, int $clientId): bool
+    {
+        $deleted = true;
+        
+        $imagePath = $this->clientUploadDir . '/' . $clientId . '/' . $filename;
+        if (file_exists($imagePath)) {
+            $deleted = unlink($imagePath) && $deleted;
+        }
+        
+        $thumbnailPath = $this->clientThumbnailDir . '/' . $clientId . '/' . $filename;
+        if (file_exists($thumbnailPath)) {
+            $deleted = unlink($thumbnailPath) && $deleted;
+        }
+        
+        return $deleted;
+    }
+
+    /**
      * Charge une image depuis un fichier
      */
     private function loadImage(string $path, ?string $mimeType): \GdImage|false
@@ -89,6 +235,45 @@ class ImageService
             'image/webp' => imagecreatefromwebp($path),
             default => false,
         };
+    }
+
+    /**
+     * Redimensionne une image en respectant les proportions (fit inside)
+     * L'image résultante aura au maximum maxWidth x maxHeight
+     */
+    private function resizeImageInside(\GdImage $source, int $maxWidth, int $maxHeight): \GdImage
+    {
+        $srcWidth = imagesx($source);
+        $srcHeight = imagesy($source);
+        
+        // Calculer le ratio pour que l'image tienne DANS la boite
+        $ratio = min($maxWidth / $srcWidth, $maxHeight / $srcHeight);
+        
+        // Si l'image est plus petite que la cible, on garde la taille d'origine (ou on upscale si on veut forcer, ici on garde)
+        if ($ratio > 1) {
+            $ratio = 1;
+        }
+        
+        $newWidth = (int)($srcWidth * $ratio);
+        $newHeight = (int)($srcHeight * $ratio);
+        
+        $final = imagecreatetruecolor($newWidth, $newHeight);
+        
+        // Préserver la transparence
+        imagealphablending($final, false);
+        imagesavealpha($final, true);
+        $transparent = imagecolorallocatealpha($final, 255, 255, 255, 127);
+        imagefilledrectangle($final, 0, 0, $newWidth, $newHeight, $transparent);
+        
+        // Redimensionner
+        imagecopyresampled(
+            $final, $source,
+            0, 0, 0, 0,
+            $newWidth, $newHeight,
+            $srcWidth, $srcHeight
+        );
+        
+        return $final;
     }
 
     /**

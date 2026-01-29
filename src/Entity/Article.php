@@ -8,6 +8,7 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Component\Validator\Context\ExecutionContextInterface;
 
 #[ORM\Entity(repositoryClass: ArticleRepository::class)]
 #[ORM\HasLifecycleCallbacks]
@@ -88,8 +89,7 @@ class Article
     private Collection $photos;
 
     #[ORM\ManyToOne(targetEntity: Categorie::class, inversedBy: 'articles')]
-    #[ORM\JoinColumn(nullable: false)]
-    #[Assert\NotNull(message: 'La catégorie est obligatoire')]
+    #[ORM\JoinColumn(nullable: true)]
     private ?Categorie $categorie = null;
 
     #[ORM\ManyToOne(targetEntity: SousCategorie::class, inversedBy: 'articles')]
@@ -101,6 +101,12 @@ class Article
 
     #[ORM\Column(length: 20)]
     private ?string $visibilite = self::VISIBILITY_BOTH;
+
+    #[ORM\ManyToOne(targetEntity: User::class)]
+    private ?User $fournisseur = null;
+
+    #[ORM\Column(length: 13, unique: true, nullable: true)]
+    private ?string $gencod = null;
 
     public const VISIBILITY_ONLINE = 'online';
     public const VISIBILITY_SHOP = 'shop';
@@ -125,6 +131,18 @@ class Article
     public function setUpdatedAtValue(): void
     {
         $this->updatedAt = new \DateTime();
+    }
+
+    #[Assert\Callback]
+    public function validate(ExecutionContextInterface $context, $payload): void
+    {
+        // La catégorie est obligatoire SAUF si visibilité est "En boutique" (shop)
+        // Donc si visibilité est "online" ou "both", categorie ne doit pas être null
+        if ($this->visibilite !== self::VISIBILITY_SHOP && $this->categorie === null) {
+            $context->buildViolation('La catégorie est obligatoire pour les articles visibles en ligne (ou "Les deux").')
+                ->atPath('categorie')
+                ->addViolation();
+        }
     }
 
     public function getId(): ?int
@@ -346,6 +364,29 @@ class Article
     public function setVisibilite(string $visibilite): static
     {
         $this->visibilite = $visibilite;
+
+        return $this;
+    }
+
+    public function getFournisseur(): ?User
+    {
+        return $this->fournisseur;
+    }
+
+    public function setFournisseur(?User $fournisseur): static
+    {
+        $this->fournisseur = $fournisseur;
+        return $this;
+    }
+
+    public function getGencod(): ?string
+    {
+        return $this->gencod;
+    }
+
+    public function setGencod(?string $gencod): static
+    {
+        $this->gencod = $gencod;
 
         return $this;
     }

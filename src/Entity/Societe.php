@@ -105,6 +105,9 @@ class Societe
     #[ORM\Column(type: 'float', nullable: true)]
     private ?float $pourcentageMensuel = null;
 
+    #[ORM\Column(length: 10, nullable: true)]
+    private ?string $adminPin = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -454,6 +457,18 @@ class Societe
     public function setPourcentageMensuel(?float $pourcentageMensuel): self
     {
         $this->pourcentageMensuel = $pourcentageMensuel;
+
+        return $this;
+    }
+
+    public function getAdminPin(): ?string
+    {
+        return $this->adminPin;
+    }
+
+    public function setAdminPin(?string $adminPin): self
+    {
+        $this->adminPin = $adminPin;
 
         return $this;
     }

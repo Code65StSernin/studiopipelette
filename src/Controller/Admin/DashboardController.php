@@ -11,6 +11,7 @@ use App\Entity\UnavailabilityRule;
 use App\Entity\Calendrier;
 use App\Entity\Order;
 use App\Entity\BtoB;
+use App\Entity\DepotVente;
 use App\Entity\Categorie;
 use App\Entity\Couleur;
 use App\Entity\ArticleCollection;
@@ -522,6 +523,7 @@ class DashboardController extends AbstractDashboardController
         yield MenuItem::linkToCrud('Offres', 'fa fa-bullhorn', Offre::class);
         yield MenuItem::linkToCrud('Codes promo', 'fa fa-percent', Code::class);
         yield MenuItem::linkToCrud('BtoB', 'fa fa-briefcase', BtoB::class);
+        yield MenuItem::linkToCrud('Dépôt-vente', 'fa fa-handshake', DepotVente::class);
         yield MenuItem::subMenu('Comptabilité', 'fa fa-coins')->setSubItems([
             MenuItem::linkToCrud('Dépenses', 'fa fa-money-bill-wave', Depenses::class),
             MenuItem::linkToCrud('Recettes', 'fa fa-wallet', Recette::class),

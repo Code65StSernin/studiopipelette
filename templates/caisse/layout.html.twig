@@ -148,7 +148,7 @@
             <i class="fas fa-box menu-icon"></i>
             <span class="menu-text">Produits</span>
         </a>
-        <a href="#" class="menu-item">
+        <a href="{{ path('app_caisse_planning') }}" class="menu-item" style="{% if app.request.get('_route') == 'app_caisse_planning' %}background-color: rgba(255, 255, 255, 0.2);{% endif %}">
             <i class="fas fa-calendar-alt menu-icon"></i>
             <span class="menu-text">Planning</span>
         </a>
@@ -163,13 +163,28 @@
             <span class="menu-text">Paramètres</span>
             <i class="fas fa-chevron-down arrow-icon"></i>
         </div>
-        <div class="submenu {% if app.request.get('_route') starts with 'categorie_vente_' or app.request.get('_route') starts with 'sous_categorie_vente_' %}open{% endif %}">
-            <div class="submenu-item">Paramètres généraux</div>
+        <div class="submenu {% if app.request.get('_route') starts with 'categorie_vente_' or app.request.get('_route') starts with 'sous_categorie_vente_' or app.request.get('_route') == 'app_caisse_parametres_generaux' %}open{% endif %}">
+            <a href="{{ path('app_caisse_parametres_generaux') }}" class="submenu-item" style="{% if app.request.get('_route') == 'app_caisse_parametres_generaux' %}background-color: rgba(255,255,255,0.1); color: white;{% endif %}">Paramètres généraux</a>
             <div class="submenu-item">Utilisateurs</div>
             <div class="submenu-item">Impression</div>
             <div class="submenu-item">Horaires</div>
             <a href="{{ path('categorie_vente_index') }}" class="submenu-item" style="{% if app.request.get('_route') starts with 'categorie_vente_' %}background-color: rgba(255,255,255,0.1); color: white;{% endif %}">Catégories</a>
             <a href="{{ path('sous_categorie_vente_index') }}" class="submenu-item" style="{% if app.request.get('_route') starts with 'sous_categorie_vente_' %}background-color: rgba(255,255,255,0.1); color: white;{% endif %}">Sous-catégories</a>
+        </div>
+
+        <!-- Journaux Accordion -->
+        <div class="menu-item" onclick="toggleSubmenu(this)">
+            <i class="fas fa-book menu-icon"></i>
+            <span class="menu-text">Journaux</span>
+            <i class="fas fa-chevron-down arrow-icon"></i>
+        </div>
+        <div class="submenu">
+            <div class="submenu-item" onclick="ouvrirReouvertureCaisseModal(event)">Réouverture caisse</div>
+            {% if isCaisseClosed is not defined or not isCaisseClosed %}
+                <div class="submenu-item" onclick="ouvrirXCaisse(event)">X de caisse</div>
+            {% endif %}
+            <div class="submenu-item" onclick="ouvrirZCaisse(event)">Z de caisse</div>
+            <div class="submenu-item" onclick="ouvrirRemiseBanqueModal(event)">Remise en banque</div>
         </div>
 
         <div class="menu-item toggle-btn" onclick="toggleSidebar()">
@@ -189,7 +204,207 @@
         {% endblock %}
     </div>
 
+    <!-- Modal Fond de caisse -->
+    <div class="modal fade" id="fondCaisseModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Ouverture de caisse</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <p class="small text-muted mb-2">Montant du fond de caisse pour aujourd&apos;hui :</p>
+            <div class="input-group">
+                <input type="number" id="fondCaisseInput" class="form-control text-end" step="0.01" min="0" placeholder="0,00">
+                <span class="input-group-text">€</span>
+            </div>
+            <div id="fondCaisseError" class="text-danger small mt-2 d-none">Montant invalide</div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-primary w-100" id="fondCaisseConfirmBtn">Enregistrer</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Remise en banque -->
+    <div class="modal fade" id="remiseBanqueModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Remise en banque</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <p class="small text-muted mb-2">Saisissez les quantités prélevées pour chaque valeur :</p>
+            <div class="table-responsive">
+                <table class="table table-sm align-middle">
+                    <thead>
+                        <tr>
+                            <th>Valeur</th>
+                            <th class="text-end">Quantité</th>
+                            <th class="text-end">Montant</th>
+                        </tr>
+                    </thead>
+                    <tbody id="remiseBanqueBody">
+                        {% set valeurs = [0.01, 0.02, 0.05, 0.10, 0.20, 0.50, 1, 2, 5, 10, 20, 50, 100, 200, 500] %}
+                        {% for valeur in valeurs %}
+                            <tr>
+                                <td>{{ valeur|number_format(2, ',', ' ') }} €</td>
+                                <td class="text-end">
+                                    <input type="number"
+                                           class="form-control form-control-sm text-end remise-quantite"
+                                           min="0"
+                                           step="1"
+                                           value="0"
+                                           data-valeur="{{ valeur }}">
+                                </td>
+                                <td class="text-end remise-montant">0,00 €</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr class="fw-bold">
+                            <td class="text-end" colspan="2">Total remise</td>
+                            <td class="text-end" id="remiseBanqueTotal">0,00 €</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+            <div id="remiseBanqueError" class="text-danger small mt-2 d-none">Le total de la remise doit être supérieur à 0.</div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-primary w-100" id="remiseBanqueConfirmBtn">Enregistrer la remise</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Clôture de caisse -->
+    <div class="modal fade" id="clotureCaisseModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Clôture de caisse</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <p class="small text-muted mb-2">Saisissez le montant réel en caisse pour la clôture (sera le fond de caisse de demain) :</p>
+            <div class="input-group">
+                <input type="number" id="clotureCaisseInput" class="form-control text-end" step="0.01" min="0" placeholder="0,00">
+                <span class="input-group-text">€</span>
+            </div>
+            <div id="clotureCaisseError" class="text-danger small mt-2 d-none">Montant invalide</div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-primary w-100" id="clotureCaisseConfirmBtn">Valider et Clôturer</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Réouverture de caisse -->
+    <div class="modal fade" id="reouvertureCaisseModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Réouverture Caisse</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <p class="small text-muted mb-2">Saisissez le code PIN administrateur pour réouvrir la caisse :</p>
+            <div class="mb-3">
+                <input type="password" id="reouverturePinInput" class="form-control text-center" placeholder="Code PIN" maxlength="4">
+            </div>
+            <div id="reouvertureError" class="text-danger small mt-2 d-none">Code PIN incorrect</div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-danger w-100" id="reouvertureConfirmBtn">Valider</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Check if caisse is open (injected from controller)
+            const currentRoute = '{{ app.request.get("_route") }}';
+            const isCaisseOpen = {{ isCaisseOpen is defined and isCaisseOpen ? 'true' : 'false' }};
+            const isCaisseClosed = {{ isCaisseClosed is defined and isCaisseClosed ? 'true' : 'false' }};
+            const montantPrecedent = {{ montantPrecedent is defined ? montantPrecedent : 0 }};
+
+            if (currentRoute === 'app_caisse') {
+                if (!isCaisseOpen && !isCaisseClosed) {
+                    ouvrirFondCaisseModal(null, montantPrecedent);
+                }
+                
+                if (isCaisseClosed) {
+                    // Disable interface or show notification
+                    const container = document.querySelector('.main-content');
+                    if (container) {
+                        const alert = document.createElement('div');
+                        alert.className = 'alert alert-warning mb-4';
+                        alert.innerHTML = '<i class="fas fa-lock me-2"></i><strong>Caisse fermée</strong> : La journée est clôturée, aucune nouvelle vente n\'est possible.';
+                        container.insertBefore(alert, container.firstChild);
+                    }
+                    
+                    // Disable validation buttons if any exist
+                    const validateBtns = document.querySelectorAll('.btn-valider-panier'); // Assuming class name
+                    validateBtns.forEach(btn => btn.disabled = true);
+                }
+            }
+
+            const fondBtn = document.getElementById('fondCaisseConfirmBtn');
+            if (fondBtn) {
+                fondBtn.addEventListener('click', enregistrerFondCaisse);
+            }
+
+            const fondInput = document.getElementById('fondCaisseInput');
+            if (fondInput) {
+                fondInput.addEventListener('keypress', function (e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        enregistrerFondCaisse();
+                    }
+                });
+            }
+
+            const remiseBtn = document.getElementById('remiseBanqueConfirmBtn');
+            if (remiseBtn) {
+                remiseBtn.addEventListener('click', enregistrerRemiseBanque);
+            }
+
+            const clotureBtn = document.getElementById('clotureCaisseConfirmBtn');
+            if (clotureBtn) {
+                clotureBtn.addEventListener('click', enregistrerClotureCaisse);
+            }
+
+            const clotureInput = document.getElementById('clotureCaisseInput');
+            if (clotureInput) {
+                clotureInput.addEventListener('keypress', function (e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        enregistrerClotureCaisse();
+                    }
+                });
+            }
+
+            const reouvertureBtn = document.getElementById('reouvertureConfirmBtn');
+            if (reouvertureBtn) {
+                reouvertureBtn.addEventListener('click', validerReouvertureCaisse);
+            }
+
+            const reouvertureInput = document.getElementById('reouverturePinInput');
+            if (reouvertureInput) {
+                reouvertureInput.addEventListener('keypress', function (e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        validerReouvertureCaisse();
+                    }
+                });
+            }
+        });
+
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
             const toggleIcon = document.getElementById('toggle-icon');
@@ -232,6 +447,379 @@
                     arrow.style.transform = 'rotate(0deg)';
                 }
             }
+        }
+
+        function ouvrirFondCaisseModal(event, montantParDefaut = null) {
+            if (event) {
+                event.stopPropagation();
+            }
+
+            const modalEl = document.getElementById('fondCaisseModal');
+            // If already open or initializing, prevent double init if possible, 
+            // but bootstrap handles this.
+            
+            const modal = new bootstrap.Modal(modalEl, {
+                backdrop: 'static', // Force user to interact
+                keyboard: false
+            });
+            
+            const input = document.getElementById('fondCaisseInput');
+            const errorEl = document.getElementById('fondCaisseError');
+
+            if (input) {
+                if (montantParDefaut !== null) {
+                    input.value = parseFloat(montantParDefaut).toFixed(2).replace('.', ',');
+                } else {
+                    input.value = '';
+                }
+            }
+
+            if (errorEl) {
+                errorEl.classList.add('d-none');
+            }
+
+            modal.show();
+
+            modalEl.addEventListener('shown.bs.modal', function () {
+                if (input) {
+                    input.focus();
+                }
+            }, { once: true });
+        }
+
+        function enregistrerFondCaisse() {
+            const input = document.getElementById('fondCaisseInput');
+            const errorEl = document.getElementById('fondCaisseError');
+
+            if (!input) {
+                return;
+            }
+
+            const value = parseFloat(input.value.replace(',', '.'));
+
+            if (isNaN(value) || value < 0) {
+                if (errorEl) {
+                    errorEl.classList.remove('d-none');
+                }
+                return;
+            }
+
+            if (errorEl) {
+                errorEl.classList.add('d-none');
+            }
+
+            fetch('{{ path("app_caisse_fond_caisse") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ montant: value })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        const modalEl = document.getElementById('fondCaisseModal');
+                        const modal = bootstrap.Modal.getInstance(modalEl);
+                        if (modal) {
+                            modal.hide();
+                        }
+                        alert('Fond de caisse enregistré.');
+                    } else {
+                        if (errorEl) {
+                            errorEl.textContent = data.message || 'Erreur lors de l\'enregistrement.';
+                            errorEl.classList.remove('d-none');
+                        }
+                    }
+                })
+                .catch(() => {
+                    if (errorEl) {
+                        errorEl.textContent = 'Erreur réseau lors de l\'enregistrement.';
+                        errorEl.classList.remove('d-none');
+                    }
+                });
+        }
+
+        function ouvrirXCaisse(event) {
+            if (event) {
+                event.stopPropagation();
+            }
+            window.open('{{ path("app_caisse_x") }}', '_blank');
+        }
+
+        function ouvrirZCaisse(event) {
+            if (event) {
+                event.stopPropagation();
+            }
+            
+            // Open modal instead of direct PDF
+            const modalEl = document.getElementById('clotureCaisseModal');
+            const modal = new bootstrap.Modal(modalEl);
+            const input = document.getElementById('clotureCaisseInput');
+            const errorEl = document.getElementById('clotureCaisseError');
+
+            if (input) {
+                input.value = '';
+            }
+            if (errorEl) {
+                errorEl.classList.add('d-none');
+            }
+
+            modal.show();
+            
+            modalEl.addEventListener('shown.bs.modal', function () {
+                if (input) {
+                    input.focus();
+                }
+            }, { once: true });
+        }
+
+        function enregistrerClotureCaisse() {
+            const input = document.getElementById('clotureCaisseInput');
+            const errorEl = document.getElementById('clotureCaisseError');
+
+            if (!input) {
+                return;
+            }
+
+            const value = parseFloat(input.value.replace(',', '.'));
+
+            if (isNaN(value) || value < 0) {
+                if (errorEl) {
+                    errorEl.classList.remove('d-none');
+                }
+                return;
+            }
+
+            if (errorEl) {
+                errorEl.classList.add('d-none');
+            }
+
+            fetch('{{ path("app_caisse_cloturer") }}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ montant: value })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        const modalEl = document.getElementById('clotureCaisseModal');
+                        const modal = bootstrap.Modal.getInstance(modalEl);
+                        if (modal) {
+                            modal.hide();
+                        }
+                        // Open Z PDF
+                        window.open('{{ path("app_caisse_z") }}', '_blank');
+                        
+                        // Reload page to reflect closed state
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1000);
+                    } else {
+                        if (errorEl) {
+                            errorEl.textContent = data.message || 'Erreur lors de la clôture.';
+                            errorEl.classList.remove('d-none');
+                        }
+                    }
+                })
+                .catch(() => {
+                    if (errorEl) {
+                        errorEl.textContent = 'Erreur réseau.';
+                        errorEl.classList.remove('d-none');
+                    }
+                });
+        }
+
+        function recalculerRemiseBanque() {
+            const lignes = document.querySelectorAll('#remiseBanqueBody tr');
+            let total = 0;
+
+            lignes.forEach(function (ligne) {
+                const input = ligne.querySelector('.remise-quantite');
+                const cellMontant = ligne.querySelector('.remise-montant');
+
+                if (!input || !cellMontant) {
+                    return;
+                }
+
+                const valeur = parseFloat(input.getAttribute('data-valeur')) || 0;
+                const quantite = parseInt(input.value || '0', 10) || 0;
+                const montant = valeur * quantite;
+
+                total += montant;
+                cellMontant.textContent = montant.toFixed(2).replace('.', ',') + ' €';
+            });
+
+            const totalEl = document.getElementById('remiseBanqueTotal');
+            if (totalEl) {
+                totalEl.textContent = total.toFixed(2).replace('.', ',') + ' €';
+            }
+
+            return total;
+        }
+
+        function initialiserRemiseBanqueInputs() {
+            const inputs = document.querySelectorAll('.remise-quantite');
+            inputs.forEach(function (input) {
+                input.addEventListener('input', function () {
+                    recalculerRemiseBanque();
+                });
+            });
+        }
+
+        function ouvrirRemiseBanqueModal(event) {
+            if (event) {
+                event.stopPropagation();
+            }
+
+            const modalEl = document.getElementById('remiseBanqueModal');
+            const modal = new bootstrap.Modal(modalEl);
+            const errorEl = document.getElementById('remiseBanqueError');
+
+            const inputs = document.querySelectorAll('.remise-quantite');
+            inputs.forEach(function (input) {
+                input.value = '0';
+            });
+
+            recalculerRemiseBanque();
+
+            if (errorEl) {
+                errorEl.classList.add('d-none');
+            }
+
+            modal.show();
+
+            if (!modalEl.dataset.initialisedRemise) {
+                initialiserRemiseBanqueInputs();
+                modalEl.dataset.initialisedRemise = '1';
+            }
+        }
+
+        function enregistrerRemiseBanque() {
+            const errorEl = document.getElementById('remiseBanqueError');
+            const lignes = document.querySelectorAll('#remiseBanqueBody tr');
+            const total = recalculerRemiseBanque();
+
+            if (total <= 0) {
+                if (errorEl) {
+                    errorEl.classList.remove('d-none');
+                }
+                return;
+            }
+
+            const details = [];
+            lignes.forEach(function (ligne) {
+                const input = ligne.querySelector('.remise-quantite');
+                if (!input) {
+                    return;
+                }
+                const valeur = parseFloat(input.getAttribute('data-valeur')) || 0;
+                const quantite = parseInt(input.value || '0', 10) || 0;
+
+                if (quantite > 0) {
+                    details.push({
+                        valeur: valeur,
+                        quantite: quantite
+                    });
+                }
+            });
+
+            fetch('{{ path("app_caisse_remise_banque") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ total: total, details: details })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        const modalEl = document.getElementById('remiseBanqueModal');
+                        const modal = bootstrap.Modal.getInstance(modalEl);
+                        if (modal) {
+                            modal.hide();
+                        }
+                        alert('Remise en banque enregistrée.');
+                    } else {
+                        if (errorEl) {
+                            errorEl.textContent = data.message || 'Erreur lors de l\'enregistrement.';
+                            errorEl.classList.remove('d-none');
+                        }
+                    }
+                })
+                .catch(() => {
+                    if (errorEl) {
+                        errorEl.textContent = 'Erreur réseau lors de l\'enregistrement.';
+                        errorEl.classList.remove('d-none');
+                    }
+                });
+        }
+
+        function ouvrirReouvertureCaisseModal(event) {
+            if (event) {
+                event.stopPropagation();
+            }
+
+            const modalEl = document.getElementById('reouvertureCaisseModal');
+            const modal = new bootstrap.Modal(modalEl);
+            const input = document.getElementById('reouverturePinInput');
+            const errorEl = document.getElementById('reouvertureError');
+
+            if (input) {
+                input.value = '';
+            }
+            if (errorEl) {
+                errorEl.classList.add('d-none');
+            }
+
+            modal.show();
+
+            modalEl.addEventListener('shown.bs.modal', function () {
+                if (input) {
+                    input.focus();
+                }
+            }, { once: true });
+        }
+
+        function validerReouvertureCaisse() {
+            const input = document.getElementById('reouverturePinInput');
+            const errorEl = document.getElementById('reouvertureError');
+
+            if (!input) {
+                return;
+            }
+
+            const pin = input.value;
+
+            if (pin.length < 1) {
+                if (errorEl) {
+                    errorEl.textContent = 'Veuillez saisir le code PIN';
+                    errorEl.classList.remove('d-none');
+                }
+                return;
+            }
+
+            fetch('{{ path("app_caisse_reouvrir") }}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ pin: pin })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        window.location.reload();
+                    } else {
+                        if (errorEl) {
+                            errorEl.textContent = data.message || 'Erreur lors de la réouverture.';
+                            errorEl.classList.remove('d-none');
+                        }
+                    }
+                })
+                .catch(() => {
+                    if (errorEl) {
+                        errorEl.textContent = 'Erreur réseau.';
+                        errorEl.classList.remove('d-none');
+                    }
+                });
         }
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>

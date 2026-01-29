@@ -4,6 +4,7 @@ namespace App\Controller\Admin;
 
 use App\Entity\Article;
 use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\ORM\QueryBuilder;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Action;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Actions;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Crud;
@@ -43,6 +44,12 @@ class ArticleCrudController extends AbstractCrudController
         }
         $this->validateTaillesJson($entityInstance);
         parent::persistEntity($entityManager, $entityInstance);
+
+        // Génération du Gencod après persistence (besoin de l'ID)
+        if ($entityInstance instanceof Article && !$entityInstance->getGencod()) {
+            $this->generateGencod($entityInstance);
+            $entityManager->flush();
+        }
     }
     
     public function updateEntity($entityManager, $entityInstance): void
@@ -53,6 +60,12 @@ class ArticleCrudController extends AbstractCrudController
         }
         $this->validateTaillesJson($entityInstance);
         parent::updateEntity($entityManager, $entityInstance);
+        
+        // Si le Gencod est manquant (anciens articles), on le génère
+        if ($entityInstance instanceof Article && !$entityInstance->getGencod()) {
+            $this->generateGencod($entityInstance);
+            $entityManager->flush();
+        }
     }
     
     private function validateTaillesJson($article): void
@@ -123,9 +136,15 @@ class ArticleCrudController extends AbstractCrudController
         yield TextField::new('nom', 'Nom de l\'article')
             ->setHelp('Nom complet du produit')
             ->setColumns(12);
+            
+        yield TextField::new('gencod', 'Gencod (EAN13)')
+            ->setFormTypeOption('disabled', true)
+            ->setHelp('Généré automatiquement à la création (3009765 + ID + Clé)')
+            ->setColumns(12);
+
         yield AssociationField::new('categorie', 'Catégorie')
-            ->setHelp('Catégorie principale de l\'article (obligatoire)')
-            ->setRequired(true)
+            ->setHelp('Catégorie principale (obligatoire sauf si visibilité "En boutique")')
+            ->setRequired(false)
             ->setColumns(6);
         yield AssociationField::new('sousCategorie', 'Sous-catégorie')
             ->setHelp('Sous-catégorie de l\'article (optionnel)')
@@ -200,7 +219,17 @@ class ArticleCrudController extends AbstractCrudController
             ->setHelp('Paragraphe associé au sous-titre')
             ->setColumns(12);
         
-        // ONGLET 5 : Informations système (uniquement en édition)
+        // ONGLET 5 : Dépôt-vente
+        yield FormField::addTab('Dépôt-vente')->setIcon('fa fa-handshake');
+        yield AssociationField::new('fournisseur', 'Fournisseur')
+            ->setHelp('Sélectionnez un fournisseur (client dépôt-vente)')
+            ->setQueryBuilder(function (QueryBuilder $queryBuilder) {
+                return $queryBuilder->andWhere('entity.clientDepotVente = :isClientDepotVente')
+                    ->setParameter('isClientDepotVente', true);
+            })
+            ->setColumns(12);
+
+        // ONGLET 6 : Informations système (uniquement en édition)
         if ($pageName === Crud::PAGE_EDIT) {
             yield FormField::addTab('Informations système')->setIcon('fa fa-clock');
             yield DateTimeField::new('createdAt', 'Créé le')
@@ -210,6 +239,40 @@ class ArticleCrudController extends AbstractCrudController
                 ->setFormTypeOption('disabled', true)
                 ->setColumns(6);
         }
+    }
+
+    private function generateGencod(Article $article): void
+    {
+        $id = $article->getId();
+        if (!$id) {
+            return;
+        }
+
+        // 300 + 9765 + ID sur 5 chiffres
+        $prefix = '3009765';
+        $paddedId = str_pad((string)$id, 5, '0', STR_PAD_LEFT);
+        $base = $prefix . $paddedId; // 12 digits
+
+        // Calcul de la clé de contrôle EAN13
+        $sumOdd = 0;
+        $sumEven = 0;
+
+        for ($i = 0; $i < 12; $i++) {
+            $digit = (int)$base[$i];
+            // Position impair (1er, 3e...) -> Index pair (0, 2...)
+            if (($i + 1) % 2 !== 0) {
+                $sumOdd += $digit;
+            } else {
+                // Position pair (2e, 4e...) -> Index impair (1, 3...)
+                $sumEven += $digit;
+            }
+        }
+
+        $total = $sumOdd + ($sumEven * 3);
+        $nextTen = ceil($total / 10) * 10;
+        $checkDigit = $nextTen - $total;
+
+        $article->setGencod($base . $checkDigit);
     }
 
     public function duplicateArticle(
@@ -239,6 +302,7 @@ class ArticleCrudController extends AbstractCrudController
         $newArticle->setSousTitre($article->getSousTitre());
         $newArticle->setSousTitreContenu($article->getSousTitreContenu());
         $newArticle->setVisibilite($article->getVisibilite());
+        $newArticle->setFournisseur($article->getFournisseur());
         $newArticle->setActif(false); // Par défaut inactif
         
         // Copier les relations ManyToMany
@@ -252,6 +316,10 @@ class ArticleCrudController extends AbstractCrudController
         // Note: Les photos ne sont PAS dupliquées (nécessiterait de copier les fichiers physiques)
         
         $entityManager->persist($newArticle);
+        $entityManager->flush();
+        
+        // Générer le Gencod pour la copie
+        $this->generateGencod($newArticle);
         $entityManager->flush();
         
         $this->addFlash('success', 'Article dupliqué avec succès ! (Les photos ne sont pas dupliquées)');

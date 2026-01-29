@@ -18,6 +18,11 @@
                         <input type="date" class="form-control" id="end_date" name="end_date" value="{{ endDate }}">
                     </div>
                     <div class="col-md-2">
+                        <button type="button" id="btn-today" class="btn btn-outline-primary w-100">
+                            <i class="fas fa-calendar-day me-2"></i>Aujourd'hui
+                        </button>
+                    </div>
+                    <div class="col-md-2">
                         <button type="submit" class="btn btn-primary w-100">
                             <i class="fas fa-filter me-2"></i>Filtrer
                         </button>
@@ -30,6 +35,142 @@
                 </form>
             </div>
         </div>
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                var btn = document.getElementById('btn-today');
+                var startInput = document.getElementById('start_date');
+                var endInput = document.getElementById('end_date');
+                var form = btn ? btn.closest('form') : null;
+                if (btn && startInput && endInput && form) {
+                    btn.addEventListener('click', function() {
+                        var today = new Date();
+                        var y = today.getFullYear();
+                        var m = String(today.getMonth() + 1).padStart(2, '0');
+                        var d = String(today.getDate()).padStart(2, '0');
+                        var iso = y + '-' + m + '-' + d;
+                        startInput.value = iso;
+                        endInput.value = iso;
+                        form.submit();
+                    });
+                }
+            });
+        </script>
+
+        <!-- Modal Annulation -->
+        <div class="modal fade" id="annulationModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Annuler la vente</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="annulationForm" onsubmit="event.preventDefault(); submitAnnulation();">
+                            <input type="hidden" id="annulationVenteId">
+                            <div class="mb-3">
+                                <label for="annulationMontant" class="form-label">Montant à annuler</label>
+                                <div class="input-group">
+                                    <input type="number" step="0.01" class="form-control" id="annulationMontant" required>
+                                    <span class="input-group-text">€</span>
+                                </div>
+                                <div class="form-text">Par défaut le montant de la vente, mais modifiable.</div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="annulationMotif" class="form-label">Motif</label>
+                                <textarea class="form-control" id="annulationMotif" rows="3" required placeholder="Ex: Avoir, erreur de saisie..."></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label for="annulationPin" class="form-label">Code PIN Administrateur</label>
+                                <input type="password" class="form-control" id="annulationPin" required maxlength="4" pattern="\d{4}" inputmode="numeric" autocomplete="off">
+                            </div>
+                            <div id="annulationError" class="alert alert-danger d-none"></div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                        <button type="button" class="btn btn-danger" onclick="submitAnnulation()">Valider l'annulation</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            var annulationModal;
+            
+            document.addEventListener('DOMContentLoaded', function() {
+                var modalEl = document.getElementById('annulationModal');
+                if (modalEl) {
+                    annulationModal = new bootstrap.Modal(modalEl);
+                    modalEl.addEventListener('shown.bs.modal', function () {
+                        document.getElementById('annulationPin').focus();
+                    });
+                }
+            });
+
+            function openAnnulationModal(id, montant) {
+                document.getElementById('annulationVenteId').value = id;
+                document.getElementById('annulationMontant').value = montant;
+                document.getElementById('annulationMotif').value = '';
+                document.getElementById('annulationPin').value = '';
+                document.getElementById('annulationError').classList.add('d-none');
+                document.getElementById('annulationError').textContent = '';
+                
+                if (annulationModal) {
+                    annulationModal.show();
+                }
+            }
+
+            function submitAnnulation() {
+                const id = document.getElementById('annulationVenteId').value;
+                const montant = document.getElementById('annulationMontant').value;
+                const motif = document.getElementById('annulationMotif').value;
+                const pin = document.getElementById('annulationPin').value;
+                const errorDiv = document.getElementById('annulationError');
+
+                if (!montant || !motif || !pin) {
+                    errorDiv.textContent = 'Tous les champs sont obligatoires.';
+                    errorDiv.classList.remove('d-none');
+                    return;
+                }
+
+                // Disable button to prevent double submit
+                const btn = document.querySelector('#annulationModal .btn-danger');
+                const originalText = btn.innerHTML;
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Traitement...';
+
+                fetch('/caisse/ventes/' + id + '/annuler', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({
+                        montant: montant,
+                        motif: motif,
+                        pin: pin
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        errorDiv.textContent = data.message || 'Une erreur est survenue';
+                        errorDiv.classList.remove('d-none');
+                        btn.disabled = false;
+                        btn.innerHTML = originalText;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    errorDiv.textContent = 'Une erreur de communication est survenue';
+                    errorDiv.classList.remove('d-none');
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                });
+            }
+        </script>
 
         <div class="card shadow-sm">
             <div class="card-body">
@@ -41,11 +182,35 @@
                                 <th>Client</th>
                                 <th>Mode Paiement</th>
                                 <th>Articles</th>
-                                <th class="text-end">Montant Total</th>
+                                <th class="text-end">Commission</th>
+                                <th class="text-end">Chiffre d'affaire</th>
+                                <th class="text-center">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for vente in ventes %}
+                                {% set totalCommission = 0 %}
+
+                                {% for ligne in vente.ligneVentes %}
+                                    {% set commissionRate = 0 %}
+                                    {% set isDepot = false %}
+                                    
+                                    {% if ligne.article and ligne.article.fournisseur and ligne.article.fournisseur.clientDepotVente %}
+                                        {% set isDepot = true %}
+                                        {% if ligne.article.fournisseur.depotVente %}
+                                            {% set commissionRate = ligne.article.fournisseur.depotVente.commission %}
+                                        {% endif %}
+                                    {% endif %}
+
+                                    {% if isDepot %}
+                                        {% set commissionAmount = ligne.prixUnitaire * ligne.quantite * commissionRate / 100 %}
+                                        {% set totalCommission = totalCommission + commissionAmount %}
+                                    {% else %}
+                                        {# Non-depot article (Shop stock) or Prestation: 100% commission #}
+                                        {% set totalCommission = totalCommission + (ligne.prixUnitaire * ligne.quantite) %}
+                                    {% endif %}
+                                {% endfor %}
+
                                 <tr>
                                     <td>{{ vente.dateVente|date('d/m/Y H:i') }}</td>
                                     <td>
@@ -70,19 +235,55 @@
                                             {% endfor %}
                                         </ul>
                                     </td>
+                                    <td class="text-end">
+                                        {{ totalCommission|number_format(2, ',', ' ') }} €
+                                    </td>
                                     <td class="text-end fw-bold">
                                         {{ vente.montantTotal|number_format(2, ',', ' ') }} €
+                                        {% if vente.commentaire %}
+                                            <br><small class="text-danger fst-italic">{{ vente.commentaire }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        {% if vente.montantTotal > 0 %}
+                                            <button type="button" class="btn btn-outline-danger btn-sm" onclick="openAnnulationModal({{ vente.id }}, {{ vente.montantTotal }})" title="Annuler cette vente">
+                                                <i class="fas fa-ban"></i>
+                                            </button>
+                                        {% endif %}
                                     </td>
                                 </tr>
                             {% else %}
                                 <tr>
-                                    <td colspan="5" class="text-center py-4 text-muted">
+                                    <td colspan="7" class="text-center py-4 text-muted">
                                         Aucune vente trouvée pour cette période.
                                     </td>
                                 </tr>
                             {% endfor %}
                         </tbody>
+                        <tfoot class="table-light fw-bold">
+                            <tr>
+                                <td colspan="4" class="text-end text-uppercase">Totaux</td>
+                                <td class="text-end">{{ globalTotalCommission|number_format(2, ',', ' ') }} €</td>
+                                <td class="text-end">{{ globalTotalMontantCaisse|number_format(2, ',', ' ') }} €</td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
                     </table>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                    <div class="text-muted small">
+                        Page {{ page }} / {{ pagesCount }} — {{ totalResults }} ventes
+                    </div>
+                    <nav>
+                        <ul class="pagination pagination-sm mb-0">
+                            <li class="page-item {{ page <= 1 ? 'disabled' : '' }}">
+                                <a class="page-link" href="{{ path('app_vente_index', {'page': page - 1, 'start_date': startDate, 'end_date': endDate}) }}">Précédent</a>
+                            </li>
+                            <li class="page-item {{ page >= pagesCount ? 'disabled' : '' }}">
+                                <a class="page-link" href="{{ path('app_vente_index', {'page': page + 1, 'start_date': startDate, 'end_date': endDate}) }}">Suivant</a>
+                            </li>
+                        </ul>
+                    </nav>
                 </div>
             </div>
         </div>

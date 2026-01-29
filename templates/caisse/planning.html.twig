@@ -1,0 +1,121 @@
+{% extends 'caisse/layout.html.twig' %}
+
+{% block title %}Caisse - Planning{% endblock %}
+
+{% block body %}
+    <style>
+        .section-title {
+            color: #d4807e;
+            border-bottom: 2px solid #d4807e;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+    </style>
+    <div class="container-fluid mt-4">
+        <h1 class="section-title">Planning</h1>
+        <div id="calendar" style="background: white; padding: 20px; border-radius: 8px;"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+    <script src="https://unpkg.com/@popperjs/core@2"></script>
+    <script src="https://unpkg.com/tippy.js@6"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var calendarEl = document.getElementById('calendar');
+            var calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'timeGridDay',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek,timeGridDay'
+                },
+                events: "{{ path('app_caisse_api_creneaux') }}",
+                locale: 'fr',
+                buttonText: {
+                    today:    'Aujourd\'hui',
+                    month:    'Mois',
+                    week:     'Semaine',
+                    day:      'Jour',
+                },
+                allDaySlot: false,
+                slotMinTime: '08:00:00',
+                slotMaxTime: '20:00:00',
+                height: 'auto',
+                nowIndicator: true,
+                eventContent: function(arg) {
+                    var props = arg.event.extendedProps || {};
+                    var title = arg.event.title || (props.clientName || '');
+                    var isReservation = props.type === 'reservation';
+                    var status = props.status || 'confirmed';
+                    var html = '<div class="fc-res-content" style="position:relative; padding-right:64px;">' +
+                               '<div>' + title + '</div>';
+                    if (isReservation && status === 'confirmed') {
+                        html += '<button class="btn btn-sm btn-warning fc-reserve-missed" ' +
+                                'style="position:absolute; top:4px; right:40px; z-index:5;" ' +
+                                'title="Marquer non honoré" ' +
+                                'data-id="' + (props.reservationId || '') + '">' +
+                                '<img src="/assets/img/lapin.png" alt="Lapin" style="width: 20px; height: 20px; vertical-align: middle;">' +
+                                '</button>';
+                        html += '<button class="btn btn-sm btn-primary fc-reserve-cart" ' +
+                                'style="position:absolute; top:4px; right:4px; z-index:5;" ' +
+                                'title="Ajouter au panier" ' +
+                                'data-client-email="' + (props.clientEmail || '') + '" ' +
+                                'data-prestations="' + ((props.prestations || []).join(',')) + '" ' +
+                                'data-id="' + (props.reservationId || '') + '">' +
+                                '<i class="fas fa-shopping-cart"></i></button>';
+                    }
+                    html += '</div>';
+                    return { html: html };
+                },
+                eventDidMount: function(info) {
+                    if (info.event.extendedProps.prestationsLabel) {
+                        tippy(info.el, {
+                            content: info.event.extendedProps.prestationsLabel,
+                            placement: 'top',
+                        });
+                    } else if (info.event.title) {
+                         tippy(info.el, {
+                            content: info.event.title,
+                            placement: 'top',
+                        });
+                    }
+                    var btn = info.el.querySelector('.fc-reserve-cart');
+                    if (btn) {
+                        btn.addEventListener('click', function(e) {
+                            e.stopPropagation();
+                            var email = btn.getAttribute('data-client-email') || '';
+                            var prestations = btn.getAttribute('data-prestations') || '';
+                            var resId = btn.getAttribute('data-id') || '';
+                            var url = '{{ path("app_caisse") }}' + '?clientEmail=' + encodeURIComponent(email) + '&tarifs=' + encodeURIComponent(prestations) + '&reservationId=' + resId;
+                            window.location.href = url;
+                        });
+                    }
+
+                    var btnMissed = info.el.querySelector('.fc-reserve-missed');
+                    if (btnMissed) {
+                        btnMissed.addEventListener('click', function(e) {
+                            e.stopPropagation();
+                            var resId = btnMissed.getAttribute('data-id');
+                            if (confirm('Confirmer que ce rendez-vous n\'a pas été honoré ?')) {
+                                fetch('/caisse/reservation/' + resId + '/missed', {
+                                    method: 'POST',
+                                    headers: {
+                                        'X-Requested-With': 'XMLHttpRequest'
+                                    }
+                                }).then(response => response.json())
+                                  .then(data => {
+                                      if (data.status === 'success') {
+                                          calendar.refetchEvents();
+                                      } else {
+                                          alert('Erreur: ' + (data.message || 'Inconnue'));
+                                      }
+                                  });
+                            }
+                        });
+                    }
+                }
+            });
+            calendar.render();
+        });
+    </script>
+{% endblock %}

@@ -6,6 +6,7 @@ use App\Entity\User;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\EmailType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
+use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
@@ -30,6 +31,15 @@ class ClientType extends AbstractType
                 'label' => 'Téléphone',
                 'required' => false,
                 'attr' => ['placeholder' => 'Téléphone du client']
+            ])
+            ->add('fiche', TextareaType::class, [
+                'label' => 'Fiche client',
+                'required' => false,
+                'attr' => [
+                    'class' => 'wysiwyg-editor',
+                    'rows' => 10,
+                    'placeholder' => 'Notes sur le client...'
+                ]
             ])
         ;
     }

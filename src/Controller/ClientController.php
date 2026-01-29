@@ -3,6 +3,9 @@
 namespace App\Controller;
 
 use App\Entity\User;
+use App\Entity\Reservation;
+use App\Entity\Photo;
+use App\Service\ImageService;
 use App\Form\ClientType;
 use App\Repository\UserRepository;
 use App\Repository\VenteRepository;
@@ -12,6 +15,7 @@ use Knp\Component\Pager\PaginatorInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Attribute\Route;
 
@@ -19,7 +23,7 @@ use Symfony\Component\Routing\Attribute\Route;
 class ClientController extends AbstractController
 {
     #[Route('/', name: 'app_client_index', methods: ['GET'])]
-    public function index(UserRepository $userRepository, PaginatorInterface $paginator, Request $request): Response
+    public function index(UserRepository $userRepository, PaginatorInterface $paginator, Request $request, EntityManagerInterface $entityManager): Response
     {
         $q = $request->query->get('q');
         $queryBuilder = $userRepository->createQueryBuilder('u')
@@ -39,8 +43,43 @@ class ClientController extends AbstractController
             15
         );
 
+        // Fetch missed reservation counts
+        $missedCounts = $entityManager->getRepository(Reservation::class)->createQueryBuilder('r')
+            ->select('r.clientEmail, COUNT(r.id) as count')
+            ->where('r.status = :status')
+            ->setParameter('status', Reservation::STATUS_MISSED)
+            ->groupBy('r.clientEmail')
+            ->getQuery()
+            ->getArrayResult();
+
+        $missedMap = [];
+        foreach ($missedCounts as $row) {
+            if ($row['clientEmail']) {
+                $missedMap[$row['clientEmail']] = $row['count'];
+            }
+        }
+
         return $this->render('caisse/client/index.html.twig', [
             'clients' => $pagination,
+            'missedMap' => $missedMap,
+        ]);
+    }
+
+    #[Route('/{id}/missed', name: 'app_client_missed', methods: ['GET'])]
+    public function missedReservations(User $user, EntityManagerInterface $em, PaginatorInterface $paginator, Request $request): Response
+    {
+        $queryBuilder = $em->getRepository(Reservation::class)->createQueryBuilder('r')
+            ->where('r.clientEmail = :email')
+            ->andWhere('r.status = :status')
+            ->setParameter('email', $user->getEmail())
+            ->setParameter('status', Reservation::STATUS_MISSED)
+            ->orderBy('r.dateStart', 'DESC');
+            
+        $pagination = $paginator->paginate($queryBuilder, $request->query->getInt('page', 1), 15);
+        
+        return $this->render('caisse/client/missed.html.twig', [
+            'client' => $user,
+            'reservations' => $pagination
         ]);
     }
 
@@ -164,5 +203,79 @@ class ClientController extends AbstractController
         }
 
         return $this->redirectToRoute('app_client_index', [], Response::HTTP_SEE_OTHER);
+    }
+
+    #[Route('/{id}/photos', name: 'app_client_photos', methods: ['GET', 'POST'])]
+    public function photos(Request $request, User $client, ImageService $imageService, EntityManagerInterface $entityManager): Response
+    {
+        if ($request->isMethod('POST')) {
+            $files = $request->files->get('photos');
+            
+            // Check for upload errors (like max size exceeded leading to empty files)
+            if (empty($files)) {
+                $maxSize = ini_get('upload_max_filesize');
+                $this->addFlash('danger', "Aucun fichier reçu. Vérifiez que la taille totale ne dépasse pas la limite du serveur ($maxSize).");
+                return $this->redirectToRoute('app_client_show', ['id' => $client->getId(), 'open_photos' => 1]);
+            }
+
+            if (!is_array($files)) {
+                $files = [$files];
+            }
+            
+            $count = 0;
+            foreach ($files as $file) {
+                if ($file) {
+                    try {
+                        $filename = $imageService->uploadClientPhoto($file, $client->getId());
+                        $photo = new Photo();
+                        $photo->setFilename($filename);
+                        $photo->setClient($client);
+                        $photo->setCreatedAt(new \DateTime());
+                        $photo->setType('image');
+                        $entityManager->persist($photo);
+                        $count++;
+                    } catch (\Exception $e) {
+                        $this->addFlash('danger', 'Erreur lors de l\'upload : ' . $e->getMessage());
+                    }
+                }
+            }
+            
+            if ($count > 0) {
+                $entityManager->flush();
+                $this->addFlash('success', $count . ' photo(s) ajoutée(s) avec succès.');
+            }
+            
+            return $this->redirectToRoute('app_client_show', ['id' => $client->getId(), 'open_photos' => 1]);
+        }
+
+        return $this->redirectToRoute('app_client_show', ['id' => $client->getId(), 'open_photos' => 1]);
+    }
+
+    #[Route('/photo/{id}/delete', name: 'app_client_photo_delete', methods: ['POST'])]
+    public function deletePhoto(Request $request, Photo $photo, ImageService $imageService, EntityManagerInterface $entityManager): Response
+    {
+        $clientId = $photo->getClient()->getId();
+        if ($this->isCsrfTokenValid('delete'.$photo->getId(), $request->request->get('_token'))) {
+            // Supprimer le fichier physique
+            $imageService->deleteClientPhoto($photo->getFilename(), $clientId);
+            
+            // Supprimer l'entité
+            $entityManager->remove($photo);
+            $entityManager->flush();
+            $this->addFlash('success', 'Photo supprimée.');
+        }
+
+        return $this->redirectToRoute('app_client_show', ['id' => $clientId, 'open_photos' => 1]);
+    }
+
+    #[Route('/photo/{id}/rotate', name: 'app_client_photo_rotate', methods: ['POST'])]
+    public function rotatePhoto(Request $request, Photo $photo, ImageService $imageService): JsonResponse
+    {
+        try {
+            $imageService->rotateClientPhoto($photo->getFilename(), $photo->getClient()->getId());
+            return new JsonResponse(['status' => 'success']);
+        } catch (\Exception $e) {
+            return new JsonResponse(['status' => 'error', 'message' => $e->getMessage()], 500);
+        }
     }
 }

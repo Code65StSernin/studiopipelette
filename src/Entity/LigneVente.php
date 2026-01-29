@@ -21,6 +21,9 @@ class LigneVente
     #[ORM\ManyToOne]
     private ?Tarif $tarif = null;
 
+    #[ORM\ManyToOne]
+    private ?Article $article = null;
+
     #[ORM\Column(length: 255)]
     private ?string $nom = null;
 
@@ -55,6 +58,18 @@ class LigneVente
     public function setTarif(?Tarif $tarif): self
     {
         $this->tarif = $tarif;
+
+        return $this;
+    }
+
+    public function getArticle(): ?Article
+    {
+        return $this->article;
+    }
+
+    public function setArticle(?Article $article): self
+    {
+        $this->article = $article;
 
         return $this;
     }

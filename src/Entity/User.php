@@ -4,6 +4,7 @@ namespace App\Entity;
 
 use App\Repository\UserRepository;
 use App\Entity\Code;
+use Doctrine\DBAL\Types\Types;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
@@ -111,11 +112,23 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\ManyToOne(inversedBy: 'users')]
     private ?BtoB $btoB = null;
 
+    #[ORM\ManyToOne(inversedBy: 'users')]
+    private ?DepotVente $depotVente = null;
+
     #[ORM\Column(options: ['default' => false])]
     private ?bool $clientDepotVente = false;
 
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $image = null;
+
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    private ?string $fiche = null;
+
+    /**
+     * @var Collection<int, Photo>
+     */
+    #[ORM\OneToMany(targetEntity: Photo::class, mappedBy: 'client', cascade: ['persist', 'remove'])]
+    private Collection $photos;
 
     public function __construct()
     {
@@ -124,6 +137,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->paniers = new ArrayCollection();
         $this->favoris = new ArrayCollection();
         $this->usedPromoCodes = new ArrayCollection();
+        $this->photos = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -238,6 +252,18 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
+    public function getDepotVente(): ?DepotVente
+    {
+        return $this->depotVente;
+    }
+
+    public function setDepotVente(?DepotVente $depotVente): static
+    {
+        $this->depotVente = $depotVente;
+
+        return $this;
+    }
+
     public function isClientDepotVente(): ?bool
     {
         return $this->clientDepotVente;
@@ -260,6 +286,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->image = $image;
 
         return $this;
+    }
+
+    public function __toString(): string
+    {
+        return $this->nom . ' ' . $this->prenom;
     }
 
     /**
@@ -447,5 +478,47 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function hasUsedPromoCode(Code $code): bool
     {
         return $this->usedPromoCodes->contains($code);
+    }
+
+    public function getFiche(): ?string
+    {
+        return $this->fiche;
+    }
+
+    public function setFiche(?string $fiche): static
+    {
+        $this->fiche = $fiche;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Photo>
+     */
+    public function getPhotos(): Collection
+    {
+        return $this->photos;
+    }
+
+    public function addPhoto(Photo $photo): static
+    {
+        if (!$this->photos->contains($photo)) {
+            $this->photos->add($photo);
+            $photo->setClient($this);
+        }
+
+        return $this;
+    }
+
+    public function removePhoto(Photo $photo): static
+    {
+        if ($this->photos->removeElement($photo)) {
+            // set the owning side to null (unless already changed)
+            if ($photo->getClient() === $this) {
+                $photo->setClient(null);
+            }
+        }
+
+        return $this;
     }
 }

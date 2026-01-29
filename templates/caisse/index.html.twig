@@ -1,10 +1,10 @@
 {% extends 'caisse/layout.html.twig' %}
 
-{% block title %}Caisse - {{ (isTarifView or isArticleView) ? (currentSousCategorie ? currentSousCategorie.nom : (currentShopCategory ? currentShopCategory.nom : '')) : ((isSousCategorieView or isShopCategoryView) ? currentCategorie.nom : 'Catégories') }}{% endblock %}
+{% block title %}Caisse - {{ (isTarifView or isArticleView) ? (currentSousCategorie ? currentSousCategorie.nom : (currentShopCategory ? currentShopCategory.nom : (currentFournisseur ? currentFournisseur.nom ~ ' ' ~ currentFournisseur.prenom : ''))) : ((isSousCategorieView or isShopCategoryView) ? currentCategorie.nom : 'Catégories') }}{% endblock %}
 
 {% block body %}
     <div class="row h-100 g-0">
-        <div class="col-9 pe-3">
+        <div class="col-9 pe-3 d-flex flex-column">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h1>
                     {% if isTarifView %}
@@ -12,6 +12,8 @@
                     {% elseif isArticleView %}
                         {% if currentShopCategory %}
                             <span class="text-muted">Catégorie Boutique :</span> {{ currentShopCategory.nom }}
+                        {% elseif currentFournisseur %}
+                            <span class="text-muted">Fournisseur :</span> {{ currentFournisseur.nom }} {{ currentFournisseur.prenom }}
                         {% elseif currentSousCategorie %}
                             <span class="text-muted">Sous-catégorie :</span> {{ currentSousCategorie.nom }}
                         {% endif %}
@@ -26,7 +28,7 @@
                         <i class="fas fa-arrow-left"></i> Retour aux sous-catégories
                     </a>
                 {% elseif isArticleView %}
-                    {% if currentShopCategory %}
+                    {% if currentShopCategory or currentFournisseur %}
                         <a href="{{ path('app_caisse', {'categorie': currentCategorie.id}) }}" class="btn btn-secondary">
                             <i class="fas fa-arrow-left"></i> Retour aux catégories
                         </a>
@@ -42,16 +44,38 @@
                 {% endif %}
             </div>
 
-            <div class="{{ (isSousCategorieView or isShopCategoryView or isTarifView or isArticleView) ? 'row row-cols-auto g-4' : 'row row-cols-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 g-4' }}">
+            {% set isMainView = not (isSousCategorieView or isShopCategoryView or isTarifView or isArticleView) %}
+            {% set containerClass = '' %}
+            
+            {% if isMainView %}
+                {% set count = items|length %}
+                {% set gridClass = 'row-cols-2' %}
+                {% if count == 1 %}
+                    {% set gridClass = 'row-cols-1' %}
+                {% elseif count > 4 %}
+                    {% set gridClass = 'row-cols-3 row-cols-lg-4' %}
+                {% endif %}
+                {% set containerClass = 'row ' ~ gridClass ~ ' justify-content-center align-content-center flex-grow-1 g-4' %}
+            {% else %}
+                {% set containerClass = 'row row-cols-auto g-4' %}
+            {% endif %}
+
+            <div class="{{ containerClass }}" style="{{ (isMainView and items|length <= 4) ? 'max-width: 800px; margin: 0 auto;' : '' }}">
                 {% for item in items %}
-                    <div class="col">
+                    <div class="col d-flex justify-content-center">
                         {% set link = '#' %}
                         {% if not isSousCategorieView and not isShopCategoryView and not isTarifView and not isArticleView %}
                             {% set link = path('app_caisse', {'categorie': item.id}) %}
                         {% elseif isSousCategorieView %}
                             {% set link = path('app_caisse', {'sous_categorie': item.id}) %}
                         {% elseif isShopCategoryView %}
-                            {% set link = path('app_caisse', {'categorie': currentCategorie.id, 'categorie_shop': item.id}) %}
+                            {% if item.clientDepotVente is defined %}
+                                {# C'est un fournisseur #}
+                                {% set link = path('app_caisse', {'categorie': currentCategorie.id, 'fournisseur_id': item.id}) %}
+                            {% else %}
+                                {# C'est une catégorie #}
+                                {% set link = path('app_caisse', {'categorie': currentCategorie.id, 'categorie_shop': item.id}) %}
+                            {% endif %}
                         {% endif %}
                         
                         {% set onclick = '' %}
@@ -86,8 +110,8 @@
                         {% endif %}
 
                         <div role="button" 
-                           class="card {{ (isSousCategorieView or isShopCategoryView or isTarifView or isArticleView) ? 'border-0' : 'h-100 border-0' }} text-decoration-none shadow-sm item-card position-relative {{ cardClass }}"
-                           style="cursor: pointer; {{ (isTarifView or isArticleView) ? 'width: 200px; height: 200px;' : ((isSousCategorieView or isShopCategoryView) ? 'width: 250px; height: 250px;' : '') }} {{ opacityStyle }}"
+                           class="card border-0 text-decoration-none shadow-sm item-card position-relative {{ cardClass }}"
+                           style="cursor: pointer; {{ (isTarifView or isArticleView) ? 'width: 200px; height: 200px;' : ((isSousCategorieView or isShopCategoryView) ? 'width: 250px; height: 250px;' : 'width: 300px; height: 300px;') }} {{ opacityStyle }}"
                            {% if onclick %}onclick="{{ onclick }}"{% endif %}>
                             
                             {% if isOutOfStock %}
@@ -117,7 +141,17 @@
                                     {% set bgColor = '#e9ecef' %}
                                 {% endif %}
                             {% elseif isShopCategoryView %}
-                                {% set bgColor = '#D19C97' %} {# Couleur "Primary" du thème (rose/rouge) #}
+                                {% if item.clientDepotVente is defined %}
+                                    {# C'est un fournisseur #}
+                                    {% if item.image %}
+                                        {% set imagePath = asset('uploads/users/' ~ item.image) %}
+                                    {% else %}
+                                        {% set bgColor = '#6c757d' %} {# Couleur "Secondary" (gris) #}
+                                    {% endif %}
+                                {% else %}
+                                    {# C'est une catégorie #}
+                                    {% set bgColor = '#D19C97' %} {# Couleur "Primary" du thème (rose/rouge) #}
+                                {% endif %}
                             {% else %}
                                 {% if item.image %}
                                      {% set folder = isSousCategorieView ? 'sous_categories' : 'categories' %}
@@ -128,21 +162,25 @@
                             {% endif %}
 
                             {% if imagePath %}
-                                <div class="card-img-top d-flex align-items-center justify-content-center bg-white {{ imageClass }}" style="{{ (isSousCategorieView or isShopCategoryView or isTarifView or isArticleView) ? 'height: 100%;' : 'height: 150px;' }} overflow: hidden; {{ imageStyle }}">
+                                <div class="card-img-top d-flex align-items-center justify-content-center bg-white {{ imageClass }}" style="height: 100%; overflow: hidden; {{ imageStyle }}">
                                      <img src="{{ imagePath }}" 
                                           alt="{{ item.nom }}" 
                                           class="img-fluid" 
-                                          style="{{ (isSousCategorieView or isShopCategoryView or isTarifView or isArticleView) ? 'width: 100%; height: 100%; object-fit: cover;' : 'max-height: 100%; max-width: 100%;' }}">
+                                          style="width: 100%; height: 100%; object-fit: cover;">
                                 </div>
                             {% else %}
-                                <div class="card-img-top {{ imageClass }}" style="{{ (isSousCategorieView or isShopCategoryView or isTarifView or isArticleView) ? 'height: 100%;' : 'height: 150px;' }} background-color: {{ bgColor }}; {{ imageStyle }}">
+                                <div class="card-img-top {{ imageClass }}" style="height: 100%; background-color: {{ bgColor }}; {{ imageStyle }}">
                                     {% if isArticleView and not imagePath %}
                                         <div class="d-flex align-items-center justify-content-center h-100 text-muted">
                                             <i class="fas fa-box fa-3x"></i>
                                         </div>
                                     {% elseif isShopCategoryView %}
                                         <div class="d-flex align-items-center justify-content-center h-100 text-white">
-                                            <i class="fas fa-tags fa-3x"></i>
+                                            {% if item.clientDepotVente is defined %}
+                                                <i class="fas fa-user-tag fa-3x"></i>
+                                            {% else %}
+                                                <i class="fas fa-tags fa-3x"></i>
+                                            {% endif %}
                                         </div>
                                     {% endif %}
                                 </div>
@@ -162,7 +200,12 @@
                             {% endif %}
                             
                             <div class="card-img-overlay d-flex {{ (isSousCategorieView or isShopCategoryView or isTarifView or isArticleView) ? 'align-items-end pb-3' : 'align-items-center' }} justify-content-center p-2 flex-column">
-                                <h6 class="card-title mb-0 fw-bold text-white text-center" style="font-variant: small-caps; text-shadow: 0 0 4px rgba(0,0,0,0.9), 0 0 8px rgba(0,0,0,0.5);">{{ item.nom }}</h6>
+                                <h6 class="card-title mb-0 fw-bold text-white text-center" style="font-variant: small-caps; text-shadow: 0 0 4px rgba(0,0,0,0.9), 0 0 8px rgba(0,0,0,0.5);">
+                                    {{ item.nom }}
+                                    {% if isShopCategoryView and item.clientDepotVente is defined %}
+                                        {{ item.prenom }}
+                                    {% endif %}
+                                </h6>
                                 {% if isSousCategorieView and item.categorieStock is defined and item.categorieStock %}
                                     <small class="text-white text-center mt-1" style="text-shadow: 0 0 4px rgba(0,0,0,0.9);">
                                         <i class="fas fa-link me-1"></i>{{ item.categorieStock.nom }}
@@ -177,7 +220,11 @@
                             {% if isTarifView %}
                                 Aucun tarif disponible pour cette sous-catégorie.
                             {% elseif isArticleView %}
-                                Aucun article disponible pour cette catégorie.
+                                {% if currentFournisseur %}
+                                    Aucun article disponible pour ce fournisseur (vérifiez que les articles sont actifs et visibles en boutique).
+                                {% else %}
+                                    Aucun article disponible pour cette catégorie.
+                                {% endif %}
                             {% elseif isSousCategorieView %}
                                 Aucune sous-catégorie disponible pour cette catégorie.
                             {% elseif isShopCategoryView %}
@@ -193,6 +240,22 @@
 
         <div class="col-3 border-start bg-light rounded shadow-sm">
             <div class="sticky-top p-3" style="top: 20px; max-height: calc(100vh - 40px); display: flex; flex-direction: column;">
+                <div class="text-center mb-3">
+                    {% if isCaisseClosed %}
+                        <span class="badge bg-danger w-100 py-2 text-uppercase shadow-sm">
+                            <i class="fas fa-lock me-2"></i>Caisse Fermée
+                        </span>
+                    {% elseif isCaisseOpen %}
+                        <span class="badge bg-success w-100 py-2 text-uppercase shadow-sm">
+                            <i class="fas fa-check-circle me-2"></i>Caisse Ouverte
+                        </span>
+                    {% else %}
+                        <span class="badge bg-warning text-dark w-100 py-2 text-uppercase shadow-sm">
+                            <i class="fas fa-exclamation-circle me-2"></i>Non initialisée
+                        </span>
+                    {% endif %}
+                </div>
+
                 <h3 class="mb-3 text-center"><i class="fas fa-shopping-cart me-2"></i>Panier</h3>
                 
                 <div class="flex-grow-1 overflow-auto mb-3" style="min-height: 200px;">
@@ -217,17 +280,23 @@
                 </div>
 
                 <div id="payment-actions" class="mt-3 d-none">
-                    <div class="d-grid gap-2">
-                        <button class="btn btn-success btn-lg" onclick="validatePayment('CB')">
-                            <i class="fas fa-credit-card me-2"></i>CB
-                        </button>
-                        <button class="btn btn-warning btn-lg text-white" onclick="showCashInterface()">
-                            <i class="fas fa-money-bill-wave me-2"></i>Espèces
-                        </button>
-                        <button class="btn btn-info btn-lg text-white" onclick="validatePayment('Cheque')">
-                            <i class="fas fa-money-check me-2"></i>Chèque
-                        </button>
-                    </div>
+                    {% if isCaisseClosed %}
+                        <div class="alert alert-danger text-center">
+                            <i class="fas fa-lock me-2"></i>Caisse fermée
+                        </div>
+                    {% else %}
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-success btn-lg" onclick="validatePayment('CB')">
+                                <i class="fas fa-credit-card me-2"></i>CB
+                            </button>
+                            <button class="btn btn-warning btn-lg text-white" onclick="showCashInterface()">
+                                <i class="fas fa-money-bill-wave me-2"></i>Espèces
+                            </button>
+                            <button class="btn btn-info btn-lg text-white" onclick="validatePayment('Cheque')">
+                                <i class="fas fa-money-check me-2"></i>Chèque
+                            </button>
+                        </div>
+                    {% endif %}
                 </div>
 
                 <div id="cash-interface" class="card bg-warning text-white mt-3 d-none">
@@ -264,7 +333,7 @@
           </div>
           <div class="modal-body">
             <p class="small text-muted mb-2">Article en rupture de stock. Code PIN requis :</p>
-            <input type="password" id="pinInput" class="form-control text-center fs-4" maxlength="4" placeholder="****">
+            <input type="password" id="pinInput" class="form-control text-center fs-4" maxlength="10" placeholder="****">
             <div id="pinError" class="text-danger small mt-2 d-none">Code incorrect</div>
           </div>
           <div class="modal-footer">
@@ -277,8 +346,30 @@
 <script>
     let cart = [];
     let clientSelect = null;
+    const CART_KEY = 'caisseCart';
+    const CLIENT_KEY = 'caisseClientId';
+    const RESERVATION_KEY = 'caisseReservationId';
+
+    function saveCart() {
+        try {
+            localStorage.setItem(CART_KEY, JSON.stringify(cart));
+        } catch (e) {}
+    }
+
+    function loadCart() {
+        try {
+            const raw = localStorage.getItem(CART_KEY);
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                if (Array.isArray(parsed)) {
+                    cart = parsed;
+                }
+            }
+        } catch (e) {}
+    }
 
     document.addEventListener('DOMContentLoaded', function() {
+        loadCart();
         // Initialize Client Search with TomSelect
         if(document.getElementById('client-select')) {
             clientSelect = new TomSelect('#client-select', {
@@ -298,7 +389,81 @@
                 placeholder: 'Rechercher un client...',
                 maxOptions: 50
             });
+
+            // Restore previously selected client
+            const savedClient = localStorage.getItem(CLIENT_KEY);
+            if (savedClient) {
+                fetch('{{ path("app_caisse_client_by_id") }}?id=' + encodeURIComponent(savedClient))
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            clientSelect.addOption({ value: data.value, label: data.label });
+                            clientSelect.setValue(data.value, true);
+                        } else {
+                            // fallback if not found
+                            clientSelect.addOption({ value: savedClient, label: 'Client #' + savedClient });
+                            clientSelect.setValue(savedClient, true);
+                        }
+                    })
+                    .catch(() => {
+                        clientSelect.addOption({ value: savedClient, label: 'Client #' + savedClient });
+                        clientSelect.setValue(savedClient, true);
+                    });
+            }
+
+            // If client changes, reset cart
+            clientSelect.on('change', function(value) {
+                const prev = localStorage.getItem(CLIENT_KEY);
+                if (prev && prev !== value && cart.length > 0) {
+                    cart = [];
+                    saveCart();
+                    updateCartDisplay();
+                }
+                if (value) {
+                    localStorage.setItem(CLIENT_KEY, value);
+                } else {
+                    localStorage.removeItem(CLIENT_KEY);
+                }
+            });
         }
+
+        // Prefill from calendar linking
+        const params = new URLSearchParams(window.location.search);
+        const clientEmail = params.get('clientEmail');
+        const tarifsCsv = params.get('tarifs');
+        const reservationId = params.get('reservationId');
+        
+        if (reservationId) {
+            localStorage.setItem(RESERVATION_KEY, reservationId);
+        }
+
+        if (clientEmail) {
+            fetch('{{ path("app_caisse_client_by_email") }}?email=' + encodeURIComponent(clientEmail))
+                .then(r => r.json())
+                .then(data => {
+                    if (data.status === 'success' && clientSelect) {
+                        clientSelect.addOption({ value: data.value, label: data.label });
+                        clientSelect.setValue(data.value, true);
+                        localStorage.setItem(CLIENT_KEY, data.value);
+                    }
+                })
+                .catch(() => {});
+        }
+        if (tarifsCsv) {
+            fetch('{{ path("app_caisse_tarifs_details") }}?ids=' + encodeURIComponent(tarifsCsv))
+                .then(r => r.json())
+                .then(items => {
+                    if (Array.isArray(items)) {
+                        items.forEach(function(it) {
+                            addToCart(it.id, it.name, it.price, it.type, null);
+                        });
+                        saveCart();
+                        updateCartDisplay();
+                    }
+                })
+                .catch(() => {});
+        }
+        updateCartDisplay();
     });
 
     function addToCart(id, name, price, type, taille, isForced = false) {
@@ -310,11 +475,13 @@
             taille: taille,
             isForced: isForced
         });
+        saveCart();
         updateCartDisplay();
     }
 
     function removeFromCart(index) {
         cart.splice(index, 1);
+        saveCart();
         updateCartDisplay();
     }
 
@@ -400,11 +567,13 @@
         }
 
         const total = cart.reduce((sum, item) => sum + item.price, 0);
+        const reservationId = localStorage.getItem(RESERVATION_KEY);
 
         const data = {
             client: clientId,
             total: total,
             method: method,
+            reservationId: reservationId,
             items: cart
         };
 
@@ -420,9 +589,11 @@
             if (data.status === 'success') {
                 alert('Vente validée avec succès !');
                 cart = [];
+                localStorage.removeItem(RESERVATION_KEY);
                 updateCartDisplay();
                 if(clientSelect) clientSelect.clear();
                 if (method === 'Espece') hideCashInterface();
+                saveCart();
             } else {
                 alert('Erreur: ' + data.message);
             }
@@ -451,18 +622,42 @@
 
     document.getElementById('pinConfirmBtn').addEventListener('click', function() {
         const pin = document.getElementById('pinInput').value;
-        if (pin === '1234') {
-            if (pendingItem) {
-                // Pass true for isForced
-                addToCart(pendingItem.id, pendingItem.name, pendingItem.price, pendingItem.type, pendingItem.taille, true);
-                pendingItem = null;
+        const btn = this;
+        
+        // Disable button while checking
+        btn.disabled = true;
+        document.getElementById('pinError').classList.add('d-none');
+
+        fetch('{{ path("app_caisse_check_pin") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({ pin: pin })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                if (pendingItem) {
+                    // Pass true for isForced
+                    addToCart(pendingItem.id, pendingItem.name, pendingItem.price, pendingItem.type, pendingItem.taille, true);
+                    pendingItem = null;
+                }
+                const modalEl = document.getElementById('pinModal');
+                const modal = bootstrap.Modal.getInstance(modalEl);
+                modal.hide();
+            } else {
+                document.getElementById('pinError').classList.remove('d-none');
             }
-            const modalEl = document.getElementById('pinModal');
-            const modal = bootstrap.Modal.getInstance(modalEl);
-            modal.hide();
-        } else {
-            document.getElementById('pinError').classList.remove('d-none');
-        }
+        })
+        .catch(err => {
+            console.error(err);
+            alert('Erreur de communication avec le serveur');
+        })
+        .finally(() => {
+            btn.disabled = false;
+        });
     });
 
     // Allow Enter key in PIN input

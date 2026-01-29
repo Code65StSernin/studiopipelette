@@ -6,6 +6,9 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1>{{ client.nom }} {{ client.prenom }}</h1>
         <div>
+            <button type="button" class="btn btn-info text-white" data-bs-toggle="modal" data-bs-target="#photosModal">
+                <i class="fas fa-images"></i> Photos
+            </button>
             <a href="{{ path('app_client_edit', {'id': client.id}) }}" class="btn btn-primary">
                 <i class="fas fa-edit"></i> Modifier
             </a>
@@ -23,6 +26,19 @@
                 <strong>Téléphone :</strong> {{ client.telephone|default('Non renseigné') }}<br>
                 <strong>Date de création :</strong> {{ client.createdAt ? client.createdAt|date('d/m/Y H:i') : 'N/A' }}
             </p>
+        </div>
+    </div>
+
+    <div class="card mb-4 shadow-sm border-info">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0"><i class="fas fa-user"></i> Fiche Client</h5>
+        </div>
+        <div class="card-body">
+            {% if client.fiche %}
+                <div class="wysiwyg-content">{{ client.fiche|raw }}</div>
+            {% else %}
+                <p class="text-muted mb-0">Aucune fiche renseignée.</p>
+            {% endif %}
         </div>
     </div>
 
@@ -111,4 +127,160 @@
             </div>
         </div>
     </div>
+
+    <!-- Photos Modal -->
+    <div class="modal fade" id="photosModal" tabindex="-1" aria-labelledby="photosModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="photosModalLabel">Photos de {{ client.prenom }} {{ client.nom }}</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <ul class="nav nav-tabs" id="photoTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="view-tab" data-bs-toggle="tab" data-bs-target="#view" type="button" role="tab" aria-controls="view" aria-selected="true">Visionner</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="manage-tab" data-bs-toggle="tab" data-bs-target="#manage" type="button" role="tab" aria-controls="manage" aria-selected="false">Gérer</button>
+                </li>
+            </ul>
+            <div class="tab-content p-3" id="photoTabsContent">
+                <!-- VIEW TAB -->
+                <div class="tab-pane fade show active" id="view" role="tabpanel" aria-labelledby="view-tab">
+                    {% if client.photos|length > 0 %}
+                        <div id="carouselClientPhotos" class="carousel slide" data-bs-ride="carousel">
+                            <div class="carousel-inner">
+                                {% for photo in client.photos %}
+                                    <div class="carousel-item {% if loop.first %}active{% endif %}">
+                                        <img src="{{ asset('assets/img/clients/' ~ client.id ~ '/' ~ photo.filename) }}" class="d-block w-100" alt="Photo client" style="max-height: 70vh; object-fit: contain;">
+                                    </div>
+                                {% endfor %}
+                            </div>
+                            <button class="carousel-control-prev" type="button" data-bs-target="#carouselClientPhotos" data-bs-slide="prev">
+                                <span class="carousel-control-prev-icon" aria-hidden="true" style="filter: invert(1);"></span>
+                                <span class="visually-hidden">Previous</span>
+                            </button>
+                            <button class="carousel-control-next" type="button" data-bs-target="#carouselClientPhotos" data-bs-slide="next">
+                                <span class="carousel-control-next-icon" aria-hidden="true" style="filter: invert(1);"></span>
+                                <span class="visually-hidden">Next</span>
+                            </button>
+                        </div>
+                    {% else %}
+                        <p class="text-center mt-3">Aucune photo disponible.</p>
+                    {% endif %}
+                </div>
+
+                <!-- MANAGE TAB -->
+                <div class="tab-pane fade" id="manage" role="tabpanel" aria-labelledby="manage-tab">
+                    <div class="card mb-4">
+                        <div class="card-header">Ajouter des photos</div>
+                        <div class="card-body">
+                            <form method="post" action="{{ path('app_client_photos', {'id': client.id}) }}" enctype="multipart/form-data">
+                                <div class="mb-3">
+                                    <label for="photos" class="form-label">Sélectionner des photos</label>
+                                    <input type="file" class="form-control" id="photos" name="photos[]" multiple accept="image/*" required>
+                                    <div class="form-text">Formats acceptés : JPG, PNG, WEBP.</div>
+                                </div>
+                                <button type="submit" class="btn btn-primary">Uploader</button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div class="row row-cols-1 row-cols-md-3 g-3" style="max-height: 50vh; overflow-y: auto;">
+                        {% for photo in client.photos %}
+                            <div class="col">
+                                <div class="card h-100">
+                                    <img src="{{ asset('assets/img/clients/thumbnails/' ~ client.id ~ '/' ~ photo.filename) }}" class="card-img-top" alt="Photo client">
+                                    <div class="card-body text-center p-2">
+                                        <div class="d-flex gap-2">
+                                            <button type="button" class="btn btn-warning btn-sm rotate-photo flex-grow-1" data-url="{{ path('app_client_photo_rotate', {'id': photo.id}) }}" data-filename="{{ photo.filename }}" title="Pivoter 90°"><i class="fas fa-redo"></i></button>
+                                            <form method="post" action="{{ path('app_client_photo_delete', {'id': photo.id}) }}" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette photo ?');" class="flex-grow-1">
+                                                <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ photo.id) }}">
+                                                <button class="btn btn-danger btn-sm w-100">Supprimer</button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% else %}
+                            <div class="col-12">
+                                <p class="text-muted text-center">Aucune photo pour ce client.</p>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {% if app.request.get('open_photos') %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var photosModalEl = document.getElementById('photosModal');
+            var photosModal = new bootstrap.Modal(photosModalEl);
+            photosModal.show();
+            
+            var manageTabTrigger = document.querySelector('#manage-tab');
+            var manageTab = new bootstrap.Tab(manageTabTrigger);
+            manageTab.show();
+        });
+    </script>
+    {% endif %}
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.rotate-photo').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const url = this.dataset.url;
+                    const filename = this.dataset.filename;
+                    const btn = this;
+                    const icon = btn.querySelector('i');
+                    
+                    // Visual feedback
+                    btn.disabled = true;
+                    icon.classList.remove('fa-redo');
+                    icon.classList.add('fa-spinner', 'fa-spin');
+                    
+                    fetch(url, { 
+                        method: 'POST',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            // Refresh images with this filename
+                            const timestamp = new Date().getTime();
+                            document.querySelectorAll('img').forEach(img => {
+                                if (img.src.includes(filename)) {
+                                    const srcUrl = new URL(img.src, window.location.origin);
+                                    srcUrl.searchParams.set('t', timestamp);
+                                    img.src = srcUrl.toString();
+                                }
+                            });
+                        } else {
+                            alert('Erreur: ' + (data.message || 'Une erreur est survenue'));
+                        }
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        alert('Erreur de communication avec le serveur');
+                    })
+                    .finally(() => {
+                        btn.disabled = false;
+                        icon.classList.remove('fa-spinner', 'fa-spin');
+                        icon.classList.add('fa-redo');
+                    });
+                });
+            });
+        });
+    </script>
 {% endblock %}

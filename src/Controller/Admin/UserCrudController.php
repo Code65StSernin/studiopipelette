@@ -53,6 +53,8 @@ class UserCrudController extends AbstractCrudController
             ->setRequired(false);
         yield AssociationField::new('btoB', 'Client BtoB')
             ->setHelp('Associer cet utilisateur à un client BtoB (optionnel)');
+        yield AssociationField::new('depotVente', 'Groupe Dépôt-Vente')
+            ->setHelp('Associer cet utilisateur à un groupe Dépôt-Vente (optionnel)');
         yield ArrayField::new('roles', 'Rôles');
         yield BooleanField::new('isVerified', 'Email vérifié');
         yield DateTimeField::new('createdAt', 'Date de création')->onlyOnIndex();

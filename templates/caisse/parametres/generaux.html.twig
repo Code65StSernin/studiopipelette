@@ -1,0 +1,38 @@
+{% extends 'caisse/layout.html.twig' %}
+
+{% block title %}Paramètres Généraux - Caisse{% endblock %}
+
+{% block body %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white py-3">
+                    <h4 class="mb-0"><i class="fas fa-cogs me-2"></i>Paramètres Généraux</h4>
+                </div>
+                <div class="card-body p-4">
+                    {{ form_start(form) }}
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">{{ form_label(form.currentPin) }}</label>
+                            {{ form_widget(form.currentPin) }}
+                            <div class="form-text mt-2">{{ form_help(form.currentPin) }}</div>
+                            {{ form_errors(form.currentPin) }}
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">{{ form_label(form.adminPin) }}</label>
+                            {{ form_widget(form.adminPin) }}
+                            <div class="form-text mt-2">{{ form_help(form.adminPin) }}</div>
+                            {{ form_errors(form.adminPin) }}
+                        </div>
+                        
+                        <div class="d-grid">
+                            {{ form_widget(form.save) }}
+                        </div>
+                    {{ form_end(form) }}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

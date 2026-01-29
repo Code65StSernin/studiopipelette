@@ -767,7 +767,7 @@
                         <div id="pinAlert" class="alert alert-danger d-none"></div>
                         
                         <div class="form-group mb-4">
-                            <input type="password" id="modalPin" class="form-control form-control-lg text-center" maxlength="4" readonly style="letter-spacing: 5px; font-size: 2rem;">
+                            <input type="password" id="modalPin" class="form-control form-control-lg text-center" maxlength="10" readonly style="letter-spacing: 5px; font-size: 2rem;">
                         </div>
 
                         <div class="row g-2 mb-3">
@@ -802,11 +802,8 @@
 
             function appendModalPin(num) {
                 const pinInput = document.getElementById('modalPin');
-                if (pinInput.value.length < 4) {
+                if (pinInput.value.length < 10) {
                     pinInput.value += num;
-                }
-                if (pinInput.value.length === 4) {
-                    submitModalPin();
                 }
             }
 
@@ -816,15 +813,18 @@
 
             function submitModalPin() {
                 const pin = document.getElementById('modalPin').value;
-                if (pin.length < 4) return;
+                if (!pin || pin.length === 0) return;
 
                 $.ajax({
                     url: '{{ path("app_caisse_login_pin") }}',
                     method: 'POST',
                     data: { pin: pin },
                     success: function(response) {
-                        if (response.success) {
+                        if (response && response.success) {
                             window.location.href = '{{ path("app_caisse") }}';
+                        } else {
+                            $('#pinAlert').text('Code PIN incorrect').removeClass('d-none');
+                            clearModalPin();
                         }
                     },
                     error: function(xhr) {

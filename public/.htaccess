@@ -9,10 +9,11 @@ DirectoryIndex index.php
 # Note: Ces directives fonctionnent uniquement si PHP est exécuté en tant que module Apache
 # Si PHP est en CGI/FastCGI, modifiez directement le php.ini
 <IfModule mod_php.c>
-    php_value upload_max_filesize 10M
-    php_value post_max_size 10M
+    php_value upload_max_filesize 64M
+    php_value post_max_size 64M
     php_value max_execution_time 300
     php_value max_input_time 300
+    php_value memory_limit 256M
 </IfModule>
 
 # By default, Apache does not evaluate symbolic links if you did not enable this

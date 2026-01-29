@@ -64,5 +64,12 @@ class SocieteConfig
     // Etalement site
     public function getTotalSite(): ?float         { return $this->get()?->getTotalSite(); }
     public function getPourcentageMensuel(): ?float { return $this->get()?->getPourcentageMensuel(); }
-}
 
+    // Configuration applicative
+    public function getAdminPin(): string
+    {
+        $pin = $this->get()?->getAdminPin();
+        $pin = is_string($pin) ? trim($pin) : '';
+        return $pin !== '' ? $pin : '1234';
+    }
+}

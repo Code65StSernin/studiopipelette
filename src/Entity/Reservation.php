@@ -26,6 +26,13 @@ class Reservation
     #[ORM\Column(length: 255)]
     private ?string $clientEmail = null;
 
+    #[ORM\Column(length: 20, options: ['default' => 'confirmed'])]
+    private ?string $status = 'confirmed';
+
+    public const STATUS_CONFIRMED = 'confirmed';
+    public const STATUS_PAID = 'paid';
+    public const STATUS_MISSED = 'missed';
+
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $clientPhone = null;
 
@@ -89,6 +96,18 @@ class Reservation
     public function setClientEmail(string $clientEmail): static
     {
         $this->clientEmail = $clientEmail;
+
+        return $this;
+    }
+
+    public function getStatus(): ?string
+    {
+        return $this->status;
+    }
+
+    public function setStatus(string $status): static
+    {
+        $this->status = $status;
 
         return $this;
     }

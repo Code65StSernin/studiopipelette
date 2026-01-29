@@ -11,8 +11,42 @@
     {{ form_row(form.email) }}
     {{ form_row(form.telephone) }}
     
+    <div class="mb-3">
+        {{ form_row(form.fiche) }}
+    </div>
+    
     <div class="mt-4">
         <button class="btn btn-primary">{{ button_label|default('Enregistrer') }}</button>
         <a href="{{ path('app_client_index') }}" class="btn btn-secondary">Annuler</a>
     </div>
 {{ form_end(form) }}
+
+<!-- Summernote CSS/JS -->
+<link href="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-lite.min.css" rel="stylesheet">
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-lite.min.js"></script>
+<script>
+    $(document).ready(function() {
+        $('.wysiwyg-editor').summernote({
+            placeholder: 'Notes sur le client...',
+            tabsize: 2,
+            height: 300, // ~10 lines
+            width: '100%',
+            toolbar: [
+                ['style', ['style']],
+                ['font', ['bold', 'underline', 'clear']],
+                ['color', ['color']],
+                ['para', ['ul', 'ol', 'paragraph']],
+                ['table', ['table']],
+                ['insert', ['link']],
+                ['view', ['fullscreen', 'codeview', 'help']]
+            ],
+            callbacks: {
+                onInit: function() {
+                    // Ensure it takes full width
+                    $('.note-editor').css('width', '100%');
+                }
+            }
+        });
+    });
+</script>

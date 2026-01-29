@@ -18,7 +18,7 @@
                     <form method="post" id="pinForm">
                         <div class="form-group mb-4">
                             <label for="pin" class="form-label text-center w-100">Entrez le code PIN</label>
-                            <input type="password" name="pin" id="pin" class="form-control form-control-lg text-center" maxlength="4" autocomplete="off" autofocus required readonly style="letter-spacing: 5px; font-size: 2rem;">
+                            <input type="password" name="pin" id="pin" class="form-control form-control-lg text-center" maxlength="10" autocomplete="off" autofocus required readonly style="letter-spacing: 5px; font-size: 2rem;">
                         </div>
 
                         <div class="row g-2 mb-3">
@@ -47,13 +47,8 @@
 <script>
     function appendPin(num) {
         const pinInput = document.getElementById('pin');
-        if (pinInput.value.length < 4) {
+        if (pinInput.value.length < 10) {
             pinInput.value += num;
-        }
-        // Auto submit if length is 4
-        if (pinInput.value.length === 4) {
-             // Optional: submit immediately
-             // document.getElementById('pinForm').submit();
         }
     }
 
