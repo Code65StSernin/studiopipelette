@@ -18,14 +18,48 @@
         </div>
     </div>
 
-    <div class="card mb-4 shadow-sm">
-        <div class="card-body">
-            <h5 class="card-title">Informations</h5>
-            <p class="card-text">
-                <strong>Email :</strong> {{ client.email }}<br>
-                <strong>Téléphone :</strong> {{ client.telephone|default('Non renseigné') }}<br>
-                <strong>Date de création :</strong> {{ client.createdAt ? client.createdAt|date('d/m/Y H:i') : 'N/A' }}
-            </p>
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Informations</h5>
+                    <p class="card-text">
+                        <strong>Email :</strong> {{ client.email }}<br>
+                        <strong>Téléphone :</strong> {{ client.telephone|default('Non renseigné') }}<br>
+                        <strong>Date de création :</strong> {{ client.createdAt ? client.createdAt|date('d/m/Y H:i') : 'N/A' }}
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow-sm h-100 bg-light border-success">
+                <div class="card-body text-center">
+                    <h5 class="card-title text-success"><i class="fas fa-gift"></i> Fidélité</h5>
+                    <div class="mt-3">
+                        <h2 class="display-4 text-success fw-bold mb-0">{{ totalCagnotte|number_format(2, ',', ' ') }} €</h2>
+                        <small class="text-muted">Total Disponible</small>
+                    </div>
+                    {% if virtualCagnotte > 0 %}
+                        <div class="mt-2">
+                            <span class="badge bg-secondary" title="Solde reporté">Cagnotte : {{ client.fideliteCagnotte|number_format(2, ',', ' ') }} €</span>
+                            <span class="badge bg-warning text-dark" title="Calculé sur Points/Visites non convertis">Virtuel : {{ virtualCagnotte|number_format(2, ',', ' ') }} €</span>
+                        </div>
+                    {% else %}
+                        <small class="text-muted">Cagnotte disponible</small>
+                    {% endif %}
+                    <hr>
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <h5 class="mb-0">{{ client.fidelitePoints|number_format(2, ',', ' ') }}</h5>
+                            <small class="text-muted">Points</small>
+                        </div>
+                        <div class="col-6">
+                            <h5 class="mb-0">{{ client.fideliteVisits }}</h5>
+                            <small class="text-muted">Visites</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 

@@ -77,6 +77,21 @@ class SocieteCrudController extends AbstractCrudController
             ->setColumns(12)
             ->setHelp('Secret utilisé pour vérifier la signature des webhooks Stripe');
 
+        // Onglet 8 : Frais Bancaires
+        yield FormField::addTab('Frais Bancaires')->setIcon('fa fa-university');
+        yield NumberField::new('stripeFraisPourcentage', 'Stripe %')
+            ->setNumDecimals(2)
+            ->setColumns(4)
+            ->setHelp('Commission Stripe variable (ex: 1.5%)');
+        yield NumberField::new('stripeFraisFixe', 'Stripe Fixe (€)')
+            ->setNumDecimals(2)
+            ->setColumns(4)
+            ->setHelp('Frais fixe par transaction Stripe (ex: 0.25€)');
+        yield NumberField::new('tpeFraisPourcentage', 'TPE Caisse %')
+            ->setNumDecimals(2)
+            ->setColumns(4)
+            ->setHelp('Commission TPE pour les paiements CB en caisse (ex: 1.75%)');
+
         // Onglet 4 : Base de données
         yield FormField::addTab('Base de données')->setIcon('fa fa-database');
         yield TextField::new('dbHost', 'Hôte')
@@ -104,15 +119,23 @@ class SocieteCrudController extends AbstractCrudController
 
         // Onglet 6 : Charges sociales et fiscales
         yield FormField::addTab('Charges sociales et fiscales')->setIcon('fa fa-percent');
-        yield NumberField::new('pourcentageUrssaf', 'Pourcentage URSSAF (%)')
+        
+        // Champs séparés BIC / BNC
+        yield NumberField::new('pourcentageUrssafBic', 'URSSAF BIC (%)')
             ->setColumns(4)
-            ->setHelp('Pourcentage de cotisations sociales URSSAF à appliquer au CA');
+            ->setHelp('Pourcentage URSSAF pour les ventes physiques (Articles)');
+            
+        yield NumberField::new('pourcentageUrssafBnc', 'URSSAF BNC (%)')
+            ->setColumns(4)
+            ->setHelp('Pourcentage URSSAF pour les prestations de service (Tarifs)');
+            
         yield NumberField::new('pourcentageCpf', 'Pourcentage CPF (%)')
             ->setColumns(4)
-            ->setHelp('Pourcentage de formation professionnelle (CPF) à appliquer au CA');
+            ->setHelp('Pourcentage de formation professionnelle (CPF) à appliquer au CA global');
+            
         yield NumberField::new('pourcentageIr', 'Pourcentage IR (%)')
             ->setColumns(4)
-            ->setHelp('Pourcentage d\'impôt sur le revenu à appliquer au CA');
+            ->setHelp('Pourcentage d\'impôt sur le revenu à appliquer au CA global');
 
         // Onglet 7 : Etalement site
         yield FormField::addTab('Etalement du site')->setIcon('fa fa-money-bill-wave');

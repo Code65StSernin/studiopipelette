@@ -21,8 +21,12 @@ class Facture
     private ?string $numero = null;
 
     #[ORM\OneToOne(targetEntity: Order::class, inversedBy: 'facture')]
-    #[ORM\JoinColumn(nullable: false)]
+    #[ORM\JoinColumn(nullable: true)]
     private ?Order $order = null;
+
+    #[ORM\OneToOne(targetEntity: Vente::class, inversedBy: 'facture')]
+    #[ORM\JoinColumn(nullable: true)]
+    private ?Vente $vente = null;
 
     // Coordonnées client (stockées pour immuabilité)
     #[ORM\Column(length: 100)]
@@ -97,9 +101,21 @@ class Facture
         return $this->order;
     }
 
-    public function setOrder(Order $order): static
+    public function setOrder(?Order $order): static
     {
         $this->order = $order;
+
+        return $this;
+    }
+
+    public function getVente(): ?Vente
+    {
+        return $this->vente;
+    }
+
+    public function setVente(?Vente $vente): static
+    {
+        $this->vente = $vente;
 
         return $this;
     }
@@ -288,12 +304,12 @@ class Facture
 
     /**
      * Génère un numéro de facture unique basé sur un numéro séquentiel.
-     * Format: FA + année(2) + mois(2) + - + numéro séquentiel (4 chiffres)
+     * Format: FB + année(2) + mois(2) + - + numéro séquentiel (4 chiffres)
      */
     public function generateNumero(int $sequentialNumber): string
     {
         $datePart = (new \DateTime())->format('ym'); // ex: 2310
-        return 'FA' . $datePart . '-' . str_pad((string) $sequentialNumber, 4, '0', STR_PAD_LEFT);
+        return 'FB' . $datePart . '-' . str_pad((string) $sequentialNumber, 4, '0', STR_PAD_LEFT);
     }
 
     public function getRemisePourcentage(): ?float

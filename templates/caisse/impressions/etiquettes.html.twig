@@ -1,0 +1,440 @@
+{% extends 'caisse/layout.html.twig' %}
+
+{% block title %}Impression Etiquettes - Caisse{% endblock %}
+
+{% block body %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="h3 mb-0 text-gray-800">Impression Etiquettes</h2>
+        <div>
+            <span id="selection-counter" class="badge bg-info fs-6 me-2">0 articles sélectionnés</span>
+            <button type="button" class="btn btn-primary" id="btn-print-action" disabled>
+                <i class="fas fa-print me-2"></i>Imprimer
+            </button>
+            <form action="{{ path('app_caisse_impressions_etiquettes_print') }}" method="post" id="print-form" class="d-none" target="_blank">
+                <div id="hidden-inputs-container"></div>
+                <div id="hidden-quantities-container"></div>
+                <div id="hidden-skipped-container"></div>
+            </form>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Left Column: Article List -->
+        <div class="col-md-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">Liste des articles</h6>
+                    <div>
+                        <button class="btn btn-sm btn-outline-secondary me-2" id="btn-check-all-page">
+                            <i class="fas fa-check-double me-1"></i>Cocher page
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" id="btn-uncheck-all">
+                            <i class="fas fa-trash-alt me-1"></i>Vider tout
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover" width="100%" cellspacing="0">
+                            <thead>
+                                <tr>
+                                    <th style="width: 40px;" class="text-center">
+                                        <input type="checkbox" id="check-all-toggle">
+                                    </th>
+                                    <th>Article</th>
+                                    <th>Prix</th>
+                                    <th style="width: 100px;">Qté</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for article in pagination %}
+                                    {% set totalStock = 0 %}
+                                    {% if article.tailles %}
+                                        {% for t in article.tailles %}
+                                            {% set totalStock = totalStock + (t.stock ?? 0) %}
+                                        {% endfor %}
+                                    {% endif %}
+                                    
+                                    {# Default quantity: Stock if > 0, else 1 #}
+                                    {% set defaultQty = totalStock > 0 ? totalStock : 1 %}
+
+                                    <tr>
+                                        <td class="text-center align-middle">
+                                            <input type="checkbox" class="article-checkbox" value="{{ article.id }}">
+                                        </td>
+                                        <td class="align-middle">
+                                            {{ article.nom }}<br>
+                                            <small class="text-muted">{{ article.gencod }}</small>
+                                        </td>
+                                        <td class="align-middle">
+                                            {% if article.tailles is not empty and article.tailles[0].prix is defined %}
+                                                {{ article.tailles[0].prix|number_format(2, ',', ' ') }} €
+                                            {% else %}
+                                                -
+                                            {% endif %}
+                                        </td>
+                                        <td class="align-middle">
+                                            <input type="number" 
+                                                   class="form-control form-control-sm article-qty" 
+                                                   data-id="{{ article.id }}" 
+                                                   value="{{ defaultQty }}" 
+                                                   min="1" 
+                                                   style="width: 80px;">
+                                            <small class="text-muted d-block text-center mt-1">Stock: {{ totalStock }}</small>
+                                        </td>
+                                    </tr>
+                                {% else %}
+                                    <tr>
+                                        <td colspan="4" class="text-center">Aucun article trouvé</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="d-flex justify-content-center mt-3">
+                        {{ knp_pagination_render(pagination) }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Grid -->
+        <div class="col-md-6">
+            <div class="card shadow mb-4 sticky-top" style="top: 20px; z-index: 900;">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">Aperçu & Emplacements utilisés</h6>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-reset-grid">
+                        <i class="fas fa-undo me-1"></i>Réinitialiser
+                    </button>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small mb-3">
+                        Cliquez sur les emplacements pour les marquer comme "déjà imprimés" (gris).
+                    </p>
+                    <div class="mb-3">
+                         <strong>Format :</strong> 
+                        {% if format %}
+                            {{ format.largeur }}x{{ format.hauteur }} cm
+                        {% else %}
+                            <span class="text-danger">Non configuré</span>
+                        {% endif %}
+                    </div>
+                    <div id="etiquette-grid-container" class="border p-3 bg-light d-flex flex-wrap justify-content-center" style="min-height: 400px; max-height: 80vh; overflow-y: auto;">
+                        <!-- Grid generated by JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Storage keys
+    const STORAGE_KEY_SELECTION = 'stupip_etiquettes_selection';
+    const STORAGE_KEY_QUANTITIES = 'stupip_etiquettes_quantities';
+    
+    // Load selection and quantities from session storage
+    let selection = new Set(JSON.parse(sessionStorage.getItem(STORAGE_KEY_SELECTION) || '[]'));
+    let quantities = new Map(JSON.parse(sessionStorage.getItem(STORAGE_KEY_QUANTITIES) || '[]'));
+    
+    const checkboxes = document.querySelectorAll('.article-checkbox');
+    const qtyInputs = document.querySelectorAll('.article-qty');
+    const counterBadge = document.getElementById('selection-counter');
+    const btnPrintAction = document.getElementById('btn-print-action');
+    const formContainer = document.getElementById('hidden-inputs-container');
+    const quantitiesContainer = document.getElementById('hidden-quantities-container');
+    const skippedContainer = document.getElementById('hidden-skipped-container');
+    const printForm = document.getElementById('print-form');
+    const btnCheckAllPage = document.getElementById('btn-check-all-page');
+    const btnUncheckAll = document.getElementById('btn-uncheck-all');
+    const checkAllToggle = document.getElementById('check-all-toggle');
+    const gridContainer = document.getElementById('etiquette-grid-container');
+    const btnResetGrid = document.getElementById('btn-reset-grid');
+
+    // Format data passed from controller
+    const format = {
+        width: {{ format ? format.largeur : 0 }},
+        height: {{ format ? format.hauteur : 0 }},
+        margeHaut: {{ format ? format.margeHaut : 0 }},
+        margeGauche: {{ format ? format.margeGauche : 0 }},
+        margeBas: {{ format ? format.margeBas : 0 }},
+        margeDroite: {{ format ? format.margeDroite : 0 }},
+        distH: {{ format ? format.distanceHorizontale : 0 }},
+        distV: {{ format ? format.distanceVerticale : 0 }}
+    };
+
+    let skippedIndices = new Set();
+
+    // Helper: Save to storage
+    function saveStorage() {
+        sessionStorage.setItem(STORAGE_KEY_SELECTION, JSON.stringify([...selection]));
+        sessionStorage.setItem(STORAGE_KEY_QUANTITIES, JSON.stringify([...quantities]));
+    }
+
+    // Update UI based on current selection
+    function updateUI() {
+        // Update checkbox states
+        checkboxes.forEach(cb => {
+            cb.checked = selection.has(cb.value);
+        });
+
+        // Update quantity inputs from storage if available
+        qtyInputs.forEach(input => {
+            const id = input.dataset.id;
+            if (quantities.has(id)) {
+                input.value = quantities.get(id);
+            }
+        });
+
+        // Calculate total labels
+        let totalLabels = 0;
+        selection.forEach(id => {
+            if (quantities.has(id)) {
+                totalLabels += parseInt(quantities.get(id));
+            } else {
+                // Try to find input on page to get default value
+                const input = document.querySelector(`.article-qty[data-id="${id}"]`);
+                if (input) {
+                    totalLabels += parseInt(input.value);
+                } else {
+                    // Fallback to 1 if not found
+                    totalLabels += 1;
+                }
+            }
+        });
+
+        // Update counter
+        counterBadge.textContent = `${selection.size} articles (${totalLabels} étiquettes)`;
+
+        // Update print button state
+        if(btnPrintAction) {
+            btnPrintAction.disabled = selection.size === 0;
+        }
+
+        saveStorage();
+    }
+
+    // Generate grid (Immediate)
+    function generateGrid() {
+        gridContainer.innerHTML = '';
+        if (!format.width || !format.height) return;
+
+        // Assume A4 page size in cm
+        const PAGE_WIDTH = 21.0;
+        const PAGE_HEIGHT = 29.7;
+
+        // Calculate columns and rows
+        const availableWidth = PAGE_WIDTH - format.margeGauche - format.margeDroite;
+        const availableHeight = PAGE_HEIGHT - format.margeHaut - format.margeBas;
+
+        // Precise calculation logic matching the one in parameters page
+        let cols = 0;
+        if (format.width > 0 && format.width <= availableWidth) {
+            cols = 1 + Math.floor((availableWidth - format.width) / (format.width + format.distH));
+        }
+        
+        let rows = 0;
+        if (format.height > 0 && format.height <= availableHeight) {
+            rows = 1 + Math.floor((availableHeight - format.height) / (format.height + format.distV));
+        }
+        
+        // Total slots
+        const totalSlots = cols * rows;
+
+        // Create grid wrapper with calculated width to center it
+        const gridWrapper = document.createElement('div');
+        gridWrapper.style.display = 'grid';
+        gridWrapper.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+        gridWrapper.style.gap = '4px'; // Visual gap for UI
+        gridWrapper.style.width = 'fit-content';
+        
+        for (let i = 0; i < totalSlots; i++) {
+            const cell = document.createElement('div');
+            cell.className = 'etiquette-cell border rounded d-flex align-items-center justify-content-center';
+            cell.style.width = '35px';
+            cell.style.height = '25px';
+            cell.style.cursor = 'pointer';
+            cell.style.fontSize = '9px';
+            cell.style.userSelect = 'none';
+            cell.textContent = i + 1;
+            
+            if (skippedIndices.has(i)) {
+                cell.classList.add('bg-secondary', 'text-white', 'opacity-50');
+                cell.title = 'Emplacement indisponible';
+            } else {
+                cell.classList.add('bg-white', 'text-dark');
+                cell.title = 'Disponible';
+            }
+
+            cell.addEventListener('click', function() {
+                if (skippedIndices.has(i)) {
+                    skippedIndices.delete(i);
+                    this.classList.remove('bg-secondary', 'text-white', 'opacity-50');
+                    this.classList.add('bg-white', 'text-dark');
+                } else {
+                    skippedIndices.add(i);
+                    this.classList.remove('bg-white', 'text-dark');
+                    this.classList.add('bg-secondary', 'text-white', 'opacity-50');
+                }
+            });
+
+            gridWrapper.appendChild(cell);
+        }
+
+        gridContainer.appendChild(gridWrapper);
+    }
+
+    // Generate grid on load
+    generateGrid();
+
+    // Reset grid button
+    if(btnResetGrid) {
+        btnResetGrid.addEventListener('click', function() {
+            skippedIndices.clear();
+            generateGrid();
+        });
+    }
+
+    // Print Action
+    if(btnPrintAction) {
+        btnPrintAction.addEventListener('click', function() {
+            // Prepare form data
+            formContainer.innerHTML = '';
+            quantitiesContainer.innerHTML = '';
+            
+            // Collect IDs from selection
+            selection.forEach(id => {
+                // Add ID input
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'articles[]';
+                input.value = id;
+                formContainer.appendChild(input);
+
+                // Add Quantity input
+                // Logic: 1. Storage, 2. DOM (if on page), 3. Default 1
+                let qtyVal = 1;
+                if (quantities.has(id)) {
+                    qtyVal = quantities.get(id);
+                } else {
+                    const domInput = document.querySelector(`.article-qty[data-id="${id}"]`);
+                    if (domInput) {
+                        qtyVal = domInput.value;
+                    }
+                }
+
+                const qInput = document.createElement('input');
+                qInput.type = 'hidden';
+                qInput.name = `quantities[${id}]`;
+                qInput.value = qtyVal;
+                quantitiesContainer.appendChild(qInput);
+            });
+
+            skippedContainer.innerHTML = '';
+            skippedIndices.forEach(idx => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'skipped_indices[]';
+                input.value = idx;
+                skippedContainer.appendChild(input);
+            });
+
+            printForm.submit();
+        });
+    }
+
+    // Event listeners for checkboxes
+    checkboxes.forEach(cb => {
+        cb.addEventListener('change', function() {
+            const id = this.value;
+            if (this.checked) {
+                selection.add(id);
+                // Also capture current quantity into storage
+                const qtyInput = document.querySelector(`.article-qty[data-id="${id}"]`);
+                if (qtyInput) {
+                    quantities.set(id, qtyInput.value);
+                }
+            } else {
+                selection.delete(id);
+                // Keep quantity in storage or remove? Keep for persistence.
+            }
+            updateUI();
+        });
+    });
+
+    // Event listeners for quantities
+    qtyInputs.forEach(input => {
+        input.addEventListener('change', function() {
+            const id = this.dataset.id;
+            const val = this.value;
+            quantities.set(id, val);
+            
+            // Auto-select if quantity changed > 0 (always > 0 here)
+            if (!selection.has(id)) {
+                selection.add(id);
+            }
+            updateUI();
+        });
+    });
+
+    // Check all on page
+    btnCheckAllPage.addEventListener('click', function() {
+        checkboxes.forEach(cb => {
+            const id = cb.value;
+            selection.add(id);
+            const qtyInput = document.querySelector(`.article-qty[data-id="${id}"]`);
+            if (qtyInput) {
+                quantities.set(id, qtyInput.value);
+            }
+        });
+        updateUI();
+    });
+    
+    // Toggle header checkbox
+    if(checkAllToggle) {
+        checkAllToggle.addEventListener('change', function() {
+            const checked = this.checked;
+            checkboxes.forEach(cb => {
+                const id = cb.value;
+                if(checked) {
+                    selection.add(id);
+                    const qtyInput = document.querySelector(`.article-qty[data-id="${id}"]`);
+                    if (qtyInput) {
+                        quantities.set(id, qtyInput.value);
+                    }
+                } else {
+                    selection.delete(id);
+                }
+            });
+            updateUI();
+        });
+    }
+
+    // Uncheck all (Global)
+    btnUncheckAll.addEventListener('click', function() {
+        if (confirm('Voulez-vous vraiment vider toute la sélection ?')) {
+            selection.clear();
+            quantities.clear(); // Clear quantities too? Yes, reset session.
+            saveStorage();
+            
+            // Reset inputs to default on page (optional, but good UX)
+            // Actually we can't easily reset to "default" unless we stored it. 
+            // Just clearing storage is enough, updateUI will leave inputs as is or reload page would reset.
+            // Let's reload page to reset inputs to default twig values? No, too aggressive.
+            // Just update UI.
+            updateUI();
+            
+            // Manually uncheck visible boxes
+            checkboxes.forEach(cb => cb.checked = false);
+            if(checkAllToggle) checkAllToggle.checked = false;
+        }
+    });
+
+    // Initial update
+    updateUI();
+});
+</script>
+{% endblock %}

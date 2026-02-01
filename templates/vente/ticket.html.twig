@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Ticket de caisse #{{ vente.dateVente|date('ymd') }}-{{ vente.id }}</title>
+    <style>
+        @media print {
+            @page {
+                margin: 0;
+                size: 54mm auto; /* Largeur réduite de ~33% (80mm -> 54mm) */
+            }
+            body {
+                margin: 0;
+                padding: 2mm;
+            }
+            .no-print {
+                display: none;
+            }
+        }
+        
+        body {
+            font-family: 'Courier New', Courier, monospace; /* Police style ticket */
+            font-size: 11px;
+            color: #333;
+            width: 54mm; /* Simulation largeur ticket écran */
+            margin: 20px auto;
+            background: white;
+            line-height: 1.3;
+        }
+
+        .ticket-container {
+            width: 100%;
+        }
+
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+        .text-left { text-align: left; }
+        .bold { font-weight: bold; }
+        .uppercase { text-transform: uppercase; }
+
+        .header {
+            margin-bottom: 15px;
+        }
+        
+        .shop-name {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+
+        .separator {
+            border-top: 1px dashed #000;
+            margin: 8px 0;
+            height: 1px;
+            width: 100%;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+        }
+        
+        .items-table td {
+            vertical-align: top;
+        }
+
+        .col-qty { width: 10%; }
+        .col-name { width: 60%; }
+        .col-size { width: 10%; text-align: center; }
+        .col-price { width: 20%; text-align: right; }
+
+        .total-section {
+            font-size: 14px;
+            margin: 15px 0;
+        }
+
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            font-weight: bold;
+            font-size: 16px;
+            margin-top: 5px;
+        }
+
+        .footer {
+            margin-top: 20px;
+            font-size: 10px;
+        }
+        
+        .tva-mention {
+            margin: 10px 0;
+            font-style: italic;
+        }
+
+        /* Bouton d'impression pour l'écran */
+        .print-btn {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            background: #333;
+            color: white;
+            text-align: center;
+            text-decoration: none;
+            margin-bottom: 20px;
+            font-family: sans-serif;
+            cursor: pointer;
+            border: none;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+</head>
+<body>
+
+    <div class="ticket-container">
+        <!-- En-tête Société -->
+        <div class="header text-center">
+            <img src="{{ asset('assets/img/logo_petit_noir.png') }}" alt="Logo" style="display: block; margin: 0 auto 10px; max-width: 80%; height: auto;">
+            <div>{{ societe.adresse }}</div>
+            <div>{{ societe.codePostal }} {{ societe.ville }}</div>
+            {% if societe.telephone %}<div>{{ societe.telephone }}</div>{% endif %}
+            {% if societe.email %}<div>{{ societe.email }}</div>{% endif %}
+        </div>
+
+        <div class="separator"></div>
+
+        <!-- Info Ticket -->
+        <div class="info-row text-center">
+            <span>Le {{ vente.dateVente|date('d/m/Y') }}</span>
+            <span>Ticket {{ vente.dateVente|date('ymd') }}-{{ vente.id }}</span>
+        </div>
+
+        <div class="separator"></div>
+
+        <!-- Info Vendeur / Client -->
+        {% if app.user %}
+            <div class="text-center">Servi par {{ app.user.prenom|default('Vendeur') }}</div>
+        {% endif %}
+        
+        {% if vente.client %}
+            <div class="separator"></div>
+            <div class="text-center">Client: {{ vente.client.prenom }} {{ vente.client.nom|upper }}</div>
+        {% endif %}
+
+        <div class="separator"></div>
+
+        <!-- Ticket # / ID Unique -->
+        <div class="text-left" style="margin: 10px 0;">
+            Ticket # : {{ vente.dateVente|date('ymd') }}-{{ vente.id }}
+            {% if vente.montantTotal < 0 and vente.avoir %}
+                <br>AVOIR {{ vente.avoir.code }}
+                <br>Valable jusqu'au {{ vente.dateVente|date_modify("+6 months")|date('d/m/Y') }}
+                <div class="text-center" style="margin-top: 10px;">
+                    <svg id="barcode-avoir"></svg>
+                    <script>
+                        JsBarcode("#barcode-avoir", "{{ vente.avoir.code }}", {
+                            format: "CODE128",
+                            displayValue: true,
+                            fontSize: 14,
+                            height: 40,
+                            width: 1.5,
+                            margin: 0
+                        });
+                    </script>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Articles -->
+        <table class="items-table">
+            {% set totalArticles = 0 %}
+            {% for ligne in vente.ligneVentes %}
+                {% set lineTotal = ligne.prixUnitaire * ligne.quantite %}
+                {% set totalArticles = totalArticles + lineTotal %}
+                <tr>
+                    <td class="col-qty">{{ ligne.quantite }}</td>
+                    <td class="col-name">{{ ligne.nom }}</td>
+                    <td class="col-size">
+                        {# Gestion taille si applicable, sinon vide #}
+                    </td>
+                    <td class="col-price">{{ lineTotal|number_format(2, '.', '') }}</td>
+                </tr>
+            {% endfor %}
+        </table>
+
+        <div class="separator"></div>
+
+        <!-- Totaux -->
+        <div class="total-section">
+            {% if (totalArticles - vente.montantTotal)|abs > 0.01 %}
+                <div class="info-row">
+                    <span>Total Articles</span>
+                    <span>EUR {{ totalArticles|number_format(2, '.', '') }}</span>
+                </div>
+                <div class="info-row">
+                    <span>Dont Avoir</span>
+                    <span>- EUR {{ (totalArticles - vente.montantTotal)|number_format(2, '.', '') }}</span>
+                </div>
+            {% endif %}
+            <div class="total-row">
+                <span>TOTAL A PAYER</span>
+                <span>EUR {{ vente.montantTotal|number_format(2, '.', '') }}</span>
+            </div>
+        </div>
+
+        <!-- Mention TVA -->
+        <div class="tva-mention text-left">
+            TVA non applicable, art. 293 B du CGI
+        </div>
+
+        <div class="separator"></div>
+
+        <!-- Paiement -->
+        <div class="text-center" style="margin: 15px 0;">
+            Payé en {{ vente.modePaiement|upper }}<br>
+            {# Pour l'instant on n'a pas le détail Donné/Rendu en base, on affiche juste le total #}
+            Montant : {{ vente.montantTotal|number_format(2, '.', '') }} EUR
+        </div>
+
+        <!-- Footer -->
+        <div class="footer text-center">
+            <p style="font-size: 14px; font-weight: bold;">Merci de votre visite.<br>A bientôt!</p>
+            
+            {% if societe.siret %}
+                <div style="margin-top: 10px;">
+                    SIRET {{ societe.siret }}
+                    {% if societe.ville %} - RCS {{ societe.ville }}{% endif %}
+                </div>
+            {% endif %}
+            
+            <div style="margin-top: 5px;">www.studiopipelette.fr</div>
+        </div>
+    </div>
+
+    <script>
+        // Lancer l'impression automatiquement au chargement
+        window.onload = function() {
+            window.print();
+        };
+    </script>
+</body>
+</html>

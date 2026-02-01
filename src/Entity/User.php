@@ -70,6 +70,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column]
     private bool $isVerified = false;
 
+    #[ORM\Column(type: 'boolean', options: ['default' => true])]
+    private bool $canBookOnline = true;
+
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $verificationToken = null;
 
@@ -129,6 +132,15 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
      */
     #[ORM\OneToMany(targetEntity: Photo::class, mappedBy: 'client', cascade: ['persist', 'remove'])]
     private Collection $photos;
+
+    #[ORM\Column(type: 'float', options: ['default' => 0.0])]
+    private ?float $fideliteCagnotte = 0.0;
+
+    #[ORM\Column(type: 'float', options: ['default' => 0.0])]
+    private ?float $fidelitePoints = 0.0;
+
+    #[ORM\Column(type: 'integer', options: ['default' => 0])]
+    private ?int $fideliteVisits = 0;
 
     public function __construct()
     {
@@ -318,6 +330,18 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setIsVerified(bool $isVerified): static
     {
         $this->isVerified = $isVerified;
+
+        return $this;
+    }
+
+    public function canBookOnline(): bool
+    {
+        return $this->canBookOnline;
+    }
+
+    public function setCanBookOnline(bool $canBookOnline): static
+    {
+        $this->canBookOnline = $canBookOnline;
 
         return $this;
     }
@@ -518,6 +542,42 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
                 $photo->setClient(null);
             }
         }
+
+        return $this;
+    }
+
+    public function getFideliteCagnotte(): ?float
+    {
+        return $this->fideliteCagnotte;
+    }
+
+    public function setFideliteCagnotte(float $fideliteCagnotte): static
+    {
+        $this->fideliteCagnotte = $fideliteCagnotte;
+
+        return $this;
+    }
+
+    public function getFidelitePoints(): ?float
+    {
+        return $this->fidelitePoints;
+    }
+
+    public function setFidelitePoints(float $fidelitePoints): static
+    {
+        $this->fidelitePoints = $fidelitePoints;
+
+        return $this;
+    }
+
+    public function getFideliteVisits(): ?int
+    {
+        return $this->fideliteVisits;
+    }
+
+    public function setFideliteVisits(int $fideliteVisits): static
+    {
+        $this->fideliteVisits = $fideliteVisits;
 
         return $this;
     }

@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Bon d'Achat #{{ bon.id }}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        @page {
+            size: 210mm 90mm;
+            margin: 0;
+        }
+        body {
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            padding: 0;
+            width: 210mm;
+            height: 90mm;
+            box-sizing: border-box;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: white;
+        }
+        .ticket-container {
+            width: 200mm; /* Marge de 5mm autour */
+            height: 80mm;
+            border: 2px solid black;
+            display: flex;
+            flex-direction: row;
+            padding: 5mm;
+            box-sizing: border-box;
+        }
+        
+        /* Left Section */
+        .left-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding-right: 10px;
+        }
+        .logo-container {
+            text-align: center;
+            margin-top: 10px;
+        }
+        .logo-container img {
+            max-width: 90%;
+            max-height: 40mm;
+            height: auto;
+        }
+        .legal-text {
+            font-size: 9px;
+            text-align: center;
+            line-height: 1.2;
+            margin-bottom: 5px;
+        }
+
+        /* Right Section */
+        .right-section {
+            flex: 1.2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            text-align: center;
+            padding-left: 10px;
+        }
+        .title {
+            font-size: 22px;
+            font-weight: 400;
+            text-transform: uppercase;
+            margin-top: 5px;
+            letter-spacing: 1px;
+        }
+        .offered-by {
+            font-size: 12px;
+            margin-top: 15px;
+            width: 100%;
+            text-align: center;
+        }
+        .value-label {
+            font-size: 12px;
+            margin-top: 10px;
+        }
+        .amount {
+            font-size: 32px;
+            font-weight: 600;
+            margin: 5px 0;
+        }
+        .dates {
+            font-size: 10px;
+            line-height: 1.4;
+        }
+        .barcode-container {
+            margin-top: 5px;
+            text-align: center;
+        }
+        /* Hide SVG background if any */
+        svg { background: transparent; }
+
+        @media print {
+            body { margin: 0; }
+            .no-print { display: none; }
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+</head>
+<body onload="window.print()">
+    <div class="ticket-container">
+        <!-- Section Gauche -->
+        <div class="left-section">
+            <div class="logo-container">
+                <img src="{{ asset('assets/img/logo_petit_noir.png') }}" alt="Studio Pipelette">
+            </div>
+            <div class="legal-text">
+                Ce bon d'achat est utilisable en une ou plusieurs fois uniquement dans la boutique physique (pas sur le site Internet). Il ne peut être ni échangé, ni remboursé.
+            </div>
+        </div>
+
+        <!-- Section Droite -->
+        <div class="right-section">
+            <div class="title">BON D'ACHAT</div>
+            
+            <div class="offered-by">
+                Offert par : ........................................................
+            </div>
+            
+            {% if bon.client %}
+            <div class="offered-by" style="margin-top: 5px;">
+                Pour : <strong>{{ bon.client.nom|upper }} {{ bon.client.prenom|capitalize }}</strong>
+            </div>
+            {% endif %}
+
+            <div style="width: 100%; text-align: center; margin-top: auto; margin-bottom: auto;">
+                <div class="value-label">Valeur initiale</div>
+                <div class="amount" style="font-size: 20px;">{{ bon.montantInitial|number_format(2, ',', ' ') }} €</div>
+                
+                <div class="value-label">Solde restant</div>
+                <div class="amount">{{ bon.montantRestant|number_format(2, ',', ' ') }} €</div>
+            </div>
+
+            <div style="width: 100%; text-align: center;">
+                <div class="dates">
+                    Date d'émission : {{ bon.dateCreation|date('d/m/Y') }}<br>
+                    Valable jusqu'au : {{ bon.dateExpiration|date('d/m/Y') }}
+                </div>
+                
+                <div class="barcode-container">
+                    <svg id="barcode"></svg>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        try {
+            JsBarcode("#barcode", "{{ bon.code }}", {
+                format: "EAN13",
+                width: 1.5,
+                height: 30,
+                displayValue: true,
+                fontSize: 12,
+                textMargin: 0,
+                margin: 0
+            });
+        } catch (e) {
+            console.warn("EAN13 generation failed, falling back to CODE128", e);
+            JsBarcode("#barcode", "{{ bon.code }}", {
+                format: "CODE128",
+                width: 1.5,
+                height: 30,
+                displayValue: true,
+                fontSize: 12,
+                textMargin: 0,
+                margin: 0
+            });
+        }
+    </script>
+</body>
+</html>

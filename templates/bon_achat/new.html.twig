@@ -1,0 +1,63 @@
+{% extends 'caisse/layout.html.twig' %}
+
+{% block title %}Nouveau Bon d'Achat{% endblock %}
+
+{% block body %}
+<div class="container-fluid">
+    <div class="d-flex align-items-center mb-4">
+        <a href="{{ path('app_bon_achat_index') }}" class="btn btn-outline-secondary me-3">
+            <i class="fas fa-arrow-left"></i>
+        </a>
+        <h1 class="h3 mb-0 text-gray-800">Générer un Bon d'Achat</h1>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card shadow">
+                <div class="card-body p-4">
+                    <form method="post" action="{{ path('app_bon_achat_new') }}">
+                        <div class="mb-4">
+                            <label for="client" class="form-label fs-5">Client</label>
+                            <select id="client" name="client" class="form-control" placeholder="Rechercher un client..." required>
+                                <option value="">Sélectionnez un client...</option>
+                                {% for user in users %}
+                                    <option value="{{ user.id }}">{{ user.nom|upper }} {{ user.prenom|capitalize }} ({{ user.email }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="montant" class="form-label fs-5">Montant du bon (€)</label>
+                            <div class="input-group input-group-lg">
+                                <input type="number" step="0.01" min="0.01" class="form-control" id="montant" name="montant" required autofocus>
+                                <span class="input-group-text">€</span>
+                            </div>
+                            <div class="form-text mt-2">
+                                Le bon sera valable 1 an à partir d'aujourd'hui.
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-check me-2"></i>Générer le Bon
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        new TomSelect('#client', {
+            create: false,
+            sortField: {
+                field: 'text',
+                direction: 'asc'
+            }
+        });
+    });
+</script>
+{% endblock %}

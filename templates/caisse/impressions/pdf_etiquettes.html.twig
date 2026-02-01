@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        @page {
+            size: A4;
+            margin-top: {{ format.margeHaut }}cm;
+            margin-bottom: {{ format.margeBas }}cm;
+            margin-left: {{ format.margeGauche }}cm;
+            margin-right: {{ format.margeDroite }}cm;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        table.etiquettes-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: {{ format.distanceHorizontale }}cm {{ format.distanceVerticale }}cm;
+            /* Negative margin to counteract the first cell's spacing if necessary, 
+               but typically border-spacing adds space between cells. 
+               We need to ensure the first column is flush left. 
+               border-spacing applies to the outside of the table too in some browsers, 
+               but in standard CSS it's between borders.
+               However, to be safe with DomPDF, we can set margin-left on the table negative? 
+               No, let's try standard table first. 
+               Actually, border-spacing DOES add space around the table in standard CSS model if not controlled.
+               Better approach: use padding on td and collapse borders?
+               No, spacing is better. 
+               Let's try a simpler approach: 
+               Table width 100%. 
+               TD width = fixed.
+               Empty spacer TD?
+            */
+            margin-left: -{{ format.distanceHorizontale / 2 }}cm; /* Adjust if needed */
+            margin-top: -{{ format.distanceVerticale / 2 }}cm;
+        }
+        /* Alternative: No border spacing, use padding in cells? */
+        /* Let's go with DIVs in TD */
+        
+        .etiquettes-table {
+            border-collapse: collapse;
+            border: 0;
+            margin: 0;
+            padding: 0;
+        }
+        .etiquette-cell {
+            width: {{ format.largeur }}cm;
+            height: {{ format.hauteur }}cm;
+            padding: 0;
+            padding-right: {{ format.distanceHorizontale }}cm;
+            padding-bottom: {{ format.distanceVerticale }}cm;
+            vertical-align: top;
+        }
+        .etiquette-wrapper {
+            width: {{ format.largeur }}cm;
+            height: {{ format.hauteur }}cm;
+            overflow: hidden;
+            box-sizing: border-box;
+            position: relative;
+            font-size: 7pt;
+            padding: 0.5mm;
+        }
+        .etiquette-wrapper.printed {
+            border: 1px solid black;
+        }
+        
+        /* Inner content styles */
+        .header-row {
+            width: 100%;
+            height: 2.5mm;
+            margin-bottom: 0;
+            overflow: hidden;
+        }
+        .nom {
+            float: left;
+            width: 65%;
+            font-size: 5pt;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-weight: bold;
+            text-align: left;
+            line-height: 2.5mm;
+        }
+        .prix {
+            float: right;
+            width: 35%;
+            font-size: 6pt;
+            font-weight: bold;
+            text-align: right;
+            line-height: 2.5mm;
+        }
+        .barcode {
+            text-align: center;
+            height: 4mm;
+            margin-top: 0.5mm;
+            margin-bottom: 0;
+            overflow: hidden;
+            display: block;
+        }
+        .barcode img {
+            height: 100%;
+            width: auto;
+            max-width: 100%;
+            display: inline-block;
+        }
+        .code-text {
+            font-size: 7pt;
+            font-weight: bold;
+            text-align: center;
+            line-height: 1;
+            margin-top: 0.5mm;
+            letter-spacing: 1px;
+            height: 3mm;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+    <table class="etiquettes-table">
+        {% for row in etiquettes|batch(cols) %}
+            <tr>
+                {% for etiquette in row %}
+                    <td class="etiquette-cell">
+                        <div class="etiquette-wrapper {% if etiquette %}printed{% endif %}">
+                            {% if etiquette %}
+                                <div class="header-row">
+                                    <div class="nom">
+                                        {{ etiquette.nom|slice(0, 20) }}
+                                    </div>
+                                    <div class="prix">
+                                        {{ etiquette.prix|number_format(2, ',', ' ') }} €
+                                    </div>
+                                </div>
+                                
+                                <div class="barcode">
+                                    {% if etiquette.barcode %}
+                                        <img src="data:image/png;base64,{{ etiquette.barcode }}">
+                                    {% else %}
+                                        <div style="font-size: 6pt;">{{ etiquette.code }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="code-text">{{ etiquette.code }}</div>
+                            {% endif %}
+                        </div>
+                    </td>
+                {% endfor %}
+                {# Fill remaining cells if needed? Not strictly necessary for layout but good for validity #}
+            </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>

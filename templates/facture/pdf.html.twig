@@ -89,14 +89,17 @@
                     <strong>Client :</strong> {{ facture.clientPrenom }} {{ facture.clientNom }}<br>
                     <strong>Email :</strong> {{ facture.clientEmail }}
                 </p>
+                {% if adresseLivraison is defined and adresseLivraison %}
                 <p class="mt-2">
                     <strong>Adresse de livraison :</strong><br>
-                    {% if adresseLivraison is defined and adresseLivraison %}
-                        {{ adresseLivraison|nl2br }}
-                    {% else %}
-                        {{ facture.modeLivraison == 'domicile' ? 'À domicile' : 'Point relais' }}
-                    {% endif %}
+                    {{ adresseLivraison|nl2br }}
                 </p>
+                {% elseif facture.vente is null %}
+                <p class="mt-2">
+                    <strong>Adresse de livraison :</strong><br>
+                    {{ facture.modeLivraison == 'domicile' ? 'À domicile' : 'Point relais' }}
+                </p>
+                {% endif %}
             </div>
         </div>
 
@@ -145,12 +148,14 @@
                             <td class="text-right"><strong>- {{ (promoRemiseCents / 100)|number_format(2, ',', ' ') }} €</strong></td>
                         </tr>
                     {% endif %}
+                    {% if facture.fraisLivraison > 0 %}
                     <tr class="totals-row">
                         <td colspan="4" class="text-right"><strong>Frais de livraison :</strong></td>
                         <td class="text-right">
                             {{ (facture.fraisLivraison / 100)|number_format(2, ',', ' ') }} €
                         </td>
                     </tr>
+                    {% endif %}
                     <tr class="totals-row">
                         <td colspan="4" class="text-right"><strong>Total TTC :</strong></td>
                         <td class="text-right"><strong>{{ (facture.totalTTC / 100)|number_format(2, ',', ' ') }} €</strong></td>

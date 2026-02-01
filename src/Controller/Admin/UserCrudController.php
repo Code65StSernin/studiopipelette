@@ -14,6 +14,9 @@ use EasyCorp\Bundle\EasyAdminBundle\Field\EmailField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\IdField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\TextField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\ImageField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\NumberField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\IntegerField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\FormField;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 class UserCrudController extends AbstractCrudController
@@ -40,12 +43,13 @@ class UserCrudController extends AbstractCrudController
 
     public function configureFields(string $pageName): iterable
     {
+        yield FormField::addColumn(8);
+        yield FormField::addPanel('Informations Personnelles');
         yield IdField::new('id')->onlyOnIndex();
         yield EmailField::new('email', 'Email');
         yield TextField::new('nom', 'Nom');
         yield TextField::new('prenom', 'Prénom');
         yield TextField::new('telephone', 'Téléphone');
-        yield BooleanField::new('clientDepotVente', 'Client Dépôt-Vente');
         yield ImageField::new('image', 'Photo de profil')
             ->setBasePath('uploads/users')
             ->setUploadDir('public/uploads/users')
@@ -55,9 +59,32 @@ class UserCrudController extends AbstractCrudController
             ->setHelp('Associer cet utilisateur à un client BtoB (optionnel)');
         yield AssociationField::new('depotVente', 'Groupe Dépôt-Vente')
             ->setHelp('Associer cet utilisateur à un groupe Dépôt-Vente (optionnel)');
+        
+        yield DateTimeField::new('createdAt', 'Date de création')->onlyOnIndex();
+
+        yield FormField::addColumn(4);
+        yield FormField::addPanel('Fidélité')
+            ->setIcon('fa fa-gift')
+            ->addCssClass('bg-light'); // Petit fond gris pour faire ressortir le bloc
+
+        yield NumberField::new('fideliteCagnotte', 'Cagnotte (€)')
+            ->setNumDecimals(2)
+            ->setStoredAsString(false)
+            ->setHtmlAttribute('style', 'font-size: 1.5em; font-weight: bold; color: #198754;') // Style inline pour l'input
+            ->addCssClass('fw-bold text-success') // Style pour le wrapper/label
+            ->setHelp('Solde disponible');
+
+        yield NumberField::new('fidelitePoints', 'Points')
+            ->setNumDecimals(2)
+            ->setStoredAsString(false);
+        yield IntegerField::new('fideliteVisits', 'Visites (compteur)');
+
+        yield FormField::addPanel('Paramètres');
+        yield BooleanField::new('clientDepotVente', 'Client Dépôt-Vente');
         yield ArrayField::new('roles', 'Rôles');
         yield BooleanField::new('isVerified', 'Email vérifié');
-        yield DateTimeField::new('createdAt', 'Date de création')->onlyOnIndex();
+        yield BooleanField::new('canBookOnline', 'Peut réserver en ligne')
+            ->setHelp('Si décoché, l\'utilisateur ne pourra pas prendre de rendez-vous sur le site.');
         
         // Le mot de passe n'est PAS affiché dans le CRUD
         // Pour modifier un mot de passe, l'admin devra utiliser la fonctionnalité de réinitialisation

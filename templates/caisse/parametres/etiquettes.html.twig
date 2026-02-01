@@ -1,0 +1,199 @@
+{% extends 'caisse/layout.html.twig' %}
+
+{% block title %}Format Etiquettes - Caisse{% endblock %}
+
+{% block body %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white py-3">
+                    <h4 class="mb-0"><i class="fas fa-tags me-2"></i>Configuration Format Etiquettes</h4>
+                </div>
+                <div class="card-body p-4">
+                    {{ form_start(form) }}
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <h5 class="border-bottom pb-2 mb-3">Marges Page A4</h5>
+                            <div class="mb-3">
+                                {{ form_label(form.margeHaut) }}
+                                {{ form_widget(form.margeHaut) }}
+                                {{ form_errors(form.margeHaut) }}
+                            </div>
+                            <div class="mb-3">
+                                {{ form_label(form.margeBas) }}
+                                {{ form_widget(form.margeBas) }}
+                                {{ form_errors(form.margeBas) }}
+                            </div>
+                            <div class="mb-3">
+                                {{ form_label(form.margeGauche) }}
+                                {{ form_widget(form.margeGauche) }}
+                                {{ form_errors(form.margeGauche) }}
+                            </div>
+                            <div class="mb-3">
+                                {{ form_label(form.margeDroite) }}
+                                {{ form_widget(form.margeDroite) }}
+                                {{ form_errors(form.margeDroite) }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h5 class="border-bottom pb-2 mb-3">Dimensions Etiquettes</h5>
+                            <div class="mb-3">
+                                {{ form_label(form.largeur) }}
+                                {{ form_widget(form.largeur) }}
+                                {{ form_errors(form.largeur) }}
+                            </div>
+                            <div class="mb-3">
+                                {{ form_label(form.hauteur) }}
+                                {{ form_widget(form.hauteur) }}
+                                {{ form_errors(form.hauteur) }}
+                            </div>
+                            <h5 class="border-bottom pb-2 mb-3 mt-4">Espacement</h5>
+                            <div class="mb-3">
+                                {{ form_label(form.distanceHorizontale) }}
+                                {{ form_widget(form.distanceHorizontale) }}
+                                {{ form_errors(form.distanceHorizontale) }}
+                            </div>
+                            <div class="mb-3">
+                                {{ form_label(form.distanceVerticale) }}
+                                {{ form_widget(form.distanceVerticale) }}
+                                {{ form_errors(form.distanceVerticale) }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info" id="calculation-result" style="display: none;">
+                        <h6 class="alert-heading fw-bold"><i class="fas fa-calculator me-2"></i>Résultat du calcul (A4)</h6>
+                        <hr>
+                        <p class="mb-1" id="result-text"></p>
+                    </div>
+
+                    <div class="alert alert-danger" id="calculation-error" style="display: none;">
+                        <h6 class="alert-heading fw-bold"><i class="fas fa-exclamation-triangle me-2"></i>Erreur de configuration</h6>
+                        <hr>
+                        <p class="mb-0" id="error-text"></p>
+                    </div>
+
+                    <div class="d-flex gap-2 justify-content-between mt-4">
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-secondary" id="btn-raz">
+                                <i class="fas fa-undo me-2"></i>RAZ
+                            </button>
+                            <button type="button" class="btn btn-info text-white" id="btn-verify">
+                                <i class="fas fa-check-circle me-2"></i>Vérifier
+                            </button>
+                        </div>
+                        {{ form_widget(form.save) }}
+                    </div>
+                    
+                    {{ form_end(form) }}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const btnVerify = document.getElementById('btn-verify');
+    const btnRaz = document.getElementById('btn-raz');
+    const resultBox = document.getElementById('calculation-result');
+    const resultText = document.getElementById('result-text');
+    const errorBox = document.getElementById('calculation-error');
+    const errorText = document.getElementById('error-text');
+
+    const inputs = {
+        margeHaut: document.getElementById('form_margeHaut'),
+        margeBas: document.getElementById('form_margeBas'),
+        margeGauche: document.getElementById('form_margeGauche'),
+        margeDroite: document.getElementById('form_margeDroite'),
+        largeur: document.getElementById('form_largeur'),
+        hauteur: document.getElementById('form_hauteur'),
+        distanceHorizontale: document.getElementById('form_distanceHorizontale'),
+        distanceVerticale: document.getElementById('form_distanceVerticale')
+    };
+
+    btnRaz.addEventListener('click', function() {
+        Object.values(inputs).forEach(input => {
+            input.value = '';
+        });
+        resultBox.style.display = 'none';
+        errorBox.style.display = 'none';
+    });
+
+    btnVerify.addEventListener('click', function() {
+        // Values in cm
+        const vals = {};
+        for (const [key, input] of Object.entries(inputs)) {
+            // Handle comma as decimal separator
+            const valStr = input.value.replace(',', '.');
+            vals[key] = parseFloat(valStr) || 0;
+        }
+
+        const A4_WIDTH = 21.0;
+        const A4_HEIGHT = 29.7;
+
+        // Check valid dimensions
+        if (vals.largeur <= 0 || vals.hauteur <= 0) {
+            showError("La largeur et la hauteur des étiquettes doivent être supérieures à 0.");
+            return;
+        }
+
+        // Available area
+        const availableWidth = A4_WIDTH - vals.margeGauche - vals.margeDroite;
+        const availableHeight = A4_HEIGHT - vals.margeHaut - vals.margeBas;
+
+        if (availableWidth <= 0 || availableHeight <= 0) {
+            showError("Les marges sont trop grandes pour le format A4.");
+            return;
+        }
+
+        // Calculate columns (N)
+        // Width required for N cols: N * w + (N-1) * gapH <= availableWidth
+        // N * w + N * gapH - gapH <= availableWidth
+        // N * (w + gapH) <= availableWidth + gapH
+        // N <= (availableWidth + gapH) / (w + gapH)
+        
+        let cols = 0;
+        if (vals.largeur > 0) {
+            // Using logic: fit first one, then see how many more fit with gap
+            if (vals.largeur <= availableWidth) {
+                cols = 1 + Math.floor((availableWidth - vals.largeur) / (vals.largeur + vals.distanceHorizontale));
+            }
+        }
+
+        // Calculate rows (M)
+        let rows = 0;
+        if (vals.hauteur > 0) {
+             if (vals.hauteur <= availableHeight) {
+                rows = 1 + Math.floor((availableHeight - vals.hauteur) / (vals.hauteur + vals.distanceVerticale));
+            }
+        }
+
+        if (cols <= 0 || rows <= 0) {
+            showError("Aucune étiquette ne rentre dans la page avec ces dimensions.");
+            return;
+        }
+
+        const total = cols * rows;
+
+        showResult(`Configuration valide.<br>
+            <strong>${cols}</strong> colonnes x <strong>${rows}</strong> lignes<br>
+            Total : <strong>${total}</strong> étiquettes par page A4.`);
+    });
+
+    function showError(msg) {
+        errorText.textContent = msg;
+        errorBox.style.display = 'block';
+        resultBox.style.display = 'none';
+    }
+
+    function showResult(html) {
+        resultText.innerHTML = html;
+        resultBox.style.display = 'block';
+        errorBox.style.display = 'none';
+    }
+});
+</script>
+{% endblock %}

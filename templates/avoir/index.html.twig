@@ -1,0 +1,139 @@
+{% extends 'caisse/layout.html.twig' %}
+
+{% block title %}Liste des Avoirs{% endblock %}
+
+{% block body %}
+    <div class="container-fluid p-4">
+        <h1 class="mb-4">Liste des Avoirs</h1>
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <form method="get" class="row g-3 align-items-end">
+                    <div class="col-md-3">
+                        <label for="start_date" class="form-label">Date de début</label>
+                        <input type="date" class="form-control" id="start_date" name="start_date" value="{{ startDate }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="end_date" class="form-label">Date de fin</label>
+                        <input type="date" class="form-control" id="end_date" name="end_date" value="{{ endDate }}">
+                    </div>
+                    <div class="col-md-2">
+                        <button type="button" id="btn-today" class="btn btn-outline-primary w-100">
+                            <i class="fas fa-calendar-day me-2"></i>Aujourd'hui
+                        </button>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-filter me-2"></i>Filtrer
+                        </button>
+                    </div>
+                    <div class="col-md-2">
+                        <a href="{{ path('app_avoir_index') }}" class="btn btn-secondary w-100">
+                            <i class="fas fa-undo me-2"></i>Réinitialiser
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Code</th>
+                                <th>Date Création</th>
+                                <th>Montant</th>
+                                <th>Client</th>
+                                <th>Origine</th>
+                                <th>Statut</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for avoir in avoirs %}
+                                <tr>
+                                    <td class="fw-bold text-primary">{{ avoir.code }}</td>
+                                    <td>{{ avoir.dateCreation|date('d/m/Y H:i') }}</td>
+                                    <td class="fw-bold">{{ avoir.montant|number_format(2, ',', ' ') }} €</td>
+                                    <td>
+                                        {% if avoir.vente and avoir.vente.client %}
+                                            {{ avoir.vente.client.prenom }} {{ avoir.vente.client.nom }}
+                                        {% else %}
+                                            <span class="text-muted">Inconnu</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if avoir.vente %}
+                                            <a href="#" class="text-decoration-none" title="Vente d'annulation">
+                                                Vente #{{ avoir.vente.id }}
+                                            </a>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if avoir.dateUtilisation %}
+                                            <span class="badge bg-secondary">
+                                                Utilisé le {{ avoir.dateUtilisation|date('d/m/Y H:i') }}
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-success">Valide</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% else %}
+                                <tr>
+                                    <td colspan="6" class="text-center py-4 text-muted">
+                                        Aucun avoir trouvé pour cette période.
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% if pagesCount > 1 %}
+                <div class="card-footer d-flex justify-content-between align-items-center">
+                    <div class="text-muted small">
+                        Page {{ page }} sur {{ pagesCount }} ({{ totalResults }} résultats)
+                    </div>
+                    <nav>
+                        <ul class="pagination mb-0">
+                            <li class="page-item {{ page == 1 ? 'disabled' }}">
+                                <a class="page-link" href="{{ path('app_avoir_index', {'page': page - 1, 'start_date': startDate, 'end_date': endDate}) }}">Précédent</a>
+                            </li>
+                            {% for p in 1..pagesCount %}
+                                <li class="page-item {{ p == page ? 'active' }}">
+                                    <a class="page-link" href="{{ path('app_avoir_index', {'page': p, 'start_date': startDate, 'end_date': endDate}) }}">{{ p }}</a>
+                                </li>
+                            {% endfor %}
+                            <li class="page-item {{ page == pagesCount ? 'disabled' }}">
+                                <a class="page-link" href="{{ path('app_avoir_index', {'page': page + 1, 'start_date': startDate, 'end_date': endDate}) }}">Suivant</a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var btn = document.getElementById('btn-today');
+            var startInput = document.getElementById('start_date');
+            var endInput = document.getElementById('end_date');
+            var form = btn ? btn.closest('form') : null;
+            if (btn && startInput && endInput && form) {
+                btn.addEventListener('click', function() {
+                    var today = new Date();
+                    var y = today.getFullYear();
+                    var m = String(today.getMonth() + 1).padStart(2, '0');
+                    var d = String(today.getDate()).padStart(2, '0');
+                    var iso = y + '-' + m + '-' + d;
+                    startInput.value = iso;
+                    endInput.value = iso;
+                    form.submit();
+                });
+            }
+        });
+    </script>
+{% endblock %}

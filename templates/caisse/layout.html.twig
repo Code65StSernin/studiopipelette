@@ -140,6 +140,14 @@
             <i class="fas fa-shopping-cart menu-icon"></i>
             <span class="menu-text">Ventes</span>
         </a>
+        <a href="{{ path('app_avoir_index') }}" class="menu-item" style="{% if app.request.get('_route') starts with 'app_avoir_' %}background-color: rgba(255, 255, 255, 0.2);{% endif %}">
+            <i class="fas fa-ticket-alt menu-icon"></i>
+            <span class="menu-text">Avoirs</span>
+        </a>
+        <a href="{{ path('app_bon_achat_index') }}" class="menu-item" style="{% if app.request.get('_route') starts with 'app_bon_achat_' %}background-color: rgba(255, 255, 255, 0.2);{% endif %}">
+            <i class="fas fa-gift menu-icon"></i>
+            <span class="menu-text">Bons d'achat</span>
+        </a>
         <a href="{{ path('app_client_index') }}" class="menu-item" style="{% if app.request.get('_route') starts with 'app_client_' %}background-color: rgba(255, 255, 255, 0.2);{% endif %}">
             <i class="fas fa-users menu-icon"></i>
             <span class="menu-text">Clients</span>
@@ -156,6 +164,16 @@
             <i class="fas fa-cash-register menu-icon"></i>
             <span class="menu-text">Caisse</span>
         </a>
+
+        <!-- Impressions Accordion -->
+        <div class="menu-item" onclick="toggleSubmenu(this)">
+            <i class="fas fa-print menu-icon"></i>
+            <span class="menu-text">Impressions</span>
+            <i class="fas fa-chevron-down arrow-icon"></i>
+        </div>
+        <div class="submenu {% if app.request.get('_route') == 'app_caisse_impressions_etiquettes' %}open{% endif %}">
+            <a href="{{ path('app_caisse_impressions_etiquettes') }}" class="submenu-item" style="{% if app.request.get('_route') == 'app_caisse_impressions_etiquettes' %}background-color: rgba(255,255,255,0.1); color: white;{% endif %}">Etiquettes</a>
+        </div>
         
         <!-- Paramètres Accordion -->
         <div class="menu-item" onclick="toggleSubmenu(this)">
@@ -163,13 +181,12 @@
             <span class="menu-text">Paramètres</span>
             <i class="fas fa-chevron-down arrow-icon"></i>
         </div>
-        <div class="submenu {% if app.request.get('_route') starts with 'categorie_vente_' or app.request.get('_route') starts with 'sous_categorie_vente_' or app.request.get('_route') == 'app_caisse_parametres_generaux' %}open{% endif %}">
+        <div class="submenu {% if app.request.get('_route') starts with 'categorie_vente_' or app.request.get('_route') starts with 'sous_categorie_vente_' or app.request.get('_route') == 'app_caisse_parametres_generaux' or app.request.get('_route') == 'app_caisse_parametres_etiquettes' %}open{% endif %}">
             <a href="{{ path('app_caisse_parametres_generaux') }}" class="submenu-item" style="{% if app.request.get('_route') == 'app_caisse_parametres_generaux' %}background-color: rgba(255,255,255,0.1); color: white;{% endif %}">Paramètres généraux</a>
-            <div class="submenu-item">Utilisateurs</div>
-            <div class="submenu-item">Impression</div>
             <div class="submenu-item">Horaires</div>
             <a href="{{ path('categorie_vente_index') }}" class="submenu-item" style="{% if app.request.get('_route') starts with 'categorie_vente_' %}background-color: rgba(255,255,255,0.1); color: white;{% endif %}">Catégories</a>
             <a href="{{ path('sous_categorie_vente_index') }}" class="submenu-item" style="{% if app.request.get('_route') starts with 'sous_categorie_vente_' %}background-color: rgba(255,255,255,0.1); color: white;{% endif %}">Sous-catégories</a>
+            <a href="{{ path('app_caisse_parametres_etiquettes') }}" class="submenu-item" style="{% if app.request.get('_route') == 'app_caisse_parametres_etiquettes' %}background-color: rgba(255,255,255,0.1); color: white;{% endif %}">Etiquettes</a>
         </div>
 
         <!-- Journaux Accordion -->
@@ -331,7 +348,7 @@
             const currentRoute = '{{ app.request.get("_route") }}';
             const isCaisseOpen = {{ isCaisseOpen is defined and isCaisseOpen ? 'true' : 'false' }};
             const isCaisseClosed = {{ isCaisseClosed is defined and isCaisseClosed ? 'true' : 'false' }};
-            const montantPrecedent = {{ montantPrecedent is defined ? montantPrecedent : 0 }};
+            const montantPrecedent = {{ montantPrecedent is defined and montantPrecedent is not null ? montantPrecedent : 0 }};
 
             if (currentRoute === 'app_caisse') {
                 if (!isCaisseOpen && !isCaisseClosed) {

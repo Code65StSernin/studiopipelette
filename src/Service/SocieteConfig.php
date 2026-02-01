@@ -49,6 +49,11 @@ class SocieteConfig
     public function getStripeSecretKey(): ?string { return $this->get()?->getStripeSecretKey(); }
     public function getStripeWebhookSecret(): ?string { return $this->get()?->getStripeWebhookSecret(); }
 
+    // Frais Bancaires
+    public function getStripeFraisPourcentage(): ?float { return $this->get()?->getStripeFraisPourcentage(); }
+    public function getStripeFraisFixe(): ?float { return $this->get()?->getStripeFraisFixe(); }
+    public function getTpeFraisPourcentage(): ?float { return $this->get()?->getTpeFraisPourcentage(); }
+
     // SMTP
     public function getSmtpHost(): ?string       { return $this->get()?->getSmtpHost(); }
     public function getSmtpPort(): ?int          { return $this->get()?->getSmtpPort(); }
@@ -58,6 +63,8 @@ class SocieteConfig
 
     // Charges sociales et fiscales
     public function getPourcentageUrssaf(): ?float { return $this->get()?->getPourcentageUrssaf(); }
+    public function getPourcentageUrssafBic(): ?float { return $this->get()?->getPourcentageUrssafBic(); }
+    public function getPourcentageUrssafBnc(): ?float { return $this->get()?->getPourcentageUrssafBnc(); }
     public function getPourcentageCpf(): ?float    { return $this->get()?->getPourcentageCpf(); }
     public function getPourcentageIr(): ?float     { return $this->get()?->getPourcentageIr(); }
 
@@ -72,4 +79,13 @@ class SocieteConfig
         $pin = is_string($pin) ? trim($pin) : '';
         return $pin !== '' ? $pin : '1234';
     }
+
+    // Programme de fidélité
+    public function isFideliteActive(): bool      { return (bool) $this->get()?->isFideliteActive(); }
+    public function getFideliteMode(): string     { return (string) $this->get()?->getFideliteMode(); }
+    public function getFideliteVisitsX(): ?int    { return $this->get()?->getFideliteVisitsX(); }
+    public function getFideliteVisitsY(): ?float  { return $this->get()?->getFideliteVisitsY(); }
+    public function getFidelitePointsX(): ?float  { return $this->get()?->getFidelitePointsX(); }
+    public function getFidelitePointsY(): ?float  { return $this->get()?->getFidelitePointsY(); }
+    public function getFidelitePointsZ(): ?float  { return $this->get()?->getFidelitePointsZ(); }
 }

@@ -60,6 +60,16 @@ class Societe
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $stripeWebhookSecret = null;
 
+    // Frais Bancaires
+    #[ORM\Column(type: 'float', nullable: true)]
+    private ?float $stripeFraisPourcentage = 1.5;
+
+    #[ORM\Column(type: 'float', nullable: true)]
+    private ?float $stripeFraisFixe = 0.25;
+
+    #[ORM\Column(type: 'float', nullable: true)]
+    private ?float $tpeFraisPourcentage = 1.75;
+
     // Base de données
     #[ORM\Column(length: 100, nullable: true)]
     private ?string $dbHost = null;
@@ -90,8 +100,17 @@ class Societe
     private ?string $smtpFromEmail = null;
 
     // Charges sociales et fiscales
+    /**
+     * @deprecated Utiliser pourcentageUrssafBic et pourcentageUrssafBnc
+     */
     #[ORM\Column(type: 'float', nullable: true)]
     private ?float $pourcentageUrssaf = null;
+
+    #[ORM\Column(type: 'float', nullable: true)]
+    private ?float $pourcentageUrssafBic = null;
+
+    #[ORM\Column(type: 'float', nullable: true)]
+    private ?float $pourcentageUrssafBnc = null;
 
     #[ORM\Column(type: 'float', nullable: true)]
     private ?float $pourcentageCpf = null;
@@ -107,6 +126,28 @@ class Societe
 
     #[ORM\Column(length: 10, nullable: true)]
     private ?string $adminPin = null;
+
+    // Fidélité
+    #[ORM\Column(type: 'boolean', options: ['default' => false])]
+    private bool $fideliteActive = false;
+
+    #[ORM\Column(length: 20, options: ['default' => 'visits'])]
+    private string $fideliteMode = 'visits'; // 'visits' or 'points'
+
+    #[ORM\Column(type: 'integer', nullable: true)]
+    private ?int $fideliteVisitsX = null;
+
+    #[ORM\Column(type: 'float', nullable: true)]
+    private ?float $fideliteVisitsY = null;
+
+    #[ORM\Column(type: 'float', nullable: true)]
+    private ?float $fidelitePointsX = null; // Points par Euro
+
+    #[ORM\Column(type: 'float', nullable: true)]
+    private ?float $fidelitePointsY = null; // Seuil Points
+
+    #[ORM\Column(type: 'float', nullable: true)]
+    private ?float $fidelitePointsZ = null; // Récompense Euro
 
     public function getId(): ?int
     {
@@ -413,6 +454,30 @@ class Societe
         return $this;
     }
 
+    public function getPourcentageUrssafBic(): ?float
+    {
+        return $this->pourcentageUrssafBic;
+    }
+
+    public function setPourcentageUrssafBic(?float $pourcentageUrssafBic): self
+    {
+        $this->pourcentageUrssafBic = $pourcentageUrssafBic;
+
+        return $this;
+    }
+
+    public function getPourcentageUrssafBnc(): ?float
+    {
+        return $this->pourcentageUrssafBnc;
+    }
+
+    public function setPourcentageUrssafBnc(?float $pourcentageUrssafBnc): self
+    {
+        $this->pourcentageUrssafBnc = $pourcentageUrssafBnc;
+
+        return $this;
+    }
+
     public function getPourcentageCpf(): ?float
     {
         return $this->pourcentageCpf;
@@ -470,6 +535,116 @@ class Societe
     {
         $this->adminPin = $adminPin;
 
+        return $this;
+    }
+
+    public function isFideliteActive(): bool
+    {
+        return $this->fideliteActive;
+    }
+
+    public function setFideliteActive(bool $fideliteActive): self
+    {
+        $this->fideliteActive = $fideliteActive;
+        return $this;
+    }
+
+    public function getFideliteMode(): string
+    {
+        return $this->fideliteMode;
+    }
+
+    public function setFideliteMode(string $fideliteMode): self
+    {
+        $this->fideliteMode = $fideliteMode;
+        return $this;
+    }
+
+    public function getFideliteVisitsX(): ?int
+    {
+        return $this->fideliteVisitsX;
+    }
+
+    public function setFideliteVisitsX(?int $fideliteVisitsX): self
+    {
+        $this->fideliteVisitsX = $fideliteVisitsX;
+        return $this;
+    }
+
+    public function getFideliteVisitsY(): ?float
+    {
+        return $this->fideliteVisitsY;
+    }
+
+    public function setFideliteVisitsY(?float $fideliteVisitsY): self
+    {
+        $this->fideliteVisitsY = $fideliteVisitsY;
+        return $this;
+    }
+
+    public function getFidelitePointsX(): ?float
+    {
+        return $this->fidelitePointsX;
+    }
+
+    public function setFidelitePointsX(?float $fidelitePointsX): self
+    {
+        $this->fidelitePointsX = $fidelitePointsX;
+        return $this;
+    }
+
+    public function getFidelitePointsY(): ?float
+    {
+        return $this->fidelitePointsY;
+    }
+
+    public function setFidelitePointsY(?float $fidelitePointsY): self
+    {
+        $this->fidelitePointsY = $fidelitePointsY;
+        return $this;
+    }
+
+    public function getFidelitePointsZ(): ?float
+    {
+        return $this->fidelitePointsZ;
+    }
+
+    public function setFidelitePointsZ(?float $fidelitePointsZ): self
+    {
+        $this->fidelitePointsZ = $fidelitePointsZ;
+        return $this;
+    }
+
+    public function getStripeFraisPourcentage(): ?float
+    {
+        return $this->stripeFraisPourcentage;
+    }
+
+    public function setStripeFraisPourcentage(?float $stripeFraisPourcentage): self
+    {
+        $this->stripeFraisPourcentage = $stripeFraisPourcentage;
+        return $this;
+    }
+
+    public function getStripeFraisFixe(): ?float
+    {
+        return $this->stripeFraisFixe;
+    }
+
+    public function setStripeFraisFixe(?float $stripeFraisFixe): self
+    {
+        $this->stripeFraisFixe = $stripeFraisFixe;
+        return $this;
+    }
+
+    public function getTpeFraisPourcentage(): ?float
+    {
+        return $this->tpeFraisPourcentage;
+    }
+
+    public function setTpeFraisPourcentage(?float $tpeFraisPourcentage): self
+    {
+        $this->tpeFraisPourcentage = $tpeFraisPourcentage;
         return $this;
     }
 

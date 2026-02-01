@@ -26,7 +26,7 @@ class FactureRepository extends ServiceEntityRepository
     {
         $currentYear = (int) date('Y');
         $currentMonth = (int) date('m');
-        $prefix = 'FA' . date('ym'); // FA + année 2 chiffres + mois 2 chiffres
+        $prefix = 'FB' . date('ym'); // FB + année 2 chiffres + mois 2 chiffres
 
         // Utiliser une requête qui compte les factures avec le préfixe du mois en cours
         $qb = $this->createQueryBuilder('f');

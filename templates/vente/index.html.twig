@@ -9,34 +9,57 @@
         <div class="card shadow-sm mb-4">
             <div class="card-body">
                 <form method="get" class="row g-3 align-items-end">
-                    <div class="col-md-3">
-                        <label for="start_date" class="form-label">Date de début</label>
+                    <div class="col-md-2">
+                        <label for="start_date" class="form-label">Début</label>
                         <input type="date" class="form-control" id="start_date" name="start_date" value="{{ startDate }}">
                     </div>
-                    <div class="col-md-3">
-                        <label for="end_date" class="form-label">Date de fin</label>
+                    <div class="col-md-2">
+                        <label for="end_date" class="form-label">Fin</label>
                         <input type="date" class="form-control" id="end_date" name="end_date" value="{{ endDate }}">
                     </div>
-                    <div class="col-md-2">
-                        <button type="button" id="btn-today" class="btn btn-outline-primary w-100">
-                            <i class="fas fa-calendar-day me-2"></i>Aujourd'hui
-                        </button>
+                    <div class="col-md-3">
+                        <label for="client_select" class="form-label">Client</label>
+                        <select id="client_select" name="client" placeholder="Tous les clients..." autocomplete="off">
+                            {% if currentClient %}
+                                <option value="{{ currentClient.id }}" selected>{{ currentClient.nom|upper }} {{ currentClient.prenom|capitalize }}</option>
+                            {% endif %}
+                        </select>
                     </div>
-                    <div class="col-md-2">
-                        <button type="submit" class="btn btn-primary w-100">
-                            <i class="fas fa-filter me-2"></i>Filtrer
-                        </button>
-                    </div>
-                    <div class="col-md-2">
-                        <a href="{{ path('app_vente_index') }}" class="btn btn-secondary w-100">
-                            <i class="fas fa-undo me-2"></i>Réinitialiser
-                        </a>
+                    <div class="col-md-5 d-flex align-items-end gap-2">
+                        <button type="button" id="btn-today" class="btn btn-outline-primary" title="Aujourd'hui"><i class="fas fa-calendar-day"></i></button>
+                        <button type="submit" class="btn btn-primary flex-grow-1"><i class="fas fa-filter me-2"></i>Filtrer</button>
+                        <a href="{{ path('app_vente_index') }}" class="btn btn-secondary" title="Réinitialiser"><i class="fas fa-undo"></i></a>
                     </div>
                 </form>
             </div>
         </div>
         <script>
             document.addEventListener('DOMContentLoaded', function() {
+                // Tom Select for Client Search
+                new TomSelect('#client_select', {
+                    valueField: 'value',
+                    labelField: 'label',
+                    searchField: 'label',
+                    load: function(query, callback) {
+                        var url = '{{ path("app_caisse_client_search") }}?q=' + encodeURIComponent(query);
+                        fetch(url)
+                            .then(response => response.json())
+                            .then(json => {
+                                callback(json);
+                            }).catch(()=>{
+                                callback();
+                            });
+                    },
+                    render: {
+                        option: function(item, escape) {
+                            return '<div>' + escape(item.label) + '</div>';
+                        },
+                        item: function(item, escape) {
+                            return '<div>' + escape(item.label) + '</div>';
+                        }
+                    }
+                });
+
                 var btn = document.getElementById('btn-today');
                 var startInput = document.getElementById('start_date');
                 var endInput = document.getElementById('end_date');
@@ -74,6 +97,21 @@
                                     <span class="input-group-text">€</span>
                                 </div>
                                 <div class="form-text">Par défaut le montant de la vente, mais modifiable.</div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Type d'annulation</label>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="annulationType" id="typeRemboursement" value="remboursement" checked>
+                                    <label class="form-check-label" for="typeRemboursement">
+                                        Remboursement
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="annulationType" id="typeAvoir" value="avoir">
+                                    <label class="form-check-label" for="typeAvoir">
+                                        Avoir (génère un code unique)
+                                    </label>
+                                </div>
                             </div>
                             <div class="mb-3">
                                 <label for="annulationMotif" class="form-label">Motif</label>
@@ -125,6 +163,7 @@
                 const montant = document.getElementById('annulationMontant').value;
                 const motif = document.getElementById('annulationMotif').value;
                 const pin = document.getElementById('annulationPin').value;
+                const type = document.querySelector('input[name="annulationType"]:checked').value;
                 const errorDiv = document.getElementById('annulationError');
 
                 if (!montant || !motif || !pin) {
@@ -148,7 +187,8 @@
                     body: JSON.stringify({
                         montant: montant,
                         motif: motif,
-                        pin: pin
+                        pin: pin,
+                        type: type
                     })
                 })
                 .then(response => response.json())
@@ -190,6 +230,27 @@
                         <tbody>
                             {% for vente in ventes %}
                                 {% set totalCommission = 0 %}
+                                
+                                {# Calculate Non-Monetary Amount (BonAchat, Fidelite) #}
+                                {% set nonMonetaryAmount = 0 %}
+                                {% if vente.paiements|length > 0 %}
+                                    {% for paiement in vente.paiements %}
+                                        {% if paiement.methode in ['BonAchat', 'Fidelite'] %}
+                                            {% set nonMonetaryAmount = nonMonetaryAmount + paiement.montant %}
+                                        {% endif %}
+                                    {% endfor %}
+                                {% elseif vente.modePaiement in ['BonAchat', 'Fidelite'] %}
+                                    {% set nonMonetaryAmount = vente.montantTotal %}
+                                {% endif %}
+
+                                {# Calculate Real CA #}
+                                {% set realCA = max(0, vente.montantTotal - nonMonetaryAmount) %}
+                                
+                                {# Calculate Ratio for Commission #}
+                                {% set ratio = 1 %}
+                                {% if vente.montantTotal > 0 %}
+                                    {% set ratio = realCA / vente.montantTotal %}
+                                {% endif %}
 
                                 {% for ligne in vente.ligneVentes %}
                                     {% set commissionRate = 0 %}
@@ -211,6 +272,8 @@
                                     {% endif %}
                                 {% endfor %}
 
+                                {% set totalCommission = totalCommission * ratio %}
+
                                 <tr>
                                     <td>{{ vente.dateVente|date('d/m/Y H:i') }}</td>
                                     <td>
@@ -221,9 +284,20 @@
                                         {% endif %}
                                     </td>
                                     <td>
-                                        <span class="badge bg-{{ vente.modePaiement == 'CB' ? 'success' : (vente.modePaiement == 'Espece' ? 'warning' : 'info') }}">
-                                            {{ vente.modePaiement }}
-                                        </span>
+                                        {% if vente.paiements|length > 0 %}
+                                            {% for paiement in vente.paiements %}
+                                                <div class="mb-1">
+                                                    <span class="badge bg-{{ paiement.methode == 'CB' ? 'success' : (paiement.methode == 'Espece' ? 'warning' : 'info') }}">
+                                                        {{ paiement.methode }}
+                                                    </span>
+                                                    <span class="small">{{ paiement.montant|number_format(2, ',', ' ') }} €</span>
+                                                </div>
+                                            {% endfor %}
+                                        {% else %}
+                                            <span class="badge bg-{{ vente.modePaiement == 'CB' ? 'success' : (vente.modePaiement == 'Espece' ? 'warning' : 'info') }}">
+                                                {{ vente.modePaiement }}
+                                            </span>
+                                        {% endif %}
                                     </td>
                                     <td>
                                         <ul class="list-unstyled mb-0 small">
@@ -239,17 +313,25 @@
                                         {{ totalCommission|number_format(2, ',', ' ') }} €
                                     </td>
                                     <td class="text-end fw-bold">
-                                        {{ vente.montantTotal|number_format(2, ',', ' ') }} €
+                                        {{ realCA|number_format(2, ',', ' ') }} €
                                         {% if vente.commentaire %}
                                             <br><small class="text-danger fst-italic">{{ vente.commentaire }}</small>
                                         {% endif %}
                                     </td>
                                     <td class="text-center">
-                                        {% if vente.montantTotal > 0 %}
+                                        {% if vente.montantTotal > 0 and not vente.isAnnule and vente.isCommission100 %}
                                             <button type="button" class="btn btn-outline-danger btn-sm" onclick="openAnnulationModal({{ vente.id }}, {{ vente.montantTotal }})" title="Annuler cette vente">
                                                 <i class="fas fa-ban"></i>
                                             </button>
+                                        {% elseif vente.isAnnule %}
+                                            <span class="badge bg-danger">ANNULÉE</span>
                                         {% endif %}
+                                        <a href="{{ path('app_vente_ticket', {'id': vente.id}) }}" target="_blank" class="btn btn-outline-dark btn-sm ms-1" title="Imprimer le ticket">
+                                            <i class="fas fa-ticket-alt"></i>
+                                        </a>
+                                        <a href="{{ path('app_vente_facture', {'id': vente.id}) }}" class="btn btn-outline-dark btn-sm ms-1" title="Facture">
+                                            <i class="fas fa-file-invoice"></i>
+                                        </a>
                                     </td>
                                 </tr>
                             {% else %}
@@ -277,10 +359,10 @@
                     <nav>
                         <ul class="pagination pagination-sm mb-0">
                             <li class="page-item {{ page <= 1 ? 'disabled' : '' }}">
-                                <a class="page-link" href="{{ path('app_vente_index', {'page': page - 1, 'start_date': startDate, 'end_date': endDate}) }}">Précédent</a>
+                                <a class="page-link" href="{{ path('app_vente_index', {'page': page - 1, 'start_date': startDate, 'end_date': endDate, 'client': currentClient ? currentClient.id : null}) }}">Précédent</a>
                             </li>
                             <li class="page-item {{ page >= pagesCount ? 'disabled' : '' }}">
-                                <a class="page-link" href="{{ path('app_vente_index', {'page': page + 1, 'start_date': startDate, 'end_date': endDate}) }}">Suivant</a>
+                                <a class="page-link" href="{{ path('app_vente_index', {'page': page + 1, 'start_date': startDate, 'end_date': endDate, 'client': currentClient ? currentClient.id : null}) }}">Suivant</a>
                             </li>
                         </ul>
                     </nav>

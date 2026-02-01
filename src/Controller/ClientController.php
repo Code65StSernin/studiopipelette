@@ -153,9 +153,31 @@ class ClientController extends AbstractController
         VenteRepository $venteRepository, 
         OrderRepository $orderRepository, 
         PaginatorInterface $paginator, 
-        Request $request
+        Request $request,
+        \App\Service\SocieteConfig $societeConfig
     ): Response
     {
+        // Calcul Cagnotte Virtuelle (Points/Visites non convertis)
+        $virtualCagnotte = 0.0;
+        if ($societeConfig->isFideliteActive()) {
+             if ($societeConfig->getFideliteMode() === 'points') {
+                 $pts = $user->getFidelitePoints();
+                 $threshold = $societeConfig->getFidelitePointsY();
+                 $gain = $societeConfig->getFidelitePointsZ();
+                 if ($threshold > 0 && $gain > 0) {
+                     $virtualCagnotte = floor($pts / $threshold) * $gain;
+                 }
+             } elseif ($societeConfig->getFideliteMode() === 'visits') {
+                 $visits = $user->getFideliteVisits();
+                 $threshold = $societeConfig->getFideliteVisitsX();
+                 $gain = $societeConfig->getFideliteVisitsY();
+                 if ($threshold > 0 && $gain > 0) {
+                     $virtualCagnotte = floor($visits / $threshold) * $gain;
+                 }
+             }
+        }
+        $totalCagnotte = $user->getFideliteCagnotte() + $virtualCagnotte;
+
         // Achats Caisse (Ventes)
         $queryVentes = $venteRepository->createQueryBuilder('v')
             ->where('v.client = :user')
@@ -190,6 +212,8 @@ class ClientController extends AbstractController
             'client' => $user,
             'ventes' => $ventes,
             'orders' => $orders,
+            'totalCagnotte' => $totalCagnotte,
+            'virtualCagnotte' => $virtualCagnotte,
         ]);
     }
 

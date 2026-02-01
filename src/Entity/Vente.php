@@ -26,18 +26,31 @@ class Vente
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
     private ?string $montantTotal = null;
 
-    #[ORM\Column(length: 20)]
+    #[ORM\Column(length: 255)]
     private ?string $modePaiement = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $commentaire = null;
 
+    #[ORM\Column(type: Types::BOOLEAN, options: ['default' => false])]
+    private ?bool $isAnnule = false;
+
     #[ORM\OneToMany(mappedBy: 'vente', targetEntity: LigneVente::class, orphanRemoval: true, cascade: ['persist'])]
     private Collection $ligneVentes;
+
+    #[ORM\OneToOne(mappedBy: 'vente', cascade: ['persist', 'remove'])]
+    private ?Avoir $avoir = null;
+
+    #[ORM\OneToMany(mappedBy: 'vente', targetEntity: Paiement::class, orphanRemoval: true, cascade: ['persist'])]
+    private Collection $paiements;
+
+    #[ORM\OneToOne(mappedBy: 'vente', targetEntity: Facture::class, cascade: ['persist', 'remove'])]
+    private ?Facture $facture = null;
 
     public function __construct()
     {
         $this->ligneVentes = new ArrayCollection();
+        $this->paiements = new ArrayCollection();
         $this->dateVente = new \DateTimeImmutable();
     }
 
@@ -132,6 +145,106 @@ class Vente
                 $ligneVente->setVente(null);
             }
         }
+
+        return $this;
+    }
+
+    public function isAnnule(): ?bool
+    {
+        return $this->isAnnule;
+    }
+
+    public function setIsAnnule(bool $isAnnule): self
+    {
+        $this->isAnnule = $isAnnule;
+
+        return $this;
+    }
+
+    public function getAvoir(): ?Avoir
+    {
+        return $this->avoir;
+    }
+
+    public function setAvoir(Avoir $avoir): static
+    {
+        // set the owning side of the relation if necessary
+        if ($avoir->getVente() !== $this) {
+            $avoir->setVente($this);
+        }
+
+        $this->avoir = $avoir;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Paiement>
+     */
+    public function getPaiements(): Collection
+    {
+        return $this->paiements;
+    }
+
+    public function addPaiement(Paiement $paiement): static
+    {
+        if (!$this->paiements->contains($paiement)) {
+            $this->paiements->add($paiement);
+            $paiement->setVente($this);
+        }
+
+        return $this;
+    }
+
+    public function removePaiement(Paiement $paiement): static
+    {
+        if ($this->paiements->removeElement($paiement)) {
+            // set the owning side to null (unless already changed)
+            if ($paiement->getVente() === $this) {
+                $paiement->setVente(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * Helper to check if sale contains only 100% commission items (no depot-vente)
+     * Returns true if all lines are either Prestation or Shop Article (not Depot-Vente)
+     */
+    public function isCommission100(): bool
+    {
+        foreach ($this->ligneVentes as $ligne) {
+            $article = $ligne->getArticle();
+            if ($article && $article->getFournisseur() && $article->getFournisseur()->isClientDepotVente()) {
+                $commissionRate = 0;
+                $depotVente = $article->getFournisseur()->getDepotVente();
+                if ($depotVente) {
+                    $commissionRate = $depotVente->getCommission();
+                }
+                
+                // Si un article dépôt-vente a une commission inférieure à 100%, la vente n'est pas "100% commission"
+                if ($commissionRate < 100) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    public function getFacture(): ?Facture
+    {
+        return $this->facture;
+    }
+
+    public function setFacture(?Facture $facture): self
+    {
+        // set the owning side of the relation if necessary
+        if ($facture !== null && $facture->getVente() !== $this) {
+            $facture->setVente($this);
+        }
+
+        $this->facture = $facture;
 
         return $this;
     }

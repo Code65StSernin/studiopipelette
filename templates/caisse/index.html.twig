@@ -4,7 +4,7 @@
 
 {% block body %}
     <div class="row h-100 g-0">
-        <div class="col-9 pe-3 d-flex flex-column">
+        <div class="col-10 pe-3 d-flex flex-column">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h1>
                     {% if isTarifView %}
@@ -42,6 +42,13 @@
                         <i class="fas fa-arrow-left"></i> Retour aux catégories
                     </a>
                 {% endif %}
+            </div>
+
+            <!-- Boutons d'action -->
+            <div class="mb-3 d-none">
+                <button class="btn btn-outline-primary" onclick="openBonAchatSaleModal()">
+                    <i class="fas fa-gift me-2"></i>Vendre Bon d'Achat
+                </button>
             </div>
 
             {% set isMainView = not (isSousCategorieView or isShopCategoryView or isTarifView or isArticleView) %}
@@ -238,89 +245,161 @@
             </div>
         </div>
 
-        <div class="col-3 border-start bg-light rounded shadow-sm">
-            <div class="sticky-top p-3" style="top: 20px; max-height: calc(100vh - 40px); display: flex; flex-direction: column;">
-                <div class="text-center mb-3">
+        <div class="col-2 border-start bg-light rounded shadow-sm">
+            <div class="sticky-top p-1" style="top: 5px; max-height: calc(100vh - 10px); display: flex; flex-direction: column;">
+                <div class="text-center mb-1">
                     {% if isCaisseClosed %}
-                        <span class="badge bg-danger w-100 py-2 text-uppercase shadow-sm">
-                            <i class="fas fa-lock me-2"></i>Caisse Fermée
+                        <span class="badge bg-danger w-100 py-1 text-uppercase shadow-sm">
+                            <i class="fas fa-lock me-1"></i>Fermée
                         </span>
                     {% elseif isCaisseOpen %}
-                        <span class="badge bg-success w-100 py-2 text-uppercase shadow-sm">
-                            <i class="fas fa-check-circle me-2"></i>Caisse Ouverte
+                        <span class="badge bg-success w-100 py-1 text-uppercase shadow-sm">
+                            <i class="fas fa-check-circle me-1"></i>Ouverte
                         </span>
                     {% else %}
-                        <span class="badge bg-warning text-dark w-100 py-2 text-uppercase shadow-sm">
-                            <i class="fas fa-exclamation-circle me-2"></i>Non initialisée
+                        <span class="badge bg-warning text-dark w-100 py-1 text-uppercase shadow-sm">
+                            <i class="fas fa-exclamation-circle me-1"></i>Non init.
                         </span>
                     {% endif %}
                 </div>
 
-                <h3 class="mb-3 text-center"><i class="fas fa-shopping-cart me-2"></i>Panier</h3>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0 text-center flex-grow-1"><i class="fas fa-shopping-cart me-1"></i>Panier</h5>
+                    <button class="btn btn-sm btn-outline-danger ms-2" onclick="if(confirm('Tout effacer (Panier et Client) ?')) resetCaisse()" title="RAZ (Remise à Zéro)">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </div>
                 
-                <div class="flex-grow-1 overflow-auto mb-3" style="min-height: 200px;">
-                     <div id="cart-items" class="list-group">
+                <div class="mb-2" style="height: 30vh; overflow-y: auto;">
+                     <div id="cart-items" class="list-group list-group-flush">
                         <!-- Items will be added here -->
                         <div id="empty-cart-msg" class="text-center text-muted mt-5">
                             <i class="fas fa-shopping-basket fa-3x mb-3"></i>
-                            <p>Votre panier est vide</p>
+                            <p class="lead mb-0">Votre panier est vide</p>
                         </div>
                      </div>
                 </div>
                 
-                <div class="card bg-primary text-white mt-auto">
-                    <div class="card-body text-center">
-                        <h5 class="card-title">Total à payer</h5>
-                        <p class="card-text display-6 fw-bold mb-2" id="cart-total">0,00 €</p>
-                        <div class="mt-2 text-start">
-                            <label for="client-select" class="form-label mb-1 text-white-50">Client</label>
-                            <select id="client-select" placeholder="Rechercher un client..." autocomplete="off"></select>
+                <div class="card bg-primary text-white mb-2">
+                    <div class="card-body text-center p-1 position-relative">
+                        <div class="small mb-0 opacity-75">Total à payer</div>
+                        <p class="card-text h4 fw-bold mb-0" id="cart-total">0,00 €</p>
+                        <button type="button" class="btn btn-sm btn-light text-primary position-absolute top-0 end-0 m-1 p-0 fw-bold" onclick="applyDiscount()" title="Appliquer une remise en %" style="width: 24px; height: 24px; line-height: 24px; z-index: 1050;">%</button>
+                        
+                        <div id="payment-recap" class="d-none border-top pt-2 mt-2">
+                            <div class="d-flex justify-content-between small">
+                                <span>Déjà payé :</span>
+                                <span id="amount-paid">0,00 €</span>
+                            </div>
+                            <div class="d-flex justify-content-between fw-bold mt-1">
+                                <span>Reste :</span>
+                                <span id="amount-remaining">0,00 €</span>
+                            </div>
+                            <div id="payments-list" class="mt-2 text-start small">
+                                <!-- List of payments added -->
+                            </div>
                         </div>
+
+                        <div class="mt-2 text-start">
+                        <select id="client-select" placeholder="Client..." autocomplete="off" class="form-control"></select>
+                    </div>
                     </div>
                 </div>
 
-                <div id="payment-actions" class="mt-3 d-none">
+                <div id="payment-actions" class="mt-2">
                     {% if isCaisseClosed %}
-                        <div class="alert alert-danger text-center">
-                            <i class="fas fa-lock me-2"></i>Caisse fermée
+                        <div class="alert alert-danger text-center py-2 mb-0">
+                            <i class="fas fa-lock me-1"></i>Fermée
                         </div>
                     {% else %}
                         <div class="d-grid gap-2">
-                            <button class="btn btn-success btn-lg" onclick="validatePayment('CB')">
-                                <i class="fas fa-credit-card me-2"></i>CB
-                            </button>
-                            <button class="btn btn-warning btn-lg text-white" onclick="showCashInterface()">
+                            <button class="btn btn-success" onclick="openPaymentModal('Espece')">
                                 <i class="fas fa-money-bill-wave me-2"></i>Espèces
                             </button>
-                            <button class="btn btn-info btn-lg text-white" onclick="validatePayment('Cheque')">
+                            <button class="btn btn-primary" onclick="openPaymentModal('CB')">
+                                <i class="fas fa-credit-card me-2"></i>Carte Bancaire
+                            </button>
+                            <button class="btn btn-info text-white" onclick="openPaymentModal('Cheque')">
                                 <i class="fas fa-money-check me-2"></i>Chèque
                             </button>
+                            <button class="btn btn-warning text-dark" onclick="openBonAchatSaleModal()">
+                                <i class="fas fa-gift me-2"></i>Bon d'achat
+                            </button>
+                            <button class="btn btn-secondary" onclick="openPaymentModal('Avoir')">
+                                <i class="fas fa-file-invoice-dollar me-2"></i>Avoir
+                            </button>
                         </div>
+                        <button id="btn-validate-sale" class="btn btn-light w-100 mt-2 fw-bold d-none" onclick="submitSale()">
+                            <i class="fas fa-check me-1"></i>Valider
+                        </button>
                     {% endif %}
                 </div>
 
-                <div id="cash-interface" class="card bg-warning text-white mt-3 d-none">
-                    <div class="card-body">
-                        <h5 class="card-title">Paiement Espèces</h5>
-                        <div class="mb-3">
-                            <label class="form-label">Montant perçu</label>
-                            <div class="input-group input-group-lg">
-                                <input type="number" id="cash-received" class="form-control" step="0.01" placeholder="0.00">
-                                <span class="input-group-text">€</span>
-                            </div>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">A rendre</label>
-                            <div class="display-6 fw-bold" id="cash-change">0,00 €</div>
-                        </div>
-                        <div class="d-grid gap-2">
-                            <button class="btn btn-light btn-lg fw-bold" onclick="validatePayment('Espece')">Valider</button>
-                            <button class="btn btn-outline-light" onclick="hideCashInterface()">Annuler</button>
-                        </div>
+
+                <!-- Champ Code-barres persistant -->
+                <div class="mt-4 p-2 bg-dark rounded shadow-sm">
+                    <div class="input-group">
+                        <span class="input-group-text bg-dark text-light border-secondary">
+                            <i class="fas fa-barcode"></i>
+                        </span>
+                        <input type="text" id="barcode-scanner-input" 
+                               class="form-control bg-dark text-light border-secondary" 
+                               placeholder="Scanner ou saisir code..."
+                               autocomplete="off">
                     </div>
+                    <div id="barcode-status" class="small text-center mt-1" style="height: 1.2rem;"></div>
                 </div>
             </div>
         </div>
+    </div>
+
+    <!-- Modal Paiement Generic -->
+    <div class="modal fade" id="paymentModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="paymentModalTitle">Paiement</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+                <label class="form-label">Méthode de paiement</label>
+                <select id="paymentMethodSelect" class="form-select form-select-lg mb-3">
+                    <option value="Espece" selected>Espèces</option>
+                    <option value="CB">Carte Bancaire</option>
+                    <option value="Cheque">Chèque</option>
+                    <option value="BonAchat">Bon d'achat</option>
+                    <option value="Avoir">Avoir</option>
+                </select>
+            </div>
+            
+            <div id="payment-code-container" class="mb-3 d-none">
+                <label class="form-label" id="payment-code-label">Code</label>
+                <div class="input-group">
+                    <input type="text" id="paymentCodeInput" class="form-control" placeholder="Saisir le code...">
+                    <button class="btn btn-outline-secondary" type="button" onclick="verifyPaymentCode()">Vérifier</button>
+                </div>
+                <div id="payment-code-msg" class="form-text mt-1"></div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Montant à encaisser</label>
+                <div class="input-group input-group-lg">
+                    <input type="number" id="paymentAmountInput" class="form-control" step="0.01" placeholder="0.00">
+                    <span class="input-group-text">€</span>
+                </div>
+                <div class="form-text">Reste à payer sur la commande : <span id="paymentModalRemaining" class="fw-bold"></span></div>
+            </div>
+            <div id="change-display" class="alert alert-info d-none">
+                A rendre : <span id="change-amount" class="fw-bold">0.00 €</span>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+            <button type="button" class="btn btn-primary" onclick="confirmPayment()">Valider</button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Modal PIN pour vente forcée -->
@@ -343,12 +422,88 @@
       </div>
     </div>
 
+    <!-- Modal Impression Ticket -->
+    <div class="modal fade" id="printTicketModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Vente validée</h5>
+          </div>
+          <div class="modal-body">
+            <p class="fs-5">Voulez-vous imprimer le ticket de caisse ?</p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="handleTicketResponse(false)">Non</button>
+            <button type="button" class="btn btn-primary" onclick="handleTicketResponse(true)">Oui, imprimer</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Vente Bon d'Achat -->
+    <div class="modal fade" id="bonAchatSaleModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Vendre Bon d'Achat</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+                <label class="form-label">Montant</label>
+                <div class="input-group">
+                    <input type="number" id="bonAchatSaleAmount" class="form-control" step="0.01" min="1" placeholder="50.00">
+                    <span class="input-group-text">€</span>
+                </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+            <button type="button" class="btn btn-primary" onclick="confirmBonAchatSale()">Valider</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Remise en Pourcentage -->
+    <div class="modal fade" id="discountModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Remise (%)</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+                <label class="form-label">Pourcentage</label>
+                <div class="input-group">
+                    <input type="number" id="discountPercentInput" class="form-control" step="1" min="1" max="100" placeholder="10">
+                    <span class="input-group-text">%</span>
+                </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+            <button type="button" class="btn btn-primary" onclick="confirmDiscount()">Appliquer</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
 <script>
     let cart = [];
+    let payments = []; // Store payment objects: {method: 'CB', amount: 10.00, code: '...'}
     let clientSelect = null;
+    let currentPaymentMethod = null; // Temporary for modal
+    let lastSaleId = null; // Store last sale ID for ticket printing
+
     const CART_KEY = 'caisseCart';
     const CLIENT_KEY = 'caisseClientId';
     const RESERVATION_KEY = 'caisseReservationId';
+
+    function hasBonAchatSale() {
+        return cart.some(item => item.type === 'bon_achat_vente');
+    }
 
     function saveCart() {
         try {
@@ -369,6 +524,115 @@
     }
 
     document.addEventListener('DOMContentLoaded', function() {
+        // --- Barcode Scanner Logic ---
+        const scannerInput = document.getElementById('barcode-scanner-input');
+        const scannerStatus = document.getElementById('barcode-status');
+        let scanDebounce = null;
+        let isProcessingScan = false;
+
+        function focusScanner() {
+            if (document.activeElement === scannerInput) return;
+            // Ne pas voler le focus si l'utilisateur est dans un autre champ important
+            if (document.activeElement && (
+                document.activeElement.tagName === 'INPUT' || 
+                document.activeElement.tagName === 'TEXTAREA' || 
+                document.activeElement.tagName === 'SELECT'
+            )) {
+                return;
+            }
+            scannerInput.focus();
+        }
+
+        // Focus initial
+        focusScanner();
+
+        // Refocus périodique et sur clic global
+        document.addEventListener('click', function(e) {
+            // Petit délai pour laisser le focus se faire naturellement si clic sur input
+            setTimeout(focusScanner, 100);
+        });
+
+        scannerInput.addEventListener('blur', function() {
+            // Refocus automatique sauf si clic sur un autre input
+            setTimeout(focusScanner, 200);
+        });
+
+        scannerInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                const code = scannerInput.value.trim();
+                if (code) {
+                    processScan(code);
+                    scannerInput.value = '';
+                }
+            }
+        });
+
+        function processScan(code) {
+            if (isProcessingScan) return;
+            isProcessingScan = true;
+            scannerStatus.innerHTML = '<span class="text-info"><i class="fas fa-spinner fa-spin"></i> Vérification...</span>';
+
+            fetch('{{ path("app_caisse_check_scan") }}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code: code })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    scannerStatus.innerHTML = '<span class="text-success"><i class="fas fa-check"></i> ' + (data.type === 'article' ? 'Article ajouté' : 'Code valide') + '</span>';
+                    
+                    if (data.type === 'article') {
+                        addToCart(data.data.id, data.data.nom, data.data.prix, 'article', data.data.taille);
+                        // Son de succès ?
+                    } else if (data.type === 'bon_achat') {
+                        addPaymentMethod('BonAchat', data.data.montant, data.data.code);
+                    } else if (data.type === 'avoir') {
+                        addPaymentMethod('Avoir', data.data.montant, data.data.code);
+                    }
+                    
+                    // Clear status after delay
+                    setTimeout(() => { scannerStatus.innerHTML = ''; }, 2000);
+                } else {
+                    scannerStatus.innerHTML = '<span class="text-danger"><i class="fas fa-times"></i> ' + data.message + '</span>';
+                    // Play error sound?
+                    setTimeout(() => { scannerStatus.innerHTML = ''; }, 3000);
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                scannerStatus.innerHTML = '<span class="text-danger">Erreur serveur</span>';
+            })
+            .finally(() => {
+                isProcessingScan = false;
+            });
+        }
+
+        function addPaymentMethod(method, maxAmount, code) {
+            if (hasBonAchatSale() && (method === 'BonAchat' || method === 'Avoir')) {
+                alert("Impossible d'utiliser un Bon d'achat ou un Avoir si le panier contient un Bon d'achat.");
+                return;
+            }
+
+            const remaining = getRemaining();
+            if (remaining <= 0) {
+                alert("Le panier est déjà payé !");
+                return;
+            }
+            
+            let amount = Math.min(remaining, maxAmount);
+            if (amount <= 0) return;
+
+            // Ajouter directement au tableau payments
+            payments.push({
+                method: method,
+                amount: amount,
+                code: code
+            });
+            updatePaymentRecap();
+        }
+        // --- End Barcode Scanner Logic ---
+
         loadCart();
         // Initialize Client Search with TomSelect
         if(document.getElementById('client-select')) {
@@ -386,8 +650,37 @@
                             callback();
                         });
                 },
+                render: {
+                    option: function(data, escape) {
+                        let extra = '';
+                        if (data.cagnotte && parseFloat(data.cagnotte) > 0) {
+                            extra = '<span class="badge bg-success ms-2">' + escape(parseFloat(data.cagnotte).toFixed(2)) + '€</span>';
+                        }
+                        return '<div>' + escape(data.label) + extra + '</div>';
+                    },
+                    item: function(data, escape) {
+                        let extra = '';
+                        if (data.cagnotte && parseFloat(data.cagnotte) > 0) {
+                            extra = ' <span class="text-success fw-bold">(' + escape(parseFloat(data.cagnotte).toFixed(2)) + '€)</span>';
+                        }
+                        return '<div>' + escape(data.label) + extra + '</div>';
+                    }
+                },
                 placeholder: 'Rechercher un client...',
                 maxOptions: 50
+            });
+
+            clientSelect.on('change', function(val) {
+                 if (!val) {
+                     payments = payments.filter(p => p.method !== 'Fidelite');
+                     updatePaymentRecap();
+                     return;
+                 }
+                 
+                 // Auto-apply Fidelity logic when client changes
+                 checkAndApplyFidelite();
+                 
+                 updatePaymentRecap();
             });
 
             // Restore previously selected client
@@ -415,9 +708,14 @@
             clientSelect.on('change', function(value) {
                 const prev = localStorage.getItem(CLIENT_KEY);
                 if (prev && prev !== value && cart.length > 0) {
-                    cart = [];
-                    saveCart();
-                    updateCartDisplay();
+                    if (confirm('Changer de client va vider le panier. Continuer ?')) {
+                        cart = [];
+                        payments = [];
+                        saveCart();
+                        updateCartDisplay();
+                    } else {
+                        // Revert change (tricky with TomSelect, but acceptable limitation for now)
+                    }
                 }
                 if (value) {
                     localStorage.setItem(CLIENT_KEY, value);
@@ -466,7 +764,23 @@
         updateCartDisplay();
     });
 
+    function getCartTotal() {
+        return cart.reduce((sum, item) => sum + item.price, 0);
+    }
+
+    function getPaidTotal() {
+        return payments.reduce((sum, p) => sum + p.amount, 0);
+    }
+
+    function getRemaining() {
+        return Math.max(0, getCartTotal() - getPaidTotal());
+    }
+
     function addToCart(id, name, price, type, taille, isForced = false) {
+        if (payments.length > 0) {
+            if(!confirm("Ajouter un article annulera les paiements en cours. Continuer ?")) return;
+            payments = [];
+        }
         cart.push({
             id: id, 
             name: name, 
@@ -480,9 +794,56 @@
     }
 
     function removeFromCart(index) {
+        if (payments.length > 0) {
+            if(!confirm("Retirer un article annulera les paiements en cours. Continuer ?")) return;
+            payments = [];
+        }
         cart.splice(index, 1);
         saveCart();
         updateCartDisplay();
+    }
+
+    function checkAndApplyFidelite() {
+        // 1. Check if client is selected
+        if (!clientSelect) return;
+        const clientId = clientSelect.getValue();
+        
+        // Remove existing Fidelite payment first (always recalculate)
+        const hadFidelite = payments.some(p => p.method === 'Fidelite');
+        payments = payments.filter(p => p.method !== 'Fidelite');
+
+        if (!clientId) return;
+
+        // 2. Check for Bon d'achat sale
+        if (hasBonAchatSale()) return;
+
+        // 3. Get client data (cagnotte)
+        const clientData = clientSelect.options[clientId];
+        if (!clientData || !clientData.cagnotte) return;
+        
+        const cagnotte = parseFloat(clientData.cagnotte);
+        if (cagnotte <= 0) return;
+
+        // 4. Calculate amount to use
+        // We prioritize Fidelity, but we must respect other existing payments?
+        // If we want it "automatically deducted", we usually want it to fill as much as possible.
+        // But if we have other payments, we might overpay if we just add it?
+        // Let's calculate remaining to pay *excluding* fidelity (which we just removed).
+        
+        const total = getCartTotal();
+        const otherPaid = payments.reduce((acc, p) => acc + p.amount, 0);
+        const remaining = total - otherPaid;
+        
+        if (remaining > 0) {
+            const amountToUse = Math.min(remaining, cagnotte);
+            if (amountToUse > 0.009) { 
+                payments.push({
+                    method: 'Fidelite',
+                    amount: amountToUse,
+                    code: null
+                });
+            }
+        }
     }
 
     function updateCartDisplay() {
@@ -492,17 +853,16 @@
         const paymentActions = document.getElementById('payment-actions');
         
         cartItemsContainer.innerHTML = '';
-        let total = 0;
+        const total = getCartTotal();
 
         if (cart.length === 0) {
             if(emptyMsg) emptyMsg.classList.remove('d-none');
-            if(paymentActions) paymentActions.classList.add('d-none');
+            // Payment actions always visible
         } else {
             if(emptyMsg) emptyMsg.classList.add('d-none');
-            if(paymentActions) paymentActions.classList.remove('d-none');
+            // Payment actions always visible
 
             cart.forEach((item, index) => {
-                total += item.price;
                 const itemEl = document.createElement('a');
                 itemEl.className = 'list-group-item list-group-item-action d-flex justify-content-between align-items-center';
                 
@@ -523,59 +883,443 @@
                 cartItemsContainer.appendChild(itemEl);
             });
         }
-
+        
         if(totalEl) totalEl.textContent = total.toFixed(2) + ' €';
-    }
-
-    function showCashInterface() {
-        const actions = document.getElementById('payment-actions');
-        const interface = document.getElementById('cash-interface');
-        const input = document.getElementById('cash-received');
         
-        if(actions) actions.classList.add('d-none');
-        if(interface) interface.classList.remove('d-none');
-        if(input) input.focus();
+        // Auto-apply Fidelity logic
+        checkAndApplyFidelite();
+
+        updatePaymentRecap();
     }
 
-    function hideCashInterface() {
-        const actions = document.getElementById('payment-actions');
-        const interface = document.getElementById('cash-interface');
+    function updatePaymentRecap() {
+        const recapDiv = document.getElementById('payment-recap');
+        const paidEl = document.getElementById('amount-paid');
+        const remainingEl = document.getElementById('amount-remaining');
+        const listEl = document.getElementById('payments-list');
+        const validateBtn = document.getElementById('btn-validate-sale');
+        const paymentActions = document.getElementById('payment-actions');
+
+        const paid = getPaidTotal();
+        const remaining = getRemaining();
+
+        if (payments.length > 0) {
+            recapDiv.classList.remove('d-none');
+            paidEl.textContent = paid.toFixed(2) + ' €';
+            remainingEl.textContent = remaining.toFixed(2) + ' €';
+            
+            listEl.innerHTML = '';
+            payments.forEach((p, idx) => {
+                const div = document.createElement('div');
+                div.className = 'd-flex justify-content-between text-white';
+                
+                let displayInfo = p.code ? '('+p.code+')' : '';
+                if (p.method === 'BonAchat' && p.clientName) {
+                    displayInfo = '(' + p.clientName + ')';
+                }
+
+                div.innerHTML = `<span>${p.method} ${displayInfo}</span> <span>${p.amount.toFixed(2)} €</span> <span class="text-danger cursor-pointer ms-2" onclick="removePayment(${idx})">&times;</span>`;
+                listEl.appendChild(div);
+            });
+        } else {
+            recapDiv.classList.add('d-none');
+        }
+
+        // Logic for validation button
+        // Always show payment buttons if remaining > 0
+        // Show Validate button if remaining == 0
         
-        if(interface) interface.classList.add('d-none');
-        if(actions) actions.classList.remove('d-none');
+        if (remaining <= 0.001 && cart.length > 0) {
+            // Fully paid
+            if(validateBtn) validateBtn.classList.remove('d-none');
+            // Optionally hide payment buttons to prevent overpayment?
+            // But user might want to adjust? No, let's keep it simple.
+        } else {
+            if(validateBtn) validateBtn.classList.add('d-none');
+        }
     }
 
-    // Calculate change logic
-    const cashInput = document.getElementById('cash-received');
-    if(cashInput) {
-        cashInput.addEventListener('input', function(e) {
-            const received = parseFloat(e.target.value) || 0;
-            const total = cart.reduce((sum, item) => sum + item.price, 0);
-            const change = received - total;
-            const changeEl = document.getElementById('cash-change');
-            if(changeEl) changeEl.textContent = (change > 0 ? change.toFixed(2) : '0.00') + ' €';
+    function removePayment(index) {
+        payments.splice(index, 1);
+        updatePaymentRecap();
+    }
+
+    // Discount Logic
+    function applyDiscount() {
+        if (cart.length === 0) {
+            alert("Le panier est vide.");
+            return;
+        }
+        
+        // Calculate subtotal of POSITIVE items (exclude existing discounts)
+        let subtotal = 0;
+        cart.forEach(item => {
+            if (item.price > 0) subtotal += item.price;
+        });
+        
+        if (subtotal <= 0) {
+            alert("Montant insuffisant pour appliquer une remise.");
+            return;
+        }
+
+        const modalEl = document.getElementById('discountModal');
+        const modal = new bootstrap.Modal(modalEl);
+        
+        document.getElementById('discountPercentInput').value = '';
+        
+        modal.show();
+        
+        modalEl.addEventListener('shown.bs.modal', function () {
+            const input = document.getElementById('discountPercentInput');
+            input.focus();
+        }, {once: true});
+    }
+
+    function confirmDiscount() {
+        const input = document.getElementById('discountPercentInput');
+        let percent = parseFloat(input.value);
+
+        if (isNaN(percent) || percent <= 0) {
+            alert("Pourcentage invalide.");
+            return;
+        }
+
+        let subtotal = 0;
+        cart.forEach(item => {
+            if (item.price > 0) subtotal += item.price;
+        });
+
+        let discountAmount = subtotal * (percent / 100);
+        // Round to 2 decimals
+        discountAmount = Math.round(discountAmount * 100) / 100;
+        
+        addToCart(null, 'Remise ' + percent + '%', -discountAmount, 'remise', null);
+
+        const modalEl = document.getElementById('discountModal');
+        const modal = bootstrap.Modal.getInstance(modalEl);
+        modal.hide();
+    }
+    
+    // Enter key support for discount input
+    document.addEventListener('DOMContentLoaded', function() {
+        const discountInput = document.getElementById('discountPercentInput');
+        if (discountInput) {
+            discountInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    confirmDiscount();
+                }
+            });
+        }
+    });
+
+    // Modal Payment Logic
+    function openPaymentModal(method = null) {
+        const remaining = getRemaining();
+        
+        if (remaining <= 0) {
+            if (getCartTotal() === 0) {
+                alert("Le panier est vide.");
+            } else {
+                alert("La commande est déjà réglée.");
+            }
+            return;
+        }
+
+        const modalEl = document.getElementById('paymentModal');
+        const modal = new bootstrap.Modal(modalEl);
+        
+        // Handle restricted payment methods
+        const hasBA = hasBonAchatSale();
+        const select = document.getElementById('paymentMethodSelect');
+        if(select) {
+            // Disable restricted options
+            for (let i = 0; i < select.options.length; i++) {
+                const opt = select.options[i];
+                if (hasBA && (opt.value === 'BonAchat' || opt.value === 'Avoir')) {
+                    opt.disabled = true;
+                    opt.text += ' (Non autorisé)';
+                } else {
+                    opt.disabled = false;
+                    opt.text = opt.text.replace(' (Non autorisé)', '');
+                }
+            }
+            
+            if (method) {
+                select.value = method;
+                currentPaymentMethod = method;
+            } else {
+                select.value = 'Espece';
+                currentPaymentMethod = 'Espece';
+            }
+        }
+        updateModalInterface();
+        
+        document.getElementById('paymentAmountInput').value = remaining.toFixed(2);
+        document.getElementById('paymentModalRemaining').textContent = remaining.toFixed(2) + ' €';
+        
+        modal.show();
+        
+        modalEl.addEventListener('shown.bs.modal', function () {
+            const input = document.getElementById('paymentAmountInput');
+            input.focus();
+            input.select();
+        }, {once: true});
+    }
+
+    // Payment Method Change Listener
+    const methodSelect = document.getElementById('paymentMethodSelect');
+    if(methodSelect) {
+        methodSelect.addEventListener('change', function(e) {
+            currentPaymentMethod = e.target.value;
+            updateModalInterface();
         });
     }
 
-    function validatePayment(method) {
-        if (cart.length === 0) return;
+    function updateModalInterface() {
+        const method = currentPaymentMethod || 'Espece';
+        const codeContainer = document.getElementById('payment-code-container');
+        const changeDisplay = document.getElementById('change-display');
+        const changeAmount = document.getElementById('change-amount');
+        const title = document.getElementById('paymentModalTitle');
         
+        title.textContent = 'Paiement ' + method;
+        
+        // Handle Code Input visibility
+        if (method === 'BonAchat' || method === 'Avoir') {
+            if(codeContainer) {
+                codeContainer.classList.remove('d-none');
+                document.getElementById('payment-code-msg').textContent = '';
+                document.getElementById('paymentCodeInput').value = '';
+                document.getElementById('payment-code-label').textContent = (method === 'BonAchat') ? 'Code Bon d\'Achat' : 'Code Avoir';
+                
+                // Reset verification status
+                const input = document.getElementById('paymentCodeInput');
+                input.dataset.verified = 'false';
+            }
+        } else {
+            if(codeContainer) codeContainer.classList.add('d-none');
+        }
+        
+        // Handle Change display for Espece
+        if (method === 'Espece') {
+            if(changeDisplay) {
+                changeDisplay.classList.remove('d-none');
+                changeAmount.textContent = '0.00 €';
+            }
+        } else {
+            if(changeDisplay) changeDisplay.classList.add('d-none');
+        }
+    }
+
+    // Verify Code Function
+    function verifyPaymentCode() {
+        const method = currentPaymentMethod;
+        const codeInput = document.getElementById('paymentCodeInput');
+        const code = codeInput.value.trim();
+        const msg = document.getElementById('payment-code-msg');
+        
+        if (!code) {
+            msg.textContent = 'Veuillez saisir un code.';
+            msg.className = 'form-text text-danger';
+            return;
+        }
+        
+        msg.textContent = 'Vérification...';
+        msg.className = 'form-text text-info';
+        
+        let url = '';
+        let body = { code: code };
+        
+        if (method === 'BonAchat') {
+            url = '{{ path("app_caisse_check_bon_achat") }}';
+            const clientId = clientSelect ? clientSelect.getValue() : null;
+            body.client_id = clientId;
+        } else if (method === 'Avoir') {
+            url = '{{ path("app_caisse_check_avoir") }}';
+        } else {
+            return;
+        }
+        
+        fetch(url, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(body)
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                msg.textContent = 'Code valide. Solde: ' + parseFloat(data.montant).toFixed(2) + ' €';
+                msg.className = 'form-text text-success fw-bold';
+                
+                // Update amount input to max possible
+                const remaining = getRemaining();
+                const amountToUse = Math.min(remaining, parseFloat(data.montant));
+                document.getElementById('paymentAmountInput').value = amountToUse.toFixed(2);
+                
+                // Store verified data
+                codeInput.dataset.verified = 'true';
+                codeInput.dataset.code = code;
+                codeInput.dataset.maxAmount = data.montant;
+                codeInput.dataset.clientName = data.client || '';
+            } else {
+                msg.textContent = data.message;
+                msg.className = 'form-text text-danger fw-bold';
+                codeInput.dataset.verified = 'false';
+            }
+        })
+        .catch(() => {
+            msg.textContent = 'Erreur serveur';
+            msg.className = 'form-text text-danger';
+        });
+    }
+
+    // Input listener for change calculation
+    document.getElementById('paymentAmountInput').addEventListener('input', function(e) {
+        if (currentPaymentMethod === 'Espece') {
+            const val = parseFloat(e.target.value) || 0;
+            const remaining = getRemaining();
+            const change = Math.max(0, val - remaining);
+            document.getElementById('change-amount').textContent = change.toFixed(2) + ' €';
+        }
+    });
+    
+    // Enter key to confirm
+    document.getElementById('paymentAmountInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            confirmPayment();
+        }
+    });
+
+    function confirmPayment() {
+        const input = document.getElementById('paymentAmountInput');
+        let amount = parseFloat(input.value);
+        
+        if (isNaN(amount) || amount <= 0) {
+            alert("Veuillez saisir un montant valide.");
+            return;
+        }
+
+        const remaining = getRemaining();
+        let paymentAmount = amount;
+        
+        if (amount > remaining) {
+            paymentAmount = remaining;
+        }
+        
+        // Handle Code-based payments
+        if (currentPaymentMethod === 'BonAchat' || currentPaymentMethod === 'Avoir') {
+            const codeInput = document.getElementById('paymentCodeInput');
+            const code = codeInput.value.trim();
+            
+            if (!code) {
+                alert("Veuillez saisir un code.");
+                return;
+            }
+            
+            // Force verification if not done
+            if (codeInput.dataset.verified !== 'true' || codeInput.dataset.code !== code) {
+                alert("Veuillez cliquer sur 'Vérifier' pour valider le code.");
+                return;
+            }
+            
+            const maxAmount = parseFloat(codeInput.dataset.maxAmount || 0);
+            if (paymentAmount > maxAmount + 0.01) {
+                alert("Le montant dépasse le solde disponible (" + maxAmount.toFixed(2) + " €)");
+                return;
+            }
+            
+            payments.push({
+                method: currentPaymentMethod,
+                amount: paymentAmount,
+                code: code,
+                clientName: codeInput.dataset.clientName
+            });
+            
+        } else {
+            payments.push({
+                method: currentPaymentMethod,
+                amount: paymentAmount
+            });
+        }
+
+        const modalEl = document.getElementById('paymentModal');
+        const modal = bootstrap.Modal.getInstance(modalEl);
+        modal.hide();
+
+        updatePaymentRecap();
+
+        if (getRemaining() <= 0.001) {
+            submitSale();
+        }
+    }
+
+    // Bon d'Achat Sale Logic
+    function openBonAchatSaleModal() {
+        const modalEl = document.getElementById('bonAchatSaleModal');
+        const modal = new bootstrap.Modal(modalEl);
+        document.getElementById('bonAchatSaleAmount').value = '';
+        modal.show();
+        
+        modalEl.addEventListener('shown.bs.modal', function () {
+            document.getElementById('bonAchatSaleAmount').focus();
+        }, {once: true});
+    }
+
+    function confirmBonAchatSale() {
+        const input = document.getElementById('bonAchatSaleAmount');
+        let amount = parseFloat(input.value);
+
+        if (isNaN(amount) || amount <= 0) {
+            alert("Montant invalide.");
+            return;
+        }
+
+        addToCart('BA_' + Date.now(), "Bon d'achat " + amount.toFixed(2) + " €", amount, 'bon_achat_vente', null);
+
+        const modalEl = document.getElementById('bonAchatSaleModal');
+        const modal = bootstrap.Modal.getInstance(modalEl);
+        modal.hide();
+    }
+    
+    // Enter key support
+    document.addEventListener('DOMContentLoaded', function() {
+        const baInput = document.getElementById('bonAchatSaleAmount');
+        if (baInput) {
+            baInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    confirmBonAchatSale();
+                }
+            });
+        }
+    });
+
+    function submitSale() {
+        const remaining = getRemaining();
+        if (remaining > 0.01) {
+            alert("La vente n'est pas soldée. Reste : " + remaining.toFixed(2) + " €");
+            return;
+        }
+
         const clientId = clientSelect ? clientSelect.getValue() : null;
         if (!clientId) {
             alert('Veuillez sélectionner un client.');
             return;
         }
 
-        const total = cart.reduce((sum, item) => sum + item.price, 0);
+        const total = getCartTotal();
         const reservationId = localStorage.getItem(RESERVATION_KEY);
 
         const data = {
             client: clientId,
             total: total,
-            method: method,
+            payments: payments, // Send the list of payments
             reservationId: reservationId,
             items: cart
         };
+
+        // Disable button to prevent double submit
+        const btn = document.getElementById('btn-validate-sale');
+        if(btn) btn.disabled = true;
 
         fetch('{{ path("app_caisse_valider") }}', {
             method: 'POST',
@@ -587,21 +1331,79 @@
         .then(response => response.json())
         .then(data => {
             if (data.status === 'success') {
-                alert('Vente validée avec succès !');
-                cart = [];
-                localStorage.removeItem(RESERVATION_KEY);
-                updateCartDisplay();
-                if(clientSelect) clientSelect.clear();
-                if (method === 'Espece') hideCashInterface();
-                saveCart();
+                // Success
+                lastSaleId = data.id;
+                
+                // Show ticket confirmation modal
+                const modalEl = document.getElementById('printTicketModal');
+                const modal = new bootstrap.Modal(modalEl);
+                modal.show();
+
             } else {
                 alert('Erreur: ' + data.message);
+                if(btn) btn.disabled = false;
             }
         })
         .catch(error => {
             console.error('Error:', error);
             alert('Une erreur est survenue lors de la validation.');
+            if(btn) btn.disabled = false;
         });
+    }
+
+    function handleTicketResponse(shouldPrint) {
+        const modalEl = document.getElementById('printTicketModal');
+        const modal = bootstrap.Modal.getInstance(modalEl);
+        modal.hide();
+
+        if (shouldPrint && lastSaleId) {
+            // Open ticket in new window
+            const url = '{{ path("app_vente_ticket", {id: "SALE_ID"}) }}'.replace("SALE_ID", lastSaleId);
+            window.open(url, '_blank');
+        }
+
+        // Reset everything
+        resetCaisse();
+    }
+
+    function resetCaisse() {
+        // 1. Reset Data
+        cart = [];
+        payments = [];
+        
+        // 2. Clear Storage
+        localStorage.removeItem(CART_KEY);
+        localStorage.removeItem(RESERVATION_KEY);
+        localStorage.removeItem(CLIENT_KEY);
+
+        // 3. Clear Client (silently to avoid triggering change events that might conflict)
+        if(clientSelect) {
+            clientSelect.clear(true); 
+            clientSelect.setValue('', true);
+        }
+
+        // Force UI reset for payments (Belt and suspenders)
+        const recapDiv = document.getElementById('payment-recap');
+        if(recapDiv) recapDiv.classList.add('d-none');
+        
+        const paidEl = document.getElementById('amount-paid');
+        if(paidEl) paidEl.textContent = '0.00 €';
+        
+        const remainingEl = document.getElementById('amount-remaining');
+        if(remainingEl) remainingEl.textContent = '0.00 €';
+        
+        const listEl = document.getElementById('payments-list');
+        if(listEl) listEl.innerHTML = '';
+
+        // 4. Update UI
+        updateCartDisplay();
+        
+        // 5. Save empty state
+        saveCart();
+        
+        // 6. Reset Buttons
+        const btn = document.getElementById('btn-validate-sale');
+        if(btn) btn.disabled = false;
     }
 
     let pendingItem = null;
@@ -664,6 +1466,13 @@
     document.getElementById('pinInput').addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
             document.getElementById('pinConfirmBtn').click();
+        }
+    });
+
+    // Allow Enter key in Avoir input
+    document.getElementById('avoir-code-input').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            checkAvoir();
         }
     });
 </script>

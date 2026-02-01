@@ -87,15 +87,16 @@
         </div>
     </div>
 
+{% endblock %}
+{% block javascripts %}
     <script>
-        document.addEventListener('DOMContentLoaded', function(){
             const checkboxes = document.querySelectorAll('.prestation-cb');
             const stickyFooter = document.getElementById('sticky-footer');
             const selectedCountSpan = document.getElementById('selected-count');
             const stickyBtn = document.getElementById('sticky-submit-btn');
             const form = document.getElementById('prestations-form');
             const mainSubmitBtn = form ? form.querySelector('button[type="submit"]') : null;
-
+            
             function updateState() {
                 let count = 0;
                 checkboxes.forEach(function(cb){
@@ -107,7 +108,8 @@
                         label.classList.remove('selected');
                     }
                 });
-
+                });
+                
                 if (selectedCountSpan) selectedCountSpan.textContent = count;
                 
                 if (stickyFooter) {

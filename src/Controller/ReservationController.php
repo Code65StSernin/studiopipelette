@@ -22,18 +22,32 @@ class ReservationController extends AbstractController
     #[Route('/reservation', name: 'app_reservation')]
     public function index(TarifRepository $tarifRepository): Response
     {
+        $user = $this->getUser();
+        $canBook = true;
+        if ($user && method_exists($user, 'canBookOnline') && !$user->canBookOnline()) {
+            $this->addFlash('warning_cant_book', 'Vous ne pouvez pas prendre de rendez-vous en ligne. Veuillez nous contacter.');
+            return $this->redirectToRoute('app_home');
+        }
+
         $tarifs = $tarifRepository->findAll();
 
         return $this->render('reservation/index.html.twig', [
             'tarifs' => $tarifs,
+            'canBook' => $canBook,
         ]);
     }
 
     #[Route('/reservation/creneaux', name: 'app_reservation_creneaux', methods: ['POST'])]
     public function creneaux(Request $request, CreneauFinderService $creneauFinderService, TarifRepository $tarifRepository): Response
     {
-        if (!$this->getUser()) {
+        $user = $this->getUser();
+        if (!$user) {
             return $this->redirectToRoute('app_login');
+        }
+
+        if (method_exists($user, 'canBookOnline') && !$user->canBookOnline()) {
+            $this->addFlash('error', 'Vous ne pouvez pas prendre de rendez-vous en ligne. Veuillez nous contacter.');
+            return $this->redirectToRoute('app_reservation');
         }
 
         $all = $request->request->all();
@@ -89,8 +103,14 @@ $prestationsData = $all['prestations'] ?? [];
         SocieteConfig $societeConfig
     ): Response
     {
-        if (!$this->getUser()) {
+        $user = $this->getUser();
+        if (!$user) {
             return $this->redirectToRoute('app_login');
+        }
+
+        if (method_exists($user, 'canBookOnline') && !$user->canBookOnline()) {
+            $this->addFlash('error', 'Vous ne pouvez pas prendre de rendez-vous en ligne. Veuillez nous contacter.');
+            return $this->redirectToRoute('app_reservation');
         }
 
         $all = $request->request->all();

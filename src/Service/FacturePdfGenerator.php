@@ -69,8 +69,15 @@ class FacturePdfGenerator
     private function buildAdresseLivraison(Facture $facture): string
     {
         $order = $facture->getOrder();
+        $vente = $facture->getVente();
 
-        if ($facture->getModeLivraison() === 'domicile') {
+        // Pour une vente en caisse, pas d'adresse de livraison
+        if ($vente) {
+            return '';
+        }
+
+        // Si c'est une commande en ligne avec livraison à domicile
+        if ($order && $facture->getModeLivraison() === 'domicile') {
             // 1) On tente de reconstruire l'adresse à partir des adresses de l'utilisateur
             $user = $order->getUser();
             $addressText = null;
@@ -124,14 +131,18 @@ class FacturePdfGenerator
         }
 
         // Point relais
-        $parts = [];
-        if ($order->getRelayName()) {
-            $parts[] = $order->getRelayName();
-        }
-        if ($order->getRelayAddress()) {
-            $parts[] = $order->getRelayAddress();
+        if ($order) {
+            $parts = [];
+            if ($order->getRelayName()) {
+                $parts[] = $order->getRelayName();
+            }
+            if ($order->getRelayAddress()) {
+                $parts[] = $order->getRelayAddress();
+            }
+
+            return implode("\n", $parts);
         }
 
-        return implode("\n", $parts);
+        return '';
     }
 }

@@ -41,6 +41,7 @@ use App\Repository\FactureRepository;
 use App\Repository\DepensesRepository;
 use App\Repository\RecetteRepository;
 use App\Repository\ReservationRepository;
+use App\Repository\VenteRepository;
 use App\Service\SocieteConfig;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
@@ -59,6 +60,7 @@ class DashboardController extends AbstractDashboardController
         private FactureRepository $factureRepository,
         private DepensesRepository $depensesRepository,
         private RecetteRepository $recetteRepository,
+        private VenteRepository $venteRepository,
         private RequestStack $requestStack,
         private SocieteConfig $societeConfig,
     ) {}
@@ -344,28 +346,142 @@ class DashboardController extends AbstractDashboardController
         }
 
         // CA port compris en euros (CA commercial / 100)
-        $caPortCompris = $caCommercialCents / 100;
+        $caWebEuros = $caCommercialCents / 100;
+
+        // --- CAISSE (Ventes physiques) ---
+        // Récupérer les ventes sur la période
+        $ventesRange = $this->venteRepository->createQueryBuilder('v')
+            ->andWhere('v.dateVente BETWEEN :from AND :to')
+            ->andWhere('v.isAnnule = :false')
+            ->setParameter('from', $fromFilter)
+            ->setParameter('to', $toFilter)
+            ->setParameter('false', false)
+            ->getQuery()
+            ->getResult();
+
+        $caCaisseBic = 0.0;
+        $caCaisseBnc = 0.0;
+        $caCaisseTotal = 0.0;
+        
+        $tpeFraisPourcentage = $this->societeConfig->getTpeFraisPourcentage() ?? 1.75;
+        $fraisCbCaisseTotal = 0.0;
+
+        foreach ($ventesRange as $vente) {
+            /** @var \App\Entity\Vente $vente */
+            
+            // 1. Calculer le montant non monétaire (Bon d'achat / Fidélité)
+            // et les frais CB (TPE)
+            $nonMonetaryAmount = 0.0;
+            foreach ($vente->getPaiements() as $paiement) {
+                $methode = $paiement->getMethode();
+                if (in_array($methode, ['BonAchat', 'Fidelite'])) {
+                    $nonMonetaryAmount += (float)$paiement->getMontant();
+                } elseif ($methode === 'CB') {
+                    $fraisCbCaisseTotal += (float)$paiement->getMontant() * ($tpeFraisPourcentage / 100);
+                }
+            }
+
+            $montantTotal = (float)$vente->getMontantTotal();
+            // CA Réel = Total - Paiements internes
+            $realCA = max(0, $montantTotal - $nonMonetaryAmount);
+            $caCaisseTotal += $realCA;
+
+            if ($realCA > 0) {
+                // 2. Répartition BIC / BNC selon les lignes
+                $sumBic = 0.0;
+                $sumBnc = 0.0;
+
+                foreach ($vente->getLigneVentes() as $ligne) {
+                    $ligneTotal = (float)$ligne->getPrixUnitaire() * $ligne->getQuantite();
+                    
+                    // Si Article -> BIC
+                    if ($ligne->getArticle() !== null) {
+                        $sumBic += $ligneTotal;
+                    } 
+                    // Si Tarif -> BNC
+                    elseif ($ligne->getTarif() !== null) {
+                        $sumBnc += $ligneTotal;
+                    }
+                    // Si ni l'un ni l'autre (ex: article supprimé?), par défaut BIC ?
+                    else {
+                        $sumBic += $ligneTotal;
+                    }
+                }
+
+                $sumLines = $sumBic + $sumBnc;
+                
+                if ($sumLines > 0) {
+                    $ratioBic = $sumBic / $sumLines;
+                    $ratioBnc = $sumBnc / $sumLines;
+                    
+                    $caCaisseBic += ($realCA * $ratioBic);
+                    $caCaisseBnc += ($realCA * $ratioBnc);
+                } else {
+                    // Si pas de lignes (bizarre), tout en BIC par défaut
+                    $caCaisseBic += $realCA;
+                }
+            }
+        }
+
+        // --- TOTAUX ---
+        // Ajout du CA Caisse aux totaux Brut et Commercial (en centimes)
+        $caCaisseCents = (int) round($caCaisseTotal * 100);
+        $caBrutCents += $caCaisseCents;
+        $caCommercialCents += $caCaisseCents;
+
+        // On considère que le Web (Order) est 100% BIC (Articles + Port)
+        // TODO: Si le Web vend des prestations, il faudra affiner ici.
+        $caTotalBic = $caWebEuros + $caCaisseBic;
+        $caTotalBnc = $caCaisseBnc;
+        $caGlobal = $caTotalBic + $caTotalBnc;
         
         // Pourcentages depuis SocieteConfig
-        $pourcentageUrssaf = $this->societeConfig->getPourcentageUrssaf() ?? 0;
+        // Compatibilité ascendante : si les nouveaux champs sont null, on utilise l'ancien
+        $pourcentageUrssafLegacy = $this->societeConfig->getPourcentageUrssaf() ?? 0;
+        
+        $pourcentageUrssafBic = $this->societeConfig->getPourcentageUrssafBic();
+        if ($pourcentageUrssafBic === null) $pourcentageUrssafBic = $pourcentageUrssafLegacy;
+        
+        $pourcentageUrssafBnc = $this->societeConfig->getPourcentageUrssafBnc();
+        if ($pourcentageUrssafBnc === null) $pourcentageUrssafBnc = $pourcentageUrssafLegacy;
+
         $pourcentageCpf = $this->societeConfig->getPourcentageCpf() ?? 0;
         $pourcentageIr = $this->societeConfig->getPourcentageIr() ?? 0;
         
-        // Charges sociales (URSSAF + CPF)
-        $chargesSociales = $caPortCompris * (($pourcentageUrssaf + $pourcentageCpf) / 100);
+        // Charges sociales
+        // BIC : Taux BIC + CPF
+        $chargesBic = $caTotalBic * ($pourcentageUrssafBic / 100);
         
-        // Impôt sur le revenu
-        $impotRevenu = $caPortCompris * ($pourcentageIr / 100);
+        // BNC : Taux BNC + CPF
+        $chargesBnc = $caTotalBnc * ($pourcentageUrssafBnc / 100);
+        
+        // CPF sur le tout
+        $chargesCpf = $caGlobal * ($pourcentageCpf / 100);
+        
+        $chargesSociales = $chargesBic + $chargesBnc + $chargesCpf;
+        
+        // Impôt sur le revenu (sur le global)
+        $impotRevenu = $caGlobal * ($pourcentageIr / 100);
         
         // Total charges à payer
         $chargesAPayer = $chargesSociales + $impotRevenu;
 
         // Frais bancaires (paiement CB) :
-        // 1,5 % du CA facturé port compris + 0,25 € par commande payée sur la période
-        $fraisPaiementCb = ($caPortCompris * 0.015) + ($paidOrdersRange * 0.25);
+        // Web (Stripe) + Caisse (TPE)
+        $stripeFraisPourcentage = $this->societeConfig->getStripeFraisPourcentage() ?? 1.5;
+        $stripeFraisFixe = $this->societeConfig->getStripeFraisFixe() ?? 0.25;
 
-        // CA encaissé = CA commercial - frais de paiement CB
-        $caEncaisseCents = (int) round($caCommercialCents - ($fraisPaiementCb * 100));
+        $fraisStripe = ($caWebEuros * ($stripeFraisPourcentage / 100)) + ($paidOrdersRange * $stripeFraisFixe);
+        
+        $fraisPaiementCb = $fraisStripe + $fraisCbCaisseTotal;
+
+        // CA encaissé = CA Global - frais de paiement CB (approximatif car on mélange Web et Caisse)
+        // Note: Le "CA encaissé" affiché précédemment était "CA Web - Frais".
+        // Maintenant on a le CA Caisse aussi.
+        
+        // On garde la logique "CA Encaisse" comme étant le CA Global net de frais bancaires estimés
+        $caEncaisseEuros = $caGlobal - $fraisPaiementCb;
+        $caEncaisseCents = (int) round($caEncaisseEuros * 100);
 
         // Dépenses sur la période (en euros)
         $depensesTotal = (float) $this->depensesRepository->createQueryBuilder('d')
@@ -395,7 +511,7 @@ class DashboardController extends AbstractDashboardController
         // Etalement site
         $totalSite = $this->societeConfig->getTotalSite() ?? 0;
         $pourcentageMensuel = $this->societeConfig->getPourcentageMensuel() ?? 0;
-        $montantRemboursement = $caPortCompris * ($pourcentageMensuel / 100);
+        $montantRemboursement = $caWebEuros * ($pourcentageMensuel / 100);
         $caTotalEuros = $revenueTotalCents / 100;
         $totalRembourseCalcul = $caTotalEuros * ($pourcentageMensuel / 100);
         
@@ -446,6 +562,9 @@ class DashboardController extends AbstractDashboardController
             'newsletterTotal' => $newsletterTotal,
             'newsletterActive' => $newsletterActive,
             'chargesSociales' => $chargesSociales,
+            'chargesBic' => $chargesBic,
+            'chargesBnc' => $chargesBnc,
+            'chargesCpf' => $chargesCpf,
             'impotRevenu' => $impotRevenu,
             'chargesAPayer' => $chargesAPayer,
             'fraisPaiementCb' => $fraisPaiementCb,

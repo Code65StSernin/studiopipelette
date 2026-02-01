@@ -111,9 +111,24 @@
                     <!-- Charges calculées -->
                     <div class="d-flex flex-wrap align-items-end">
                         <div class="form-group mb-2 mr-3 px-1">
-                            <label class="mr-2 mb-0 text-white-50" for="chargesSociales">Charges sociales (URSSAF + CPF) :</label>
+                            <label class="mr-2 mb-0 text-white-50" for="chargesBnc">URSSAF BIC :</label>
+                            <input id="chargesBnc" type="text" class="form-control form-control-sm bg-dark text-white border-secondary" 
+                                   value="{{ stats.chargesBnc|number_format(2, ',', ' ') }} €" readonly style="min-width: 140px;">
+                        </div>
+                        <div class="form-group mb-2 mr-3 px-1">
+                            <label class="mr-2 mb-0 text-white-50" for="chargesBic">URSSAF BNC :</label>
+                            <input id="chargesBic" type="text" class="form-control form-control-sm bg-dark text-white border-secondary" 
+                                   value="{{ stats.chargesBic|number_format(2, ',', ' ') }} €" readonly style="min-width: 140px;">
+                        </div>
+                        <div class="form-group mb-2 mr-3 px-1">
+                            <label class="mr-2 mb-0 text-white-50" for="chargesCpf">CPF :</label>
+                            <input id="chargesCpf" type="text" class="form-control form-control-sm bg-dark text-white border-secondary" 
+                                   value="{{ stats.chargesCpf|number_format(2, ',', ' ') }} €" readonly style="min-width: 140px;">
+                        </div>
+                        <div class="form-group mb-2 mr-3 px-1">
+                            <label class="mr-2 mb-0 text-white-50" for="chargesSociales"><strong>Total Charges (URSSAF+CPF) :</strong></label>
                             <input id="chargesSociales" type="text" class="form-control form-control-sm bg-dark text-white border-secondary" 
-                                   value="{{ stats.chargesSociales|number_format(2, ',', ' ') }} €" readonly style="min-width: 180px;">
+                                   value="{{ stats.chargesSociales|number_format(2, ',', ' ') }} €" readonly style="min-width: 180px; font-weight: bold;">
                         </div>
                         <div class="form-group mb-2 mr-3 px-1">
                             <label class="mr-2 mb-0 text-white-50" for="impotRevenu">Impôt sur le revenu :</label>
@@ -199,7 +214,7 @@
             <div class="col-md-8 mb-3">
                 <div class="card bg-secondary text-white h-100 shadow-sm">
                     <div class="card-header bg-transparent border-0">
-                        <h5 class="card-title mb-0">Activité sur la période sélectionnée</h5>
+                        <h5 class="card-title mb-0">Activité sur la période sélectionnée en ligne</h5>
                     </div>
                     <div class="card-body">
                         <p class="mb-2">Commandes payées : <strong>{{ stats.paidOrders }}</strong></p>
@@ -293,7 +308,7 @@
             <div class="col-md-12">
                 <div class="card bg-dark text-white shadow-sm">
                     <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center">
-                        <h5 class="card-title mb-0">Dernières commandes</h5>
+                        <h5 class="card-title mb-0">Dernières commandes en ligne</h5>
                         <a href="{{ path('admin', { 'crudAction': 'index', 'crudControllerFqcn': 'App\\Controller\\Admin\\OrderCrudController' }) }}" class="btn btn-sm btn-outline-light">Voir toutes les commandes</a>
                     </div>
                     <div class="card-body p-0">

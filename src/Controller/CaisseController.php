@@ -3,9 +3,12 @@
 namespace App\Controller;
 
 use App\Entity\Article;
+use App\Entity\Avoir;
+use App\Entity\BonAchat;
 use App\Entity\Creneau;
 use App\Entity\FondCaisse;
 use App\Entity\LigneVente;
+use App\Entity\Paiement;
 use App\Entity\RemiseBanque;
 use App\Entity\Reservation;
 use App\Entity\UnavailabilityRule;
@@ -81,15 +84,27 @@ class CaisseController extends AbstractController
                     $end = \DateTimeImmutable::createFromMutable($datePrecedente)->setTime(23, 59, 59);
                     
                     $venteRepo = $entityManager->getRepository(Vente::class);
-                    $ventesEspece = $venteRepo->createQueryBuilder('v')
+                    $ventesEspeceLegacy = $venteRepo->createQueryBuilder('v')
                         ->select('SUM(v.montantTotal)')
                         ->where('v.dateVente BETWEEN :start AND :end')
-                        ->andWhere('v.modePaiement = :mode')
+                        ->andWhere('v.modePaiement LIKE :mode')
                         ->setParameter('start', $start)
                         ->setParameter('end', $end)
-                        ->setParameter('mode', 'Espece')
+                        ->setParameter('mode', 'Espece%')
                         ->getQuery()
                         ->getSingleScalarResult();
+
+                    $ventesEspecePaiements = $entityManager->getRepository(Paiement::class)->createQueryBuilder('p')
+                        ->select('SUM(p.montant)')
+                        ->where('p.datePaiement BETWEEN :start AND :end')
+                        ->andWhere('p.methode LIKE :mode')
+                        ->setParameter('start', $start)
+                        ->setParameter('end', $end)
+                        ->setParameter('mode', 'Espece%')
+                        ->getQuery()
+                        ->getSingleScalarResult();
+
+                    $ventesEspece = (float)($ventesEspeceLegacy ?? 0.0) + (float)($ventesEspecePaiements ?? 0.0);
                     
                     // Remises en banque du jour précédent
                     $remiseRepo = $entityManager->getRepository(RemiseBanque::class);
@@ -188,7 +203,7 @@ class CaisseController extends AbstractController
     }
 
     #[Route('/caisse/client-search', name: 'app_caisse_client_search', methods: ['GET'])]
-    public function searchClient(Request $request, UserRepository $userRepository): JsonResponse
+    public function searchClient(Request $request, UserRepository $userRepository, SocieteConfig $societeConfig): JsonResponse
     {
         $term = trim((string) $request->query->get('q', ''));
 
@@ -204,6 +219,13 @@ class CaisseController extends AbstractController
         $users = $qb->getQuery()->getResult();
 
         $results = [];
+        
+        $isFideliteActive = $societeConfig->isFideliteActive();
+        $mode = $societeConfig->getFideliteMode();
+        $pointsY = $societeConfig->getFidelitePointsY();
+        $pointsZ = $societeConfig->getFidelitePointsZ();
+        $visitsX = $societeConfig->getFideliteVisitsX();
+        $visitsY = $societeConfig->getFideliteVisitsY();
 
         foreach ($users as $user) {
             $labelParts = [];
@@ -214,13 +236,186 @@ class CaisseController extends AbstractController
                 $labelParts[] = $user->getPrenom();
             }
 
+            $cagnotte = method_exists($user, 'getFideliteCagnotte') ? $user->getFideliteCagnotte() : 0.0;
+            
+            // Calcul de la cagnotte virtuelle (points/visites)
+            $virtualCagnotte = 0.0;
+            if ($isFideliteActive) {
+                if ($mode === 'points' && $pointsY > 0 && $pointsZ > 0) {
+                    $pts = $user->getFidelitePoints();
+                    $virtualCagnotte = floor($pts / $pointsY) * $pointsZ;
+                } elseif ($mode === 'visits' && $visitsX > 0 && $visitsY > 0) {
+                    $visits = $user->getFideliteVisits();
+                    $virtualCagnotte = floor($visits / $visitsX) * $visitsY;
+                }
+            }
+            
+            $totalCagnotte = $cagnotte + $virtualCagnotte;
+
             $results[] = [
                 'value' => $user->getId(),
                 'label' => implode(' ', $labelParts),
+                'cagnotte' => (float) $totalCagnotte
             ];
         }
 
         return new JsonResponse($results);
+    }
+
+    #[Route('/caisse/check-avoir', name: 'app_caisse_check_avoir', methods: ['POST'])]
+    public function checkAvoir(Request $request, EntityManagerInterface $entityManager): JsonResponse
+    {
+        $data = json_decode($request->getContent(), true);
+        $code = $data['code'] ?? '';
+
+        if (!$code) {
+            return new JsonResponse(['success' => false, 'message' => 'Code manquant']);
+        }
+
+        $avoir = $entityManager->getRepository(Avoir::class)->findOneBy(['code' => $code]);
+
+        if (!$avoir) {
+            return new JsonResponse(['success' => false, 'message' => 'Code avoir invalide']);
+        }
+        
+        if ($avoir->getDateUtilisation() !== null) {
+             return new JsonResponse(['success' => false, 'message' => 'Cet avoir a déjà été utilisé le ' . $avoir->getDateUtilisation()->format('d/m/Y')]);
+        }
+        
+        // Vérifier si l'avoir est expiré
+        $dateLimite = new \DateTime();
+        $dateLimite->modify('-6 months');
+        if ($avoir->getDateCreation() < $dateLimite) {
+            return new JsonResponse(['success' => false, 'message' => 'Cet avoir est expiré']);
+        }
+
+        return new JsonResponse([
+            'success' => true,
+            'montant' => (float)$avoir->getMontant(),
+            'code' => $avoir->getCode()
+        ]);
+    }
+
+    #[Route('/caisse/check-bon-achat', name: 'app_caisse_check_bon_achat', methods: ['POST'])]
+    public function checkBonAchat(Request $request, EntityManagerInterface $entityManager): JsonResponse
+    {
+        $data = json_decode($request->getContent(), true);
+        $code = $data['code'] ?? null;
+        $clientId = $data['client_id'] ?? null;
+
+        if (!$code) {
+            return new JsonResponse(['success' => false, 'message' => 'Code manquant']);
+        }
+
+        $bon = $entityManager->getRepository(BonAchat::class)->findOneBy(['code' => $code]);
+
+        if (!$bon) {
+            return new JsonResponse(['success' => false, 'message' => 'Bon d\'achat introuvable']);
+        }
+        
+        if ($bon->getClient() && $clientId) {
+            if ($bon->getClient()->getId() != $clientId) {
+                return new JsonResponse(['success' => false, 'message' => 'Ce bon d\'achat appartient à un autre client (' . $bon->getClient()->getNom() . ' ' . $bon->getClient()->getPrenom() . ')']);
+            }
+        }
+        
+        if (!$bon->isValide()) {
+             if ($bon->getMontantRestant() <= 0) {
+                 return new JsonResponse(['success' => false, 'message' => 'Ce bon d\'achat est épuisé (solde 0 €)']);
+             }
+             return new JsonResponse(['success' => false, 'message' => 'Ce bon d\'achat a expiré le ' . $bon->getDateExpiration()->format('d/m/Y')]);
+        }
+        
+        $clientName = $bon->getClient() ? (strtoupper($bon->getClient()->getNom()) . ' ' . ucfirst($bon->getClient()->getPrenom())) : '';
+
+        return new JsonResponse([
+            'success' => true,
+            'montant' => (float)$bon->getMontantRestant(),
+            'code' => $bon->getCode(),
+            'client' => $clientName
+        ]);
+    }
+
+    #[Route('/caisse/check-scan', name: 'app_caisse_check_scan', methods: ['POST'])]
+    public function checkScan(Request $request, EntityManagerInterface $entityManager, ArticleRepository $articleRepository): JsonResponse
+    {
+        $data = json_decode($request->getContent(), true);
+        $code = trim($data['code'] ?? '');
+
+        if (!$code) {
+            return new JsonResponse(['success' => false, 'message' => 'Code vide']);
+        }
+
+        // 1. Check Article (Gencod)
+        $article = $articleRepository->findOneBy(['gencod' => $code, 'actif' => true]);
+        if ($article) {
+            // Determine size and price
+            // Default to first available size
+            $tailles = $article->getTailles(); // Array from JSON
+            $firstAvailable = null;
+            
+            if (is_array($tailles)) {
+                foreach ($tailles as $t) {
+                    if (isset($t['stock']) && $t['stock'] > 0) {
+                        $firstAvailable = $t;
+                        break;
+                    }
+                }
+            }
+            
+            // If no stock, take the first one anyway (to show out of stock message or let UI handle it)
+            if (!$firstAvailable && is_array($tailles) && count($tailles) > 0) {
+                $firstAvailable = $tailles[0];
+            }
+
+            if ($firstAvailable) {
+                return new JsonResponse([
+                    'success' => true,
+                    'type' => 'article',
+                    'data' => [
+                        'id' => $article->getId(),
+                        'nom' => $article->getNom(),
+                        'prix' => (float)($firstAvailable['prix'] ?? 0),
+                        'taille' => $firstAvailable['taille'] ?? '',
+                        'stock' => (int)($firstAvailable['stock'] ?? 0)
+                    ]
+                ]);
+            }
+        }
+
+        // 2. Check Bon d'achat
+        $bon = $entityManager->getRepository(BonAchat::class)->findOneBy(['code' => $code]);
+        if ($bon && $bon->isValide()) {
+             return new JsonResponse([
+                'success' => true,
+                'type' => 'bon_achat',
+                'data' => [
+                    'code' => $bon->getCode(),
+                    'montant' => $bon->getMontantRestant(),
+                    'client' => $bon->getClient() ? ($bon->getClient()->getNom() . ' ' . $bon->getClient()->getPrenom()) : null
+                ]
+            ]);
+        }
+
+        // 3. Check Avoir
+        $avoir = $entityManager->getRepository(Avoir::class)->findOneBy(['code' => $code]);
+        if ($avoir && !$avoir->getDateUtilisation()) {
+             // Check expiry (6 months)
+             $dateLimite = new \DateTime();
+             $dateLimite->modify('-6 months');
+             if ($avoir->getDateCreation() >= $dateLimite) {
+                 return new JsonResponse([
+                    'success' => true,
+                    'type' => 'avoir',
+                    'data' => [
+                        'code' => $avoir->getCode(),
+                        'montant' => (float)$avoir->getMontant()
+                    ]
+                ]);
+             }
+        }
+
+        return new JsonResponse(['success' => false, 'message' => 'Code inconnu ou invalide']);
     }
 
     #[Route('/caisse/valider', name: 'app_caisse_valider', methods: ['POST'])]
@@ -229,7 +424,8 @@ class CaisseController extends AbstractController
         UserRepository $userRepository, 
         TarifRepository $tarifRepository, 
         ArticleRepository $articleRepository,
-        EntityManagerInterface $entityManager
+        EntityManagerInterface $entityManager,
+        SocieteConfig $societeConfig
     ): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
@@ -239,6 +435,7 @@ class CaisseController extends AbstractController
         $method = $data['method'] ?? 'Inconnu';
         $reservationId = $data['reservationId'] ?? null;
         $items = $data['items'] ?? [];
+        $avoirCode = $data['avoirCode'] ?? null;
 
         // Vérification si la caisse est fermée
         $today = new \DateTime('today');
@@ -253,6 +450,55 @@ class CaisseController extends AbstractController
             return new JsonResponse(['status' => 'error', 'message' => 'Client manquant'], 400);
         }
 
+        // Gestion des paiements multiples
+        $payments = $data['payments'] ?? [];
+        
+        // Fallback pour compatibilité (si appel avec ancienne structure)
+        if (empty($payments) && isset($data['method'])) {
+            $method = $data['method'];
+            $avoirCode = $data['avoirCode'] ?? null;
+            $montantTotal = (float)$total;
+            
+            if ($avoirCode) {
+                 $avoirEntity = $entityManager->getRepository(Avoir::class)->findOneBy(['code' => $avoirCode]);
+                 if ($avoirEntity) {
+                     $montantAvoir = (float)$avoirEntity->getMontant();
+                     $partAvoir = min($montantAvoir, $montantTotal);
+                     $partReste = max(0, $montantTotal - $partAvoir);
+                     
+                     $payments[] = ['method' => 'Avoir', 'amount' => $partAvoir, 'code' => $avoirCode];
+                     if ($partReste > 0) {
+                        $payments[] = ['method' => $method, 'amount' => $partReste];
+                     } else if ($method === 'Avoir') {
+                        // Tout payé par l'avoir
+                     }
+                 } else {
+                     // Cas étrange où le code avoir est fourni mais invalide (déjà géré par le frontend normalement)
+                     $payments[] = ['method' => $method, 'amount' => $montantTotal];
+                 }
+            } else {
+                $payments[] = ['method' => $method, 'amount' => $montantTotal];
+            }
+        }
+
+        // Check for Bon d'Achat Sale restriction
+        $hasBonAchatSale = false;
+        foreach ($items as $item) {
+            if (($item['type'] ?? '') === 'bon_achat_vente') {
+                $hasBonAchatSale = true;
+                break;
+            }
+        }
+
+        if ($hasBonAchatSale) {
+            foreach ($payments as $p) {
+                $m = $p['method'] ?? '';
+                if (in_array($m, ['BonAchat', 'Avoir', 'Fidelite'])) {
+                     return new JsonResponse(['status' => 'error', 'message' => "Impossible de payer un Bon d'achat avec un Bon d'achat, un Avoir ou des points Fidélité."], 400);
+                }
+            }
+        }
+
         $client = $userRepository->find($clientId);
         if (!$client) {
             return new JsonResponse(['status' => 'error', 'message' => 'Client introuvable'], 404);
@@ -260,11 +506,173 @@ class CaisseController extends AbstractController
 
         $vente = new Vente();
         $vente->setClient($client);
+        // Le montant total de la vente doit rester le montant des articles (pour le CA)
         $vente->setMontantTotal((string) $total);
-        $vente->setModePaiement($method);
+
+        $modePaiementParts = [];
+        
+        foreach ($payments as $p) {
+            $amount = (float)($p['amount'] ?? 0);
+            $methodName = $p['method'] ?? 'Inconnu';
+            
+            if ($amount <= 0) continue;
+
+            if ($methodName === 'Fidelite') {
+                // Paiement par cagnotte fidélité
+                // Calcul du solde total disponible (Cagnotte stockée + Virtuelle)
+                $storedCagnotte = $client->getFideliteCagnotte();
+                $virtualCagnotte = 0.0;
+                
+                if ($societeConfig->isFideliteActive()) {
+                     if ($societeConfig->getFideliteMode() === 'points') {
+                         $pts = $client->getFidelitePoints();
+                         $threshold = $societeConfig->getFidelitePointsY();
+                         $gain = $societeConfig->getFidelitePointsZ();
+                         if ($threshold > 0 && $gain > 0) {
+                             $virtualCagnotte = floor($pts / $threshold) * $gain;
+                         }
+                     } elseif ($societeConfig->getFideliteMode() === 'visits') {
+                         $visits = $client->getFideliteVisits();
+                         $threshold = $societeConfig->getFideliteVisitsX();
+                         $gain = $societeConfig->getFideliteVisitsY();
+                         if ($threshold > 0 && $gain > 0) {
+                             $virtualCagnotte = floor($visits / $threshold) * $gain;
+                         }
+                     }
+                }
+                
+                $totalAvailable = $storedCagnotte + $virtualCagnotte;
+
+                // Tolérance
+                if ($amount > $totalAvailable + 0.01) {
+                    return new JsonResponse(['status' => 'error', 'message' => "Solde fidélité insuffisant. Solde: " . number_format($totalAvailable, 2) . " €"], 400);
+                }
+                
+                // Déduction
+                $remainingToDeduct = $amount;
+                
+                // 1. Priorité Cagnotte stockée (Cash)
+                $deductedFromStored = min($remainingToDeduct, $storedCagnotte);
+                $client->setFideliteCagnotte($storedCagnotte - $deductedFromStored);
+                $remainingToDeduct -= $deductedFromStored;
+                
+                // 2. Déduction des points/visites (Virtuel)
+                if ($remainingToDeduct > 0.001) {
+                    if ($societeConfig->getFideliteMode() === 'points') {
+                        $threshold = $societeConfig->getFidelitePointsY();
+                        $gain = $societeConfig->getFidelitePointsZ();
+                        // Points nécessaires = (Montant / Gain) * Seuil
+                        $pointsNeeded = ($remainingToDeduct / $gain) * $threshold;
+                        $client->setFidelitePoints(max(0, $client->getFidelitePoints() - $pointsNeeded));
+                    } elseif ($societeConfig->getFideliteMode() === 'visits') {
+                        $threshold = $societeConfig->getFideliteVisitsX();
+                        $gain = $societeConfig->getFideliteVisitsY();
+                        $visitsNeeded = ($remainingToDeduct / $gain) * $threshold;
+                        $client->setFideliteVisits(max(0, $client->getFideliteVisits() - ceil($visitsNeeded)));
+                    }
+                }
+                
+                $entityManager->persist($client);
+                
+                $modePaiementParts[] = "Fidélité (" . number_format($amount, 2) . "€)";
+                
+                $paiement = new Paiement();
+                $paiement->setVente($vente);
+                $paiement->setMontant((string)$amount);
+                $paiement->setMethode('Fidelite');
+                $paiement->setDatePaiement(new \DateTimeImmutable());
+                $entityManager->persist($paiement);
+                
+                continue; // Skip the default persistent logic since we handled it
+            }
+
+            $paiement = new Paiement();
+            $paiement->setVente($vente);
+            $paiement->setMontant((string)$amount);
+            $paiement->setMethode($methodName);
+            $paiement->setDatePaiement(new \DateTimeImmutable());
+            
+            if ($methodName === 'Avoir') {
+                $code = $p['code'] ?? null;
+                if ($code) {
+                    $avoirEntity = $entityManager->getRepository(Avoir::class)->findOneBy(['code' => $code]);
+                    if (!$avoirEntity) {
+                        return new JsonResponse(['status' => 'error', 'message' => "Code avoir $code invalide"], 400);
+                    }
+                    
+                    $modePaiementParts[] = "Avoir ($code : " . number_format($amount, 2) . "€)";
+                    
+                    // Consommation de l'avoir
+                    $avoirEntity->setDateUtilisation(new \DateTimeImmutable());
+                    $entityManager->persist($avoirEntity);
+                } else {
+                    $modePaiementParts[] = "Avoir (Inconnu : " . number_format($amount, 2) . "€)";
+                }
+            } elseif ($methodName === 'BonAchat') {
+                $code = $p['code'] ?? null;
+                if ($code) {
+                    $bonEntity = $entityManager->getRepository(BonAchat::class)->findOneBy(['code' => $code]);
+                    if (!$bonEntity) {
+                        return new JsonResponse(['status' => 'error', 'message' => "Code bon d'achat $code invalide"], 400);
+                    }
+                    
+                    // Vérification du propriétaire
+                    if ($bonEntity->getClient() && $bonEntity->getClient()->getId() !== $client->getId()) {
+                        return new JsonResponse(['status' => 'error', 'message' => "Le bon d'achat $code appartient à " . $bonEntity->getClient()->getNom() . " " . $bonEntity->getClient()->getPrenom() . ", pas au client actuel."], 400);
+                    }
+                    
+                    // Vérification montant
+                    $restant = (float)$bonEntity->getMontantRestant();
+                    // On accepte une tolérance minime pour les flottants
+                    if ($amount > $restant + 0.01) {
+                        return new JsonResponse(['status' => 'error', 'message' => "Montant bon d'achat insuffisant. Solde: $restant €"], 400);
+                    }
+                    
+                    $modePaiementParts[] = "Bon d'Achat ($code : " . number_format($amount, 2) . "€)";
+                    
+                    // Mise à jour du solde
+                    $nouveauSolde = max(0, $restant - $amount);
+                    $bonEntity->setMontantRestant((string)$nouveauSolde);
+                    $entityManager->persist($bonEntity);
+                } else {
+                    $modePaiementParts[] = "Bon d'Achat (Inconnu : " . number_format($amount, 2) . "€)";
+                }
+            } else {
+                $modePaiementParts[] = $methodName . " (" . number_format($amount, 2) . "€)";
+            }
+            
+            $entityManager->persist($paiement);
+        }
+
+        $vente->setModePaiement(implode(' + ', $modePaiementParts));
+
         // DateVente is set in constructor
 
         $entityManager->persist($vente);
+
+        // --- GESTION ACQUISITION FIDELITE ---
+        if ($societeConfig->isFideliteActive()) {
+            $mode = $societeConfig->getFideliteMode();
+            
+            // On incrémente toujours les visites
+            $client->setFideliteVisits($client->getFideliteVisits() + 1);
+            
+            if ($mode === 'points') {
+                $x = $societeConfig->getFidelitePointsX(); // points par euro
+                if ($x) {
+                    $pointsGagnes = $total * $x;
+                    $client->setFidelitePoints($client->getFidelitePoints() + $pointsGagnes);
+                }
+            }
+            
+            // Note: On ne convertit plus automatiquement en cagnotte.
+            // Les points s'accumulent et sont déduits lors de l'utilisation (Paiement).
+            
+            $entityManager->persist($client);
+        }
+        // -------------------------------------
+
+        $createdBons = [];
 
         foreach ($items as $itemData) {
             $ligneVente = new LigneVente();
@@ -272,6 +680,19 @@ class CaisseController extends AbstractController
             $ligneVente->setNom($itemData['name']);
             $ligneVente->setPrixUnitaire((string) $itemData['price']);
             $ligneVente->setQuantite(1); // Assuming 1 per item in the cart array as structured in JS
+
+            if (($itemData['type'] ?? '') === 'bon_achat_vente') {
+                 $bonAchat = new BonAchat();
+                 $bonAchat->setClient($client);
+                 $montant = (float)$itemData['price'];
+                 $bonAchat->setMontantInitial((string)$montant);
+                 $bonAchat->setMontantRestant((string)$montant);
+                 $bonAchat->setDateCreation(new \DateTimeImmutable());
+                 $bonAchat->setDateExpiration((new \DateTimeImmutable())->modify('+1 year'));
+                 
+                 $entityManager->persist($bonAchat);
+                 $createdBons[] = $bonAchat;
+            }
 
             if (isset($itemData['id'])) {
                 // On ne lie le Tarif que si c'est une prestation (type = tarif ou non défini)
@@ -331,6 +752,16 @@ class CaisseController extends AbstractController
 
         $entityManager->flush();
 
+        // Update Bon Achat codes with generated IDs
+        foreach ($createdBons as $bon) {
+             $prefix = '30081260';
+             $idPart = str_pad((string)$bon->getId(), 5, '0', STR_PAD_LEFT);
+             $bon->setCode($prefix . $idPart);
+        }
+        if (!empty($createdBons)) {
+            $entityManager->flush();
+        }
+
         return new JsonResponse(['status' => 'success', 'id' => $vente->getId()]);
     }
 
@@ -383,7 +814,7 @@ class CaisseController extends AbstractController
         $start = \DateTimeImmutable::createFromMutable($today)->setTime(0, 0, 0);
         $end = \DateTimeImmutable::createFromMutable($today)->setTime(23, 59, 59);
 
-        $ventesEspece = $venteRepository->createQueryBuilder('v')
+        $ventesEspeceLegacy = $venteRepository->createQueryBuilder('v')
             ->select('SUM(v.montantTotal)')
             ->where('v.dateVente BETWEEN :start AND :end')
             ->andWhere('v.modePaiement = :mode')
@@ -392,8 +823,18 @@ class CaisseController extends AbstractController
             ->setParameter('mode', 'Espece')
             ->getQuery()
             ->getSingleScalarResult();
+
+        $ventesEspecePaiements = $entityManager->getRepository(Paiement::class)->createQueryBuilder('p')
+            ->select('SUM(p.montant)')
+            ->where('p.datePaiement BETWEEN :start AND :end')
+            ->andWhere('p.methode = :mode')
+            ->setParameter('start', $start)
+            ->setParameter('end', $end)
+            ->setParameter('mode', 'Espece')
+            ->getQuery()
+            ->getSingleScalarResult();
             
-        $montantVentesEspece = (float) $ventesEspece;
+        $montantVentesEspece = (float)($ventesEspeceLegacy ?? 0.0) + (float)($ventesEspecePaiements ?? 0.0);
 
         $remiseRepo = $entityManager->getRepository(RemiseBanque::class);
         $remises = $remiseRepo->findBy(['date' => $today]);
@@ -514,24 +955,86 @@ class CaisseController extends AbstractController
                 continue;
             }
 
-            $mode = $vente->getModePaiement() ?: 'Inconnu';
-            $montant = (float) $vente->getMontantTotal();
+            // Gestion des Avoirs émis (Vente négative liée à un Avoir)
+            if ($vente->getMontantTotal() < 0 && $vente->getAvoir()) {
+                $mode = 'Avoir Émis';
+                $montant = (float) $vente->getMontantTotal();
 
-            if (!isset($totauxParMoyen[$mode])) {
-                $totauxParMoyen[$mode] = 0.0;
-                $detailsParMoyen[$mode] = [];
+                if (!isset($totauxParMoyen[$mode])) {
+                    $totauxParMoyen[$mode] = 0.0;
+                    $detailsParMoyen[$mode] = [];
+                }
+
+                $totauxParMoyen[$mode] += $montant;
+                $totalGeneral += $montant;
+
+                foreach ($vente->getLigneVentes() as $ligne) {
+                    $detailsParMoyen[$mode][] = [
+                        'nom' => $ligne->getNom(),
+                        'prix' => $ligne->getPrixUnitaire(),
+                        'quantite' => $ligne->getQuantite(),
+                        'total' => $ligne->getPrixUnitaire() * $ligne->getQuantite()
+                    ];
+                }
+                continue;
             }
 
-            $totauxParMoyen[$mode] += $montant;
-            $totalGeneral += $montant;
-            
-            foreach ($vente->getLigneVentes() as $ligne) {
-                $detailsParMoyen[$mode][] = [
-                    'nom' => $ligne->getNom(),
-                    'prix' => $ligne->getPrixUnitaire(),
-                    'quantite' => $ligne->getQuantite(),
-                    'total' => $ligne->getPrixUnitaire() * $ligne->getQuantite()
-                ];
+            $paiements = $vente->getPaiements();
+            $countPaiements = count($paiements);
+
+            if ($countPaiements > 0) {
+                $totalGeneral += (float) $vente->getMontantTotal();
+                $hasMultiplePayments = $countPaiements > 1;
+
+                foreach ($paiements as $paiement) {
+                    $mode = $paiement->getMethode();
+                    $pMontant = (float) $paiement->getMontant();
+
+                    if (!isset($totauxParMoyen[$mode])) {
+                        $totauxParMoyen[$mode] = 0.0;
+                        $detailsParMoyen[$mode] = [];
+                    }
+
+                    $totauxParMoyen[$mode] += $pMontant;
+
+                    if ($hasMultiplePayments) {
+                        $detailsParMoyen[$mode][] = [
+                            'nom' => 'Vente #' . $vente->getId() . ' (Partiel)',
+                            'prix' => $pMontant,
+                            'quantite' => 1,
+                            'total' => $pMontant
+                        ];
+                    } else {
+                        foreach ($vente->getLigneVentes() as $ligne) {
+                            $detailsParMoyen[$mode][] = [
+                                'nom' => $ligne->getNom(),
+                                'prix' => $ligne->getPrixUnitaire(),
+                                'quantite' => $ligne->getQuantite(),
+                                'total' => $ligne->getPrixUnitaire() * $ligne->getQuantite()
+                            ];
+                        }
+                    }
+                }
+            } else {
+                $mode = $vente->getModePaiement() ?: 'Inconnu';
+                $montant = (float) $vente->getMontantTotal();
+
+                if (!isset($totauxParMoyen[$mode])) {
+                    $totauxParMoyen[$mode] = 0.0;
+                    $detailsParMoyen[$mode] = [];
+                }
+
+                $totauxParMoyen[$mode] += $montant;
+                $totalGeneral += $montant;
+                
+                foreach ($vente->getLigneVentes() as $ligne) {
+                    $detailsParMoyen[$mode][] = [
+                        'nom' => $ligne->getNom(),
+                        'prix' => $ligne->getPrixUnitaire(),
+                        'quantite' => $ligne->getQuantite(),
+                        'total' => $ligne->getPrixUnitaire() * $ligne->getQuantite()
+                    ];
+                }
             }
         }
 
@@ -678,24 +1181,86 @@ class CaisseController extends AbstractController
                 continue;
             }
 
-            $mode = $vente->getModePaiement() ?: 'Inconnu';
-            $montant = (float) $vente->getMontantTotal();
+            // Gestion des Avoirs émis (Vente négative liée à un Avoir)
+            if ($vente->getMontantTotal() < 0 && $vente->getAvoir()) {
+                $mode = 'Avoir Émis';
+                $montant = (float) $vente->getMontantTotal();
 
-            if (!isset($totauxParMoyen[$mode])) {
-                $totauxParMoyen[$mode] = 0.0;
-                $detailsParMoyen[$mode] = [];
+                if (!isset($totauxParMoyen[$mode])) {
+                    $totauxParMoyen[$mode] = 0.0;
+                    $detailsParMoyen[$mode] = [];
+                }
+
+                $totauxParMoyen[$mode] += $montant;
+                $totalGeneral += $montant;
+
+                foreach ($vente->getLigneVentes() as $ligne) {
+                    $detailsParMoyen[$mode][] = [
+                        'nom' => $ligne->getNom(),
+                        'prix' => $ligne->getPrixUnitaire(),
+                        'quantite' => $ligne->getQuantite(),
+                        'total' => $ligne->getPrixUnitaire() * $ligne->getQuantite()
+                    ];
+                }
+                continue;
             }
 
-            $totauxParMoyen[$mode] += $montant;
-            $totalGeneral += $montant;
-            
-            foreach ($vente->getLigneVentes() as $ligne) {
-                $detailsParMoyen[$mode][] = [
-                    'nom' => $ligne->getNom(),
-                    'prix' => $ligne->getPrixUnitaire(),
-                    'quantite' => $ligne->getQuantite(),
-                    'total' => $ligne->getPrixUnitaire() * $ligne->getQuantite()
-                ];
+            $paiements = $vente->getPaiements();
+            $countPaiements = count($paiements);
+
+            if ($countPaiements > 0) {
+                $totalGeneral += (float) $vente->getMontantTotal();
+                $hasMultiplePayments = $countPaiements > 1;
+
+                foreach ($paiements as $paiement) {
+                    $mode = $paiement->getMethode();
+                    $pMontant = (float) $paiement->getMontant();
+
+                    if (!isset($totauxParMoyen[$mode])) {
+                        $totauxParMoyen[$mode] = 0.0;
+                        $detailsParMoyen[$mode] = [];
+                    }
+
+                    $totauxParMoyen[$mode] += $pMontant;
+
+                    if ($hasMultiplePayments) {
+                        $detailsParMoyen[$mode][] = [
+                            'nom' => 'Vente #' . $vente->getId() . ' (Partiel)',
+                            'prix' => $pMontant,
+                            'quantite' => 1,
+                            'total' => $pMontant
+                        ];
+                    } else {
+                        foreach ($vente->getLigneVentes() as $ligne) {
+                            $detailsParMoyen[$mode][] = [
+                                'nom' => $ligne->getNom(),
+                                'prix' => $ligne->getPrixUnitaire(),
+                                'quantite' => $ligne->getQuantite(),
+                                'total' => $ligne->getPrixUnitaire() * $ligne->getQuantite()
+                            ];
+                        }
+                    }
+                }
+            } else {
+                $mode = $vente->getModePaiement() ?: 'Inconnu';
+                $montant = (float) $vente->getMontantTotal();
+
+                if (!isset($totauxParMoyen[$mode])) {
+                    $totauxParMoyen[$mode] = 0.0;
+                    $detailsParMoyen[$mode] = [];
+                }
+
+                $totauxParMoyen[$mode] += $montant;
+                $totalGeneral += $montant;
+                
+                foreach ($vente->getLigneVentes() as $ligne) {
+                    $detailsParMoyen[$mode][] = [
+                        'nom' => $ligne->getNom(),
+                        'prix' => $ligne->getPrixUnitaire(),
+                        'quantite' => $ligne->getQuantite(),
+                        'total' => $ligne->getPrixUnitaire() * $ligne->getQuantite()
+                    ];
+                }
             }
         }
 
