@@ -165,6 +165,17 @@
             <span class="menu-text">Caisse</span>
         </a>
 
+        <!-- Stock Accordion -->
+        <div class="menu-item" onclick="toggleSubmenu(this)">
+            <i class="fas fa-boxes menu-icon"></i>
+            <span class="menu-text">Stock</span>
+            <i class="fas fa-chevron-down arrow-icon"></i>
+        </div>
+        <div class="submenu">
+            <div class="submenu-item" onclick="ouvrirStockEntreeModal(event)">Entrée</div>
+            <div class="submenu-item" onclick="ouvrirStockSortieModal(event)">Sortie</div>
+        </div>
+
         <!-- Impressions Accordion -->
         <div class="menu-item" onclick="toggleSubmenu(this)">
             <i class="fas fa-print menu-icon"></i>
@@ -342,6 +353,64 @@
       </div>
     </div>
 
+    <!-- Modal Stock Entrée -->
+    <div class="modal fade" id="stockEntreeModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Entrée de Stock</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+                <label for="stockEntreeSearch" class="form-label">Article</label>
+                <select id="stockEntreeSearch" placeholder="Rechercher un article..."></select>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Stock actuel : <span id="stockEntreeCurrent" class="fw-bold">-</span></label>
+            </div>
+            <div class="mb-3">
+                <label for="stockEntreeQuantity" class="form-label">Quantité à ajouter</label>
+                <input type="number" id="stockEntreeQuantity" class="form-control" min="1" value="1">
+            </div>
+            <div id="stockEntreeError" class="text-danger small d-none"></div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-success w-100" id="stockEntreeConfirmBtn">Valider Entrée</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Stock Sortie -->
+    <div class="modal fade" id="stockSortieModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Sortie de Stock</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+                <label for="stockSortieSearch" class="form-label">Article</label>
+                <select id="stockSortieSearch" placeholder="Rechercher un article..."></select>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Stock actuel : <span id="stockSortieCurrent" class="fw-bold">-</span></label>
+            </div>
+            <div class="mb-3">
+                <label for="stockSortieQuantity" class="form-label">Quantité à retirer</label>
+                <input type="number" id="stockSortieQuantity" class="form-control" min="1" value="1">
+            </div>
+            <div id="stockSortieError" class="text-danger small d-none"></div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-warning w-100" id="stockSortieConfirmBtn">Valider Sortie</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             // Check if caisse is open (injected from controller)
@@ -419,6 +488,16 @@
                         validerReouvertureCaisse();
                     }
                 });
+            }
+
+            const stockEntreeBtn = document.getElementById('stockEntreeConfirmBtn');
+            if (stockEntreeBtn) {
+                stockEntreeBtn.addEventListener('click', () => validerMouvementStock('entree'));
+            }
+
+            const stockSortieBtn = document.getElementById('stockSortieConfirmBtn');
+            if (stockSortieBtn) {
+                stockSortieBtn.addEventListener('click', () => validerMouvementStock('sortie'));
             }
         });
 
@@ -837,6 +916,168 @@
                         errorEl.classList.remove('d-none');
                     }
                 });
+        }
+    function validerMouvementStock(type) {
+            const prefix = type === 'entree' ? 'stockEntree' : 'stockSortie';
+            const quantityInput = document.getElementById(prefix + 'Quantity');
+            const display = document.getElementById(prefix + 'Current');
+            const errorEl = document.getElementById(prefix + 'Error');
+            
+            if (!quantityInput || !display) return;
+
+            const quantity = parseInt(quantityInput.value);
+            const currentStock = parseInt(display.dataset.stock);
+            const articleId = display.dataset.articleId;
+            const taille = display.dataset.taille;
+
+            if (!articleId || !taille) {
+                errorEl.textContent = 'Veuillez sélectionner un article.';
+                errorEl.classList.remove('d-none');
+                return;
+            }
+
+            if (isNaN(quantity) || quantity <= 0) {
+                errorEl.textContent = 'La quantité doit être supérieure à 0.';
+                errorEl.classList.remove('d-none');
+                return;
+            }
+
+            if (type === 'sortie' && (isNaN(currentStock) || currentStock < quantity)) {
+                errorEl.textContent = 'Stock insuffisant pour cette sortie.';
+                errorEl.classList.remove('d-none');
+                return;
+            }
+            
+            // Check for stock 0 on exit
+             if (type === 'sortie' && currentStock === 0) {
+                errorEl.textContent = 'Impossible de sortir du stock sur un article à 0.';
+                errorEl.classList.remove('d-none');
+                return;
+            }
+
+            errorEl.classList.add('d-none');
+
+            fetch('{{ path("app_caisse_stock_update") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    articleId: articleId,
+                    taille: taille,
+                    quantity: quantity,
+                    type: type
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const modalEl = document.getElementById(prefix + 'Modal');
+                    const modal = bootstrap.Modal.getInstance(modalEl);
+                    if (modal) modal.hide();
+                    
+                    alert('Stock mis à jour. Nouveau stock : ' + data.newStock);
+                    
+                    // Clear selection
+                     if (type === 'entree' && tomSelectEntree) tomSelectEntree.clear();
+                     if (type === 'sortie' && tomSelectSortie) tomSelectSortie.clear();
+                } else {
+                    errorEl.textContent = data.message || 'Erreur lors de la mise à jour.';
+                    errorEl.classList.remove('d-none');
+                }
+            })
+            .catch(err => {
+                errorEl.textContent = 'Erreur réseau.';
+                errorEl.classList.remove('d-none');
+            });
+        }
+
+        // Stock Management
+        let tomSelectEntree = null;
+        let tomSelectSortie = null;
+
+        function initTomSelect(elementId, stockDisplayId) {
+            return new TomSelect('#' + elementId, {
+                valueField: 'id',
+                labelField: 'label',
+                searchField: 'label',
+                load: function(query, callback) {
+                    if (!query.length) return callback();
+                    fetch('{{ path("app_caisse_stock_search") }}?q=' + encodeURIComponent(query))
+                        .then(response => response.json())
+                        .then(json => {
+                            callback(json);
+                        }).catch(() => {
+                            callback();
+                        });
+                },
+                onChange: function(value) {
+                    const item = this.options[value];
+                    const display = document.getElementById(stockDisplayId);
+                    if (item && display) {
+                        display.textContent = item.stock;
+                        display.dataset.stock = item.stock;
+                        display.dataset.articleId = item.articleId;
+                        display.dataset.taille = item.taille;
+                    } else if (display) {
+                        display.textContent = '-';
+                        delete display.dataset.stock;
+                        delete display.dataset.articleId;
+                        delete display.dataset.taille;
+                    }
+                },
+                render: {
+                    option: function(item, escape) {
+                        return `<div>
+                            <span class="title">${escape(item.label)}</span>
+                            <span class="small text-muted ms-2">Stock: ${escape(item.stock)}</span>
+                        </div>`;
+                    },
+                    item: function(item, escape) {
+                        return `<div>${escape(item.label)}</div>`;
+                    }
+                }
+            });
+        }
+
+        function ouvrirStockEntreeModal(e) {
+            if(e) e.preventDefault();
+            const modalEl = document.getElementById('stockEntreeModal');
+            const modal = new bootstrap.Modal(modalEl);
+            modal.show();
+            
+            modalEl.addEventListener('shown.bs.modal', function () {
+                 if (!tomSelectEntree) {
+                    tomSelectEntree = initTomSelect('stockEntreeSearch', 'stockEntreeCurrent');
+                } else {
+                    tomSelectEntree.clear();
+                    tomSelectEntree.clearOptions();
+                }
+            }, { once: true });
+           
+            document.getElementById('stockEntreeQuantity').value = 1;
+            document.getElementById('stockEntreeError').classList.add('d-none');
+            document.getElementById('stockEntreeCurrent').textContent = '-';
+        }
+
+        function ouvrirStockSortieModal(e) {
+            if(e) e.preventDefault();
+            const modalEl = document.getElementById('stockSortieModal');
+            const modal = new bootstrap.Modal(modalEl);
+            modal.show();
+            
+             modalEl.addEventListener('shown.bs.modal', function () {
+                if (!tomSelectSortie) {
+                    tomSelectSortie = initTomSelect('stockSortieSearch', 'stockSortieCurrent');
+                } else {
+                    tomSelectSortie.clear();
+                    tomSelectSortie.clearOptions();
+                }
+            }, { once: true });
+
+            document.getElementById('stockSortieQuantity').value = 1;
+            document.getElementById('stockSortieError').classList.add('d-none');
+            document.getElementById('stockSortieCurrent').textContent = '-';
         }
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
