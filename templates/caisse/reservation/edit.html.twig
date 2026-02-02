@@ -1,0 +1,12 @@
+{% extends 'caisse/layout.html.twig' %}
+
+{% block title %}Modifier la réservation{% endblock %}
+
+{% block body %}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Modifier la réservation</h1>
+        {{ include('caisse/reservation/_delete_form.html.twig') }}
+    </div>
+
+    {{ include('caisse/reservation/_form.html.twig', {'button_label': 'Mettre à jour'}) }}
+{% endblock %}

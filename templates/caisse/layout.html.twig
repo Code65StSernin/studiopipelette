@@ -152,14 +152,16 @@
             <i class="fas fa-users menu-icon"></i>
             <span class="menu-text">Clients</span>
         </a>
-        <a href="#" class="menu-item">
-            <i class="fas fa-box menu-icon"></i>
-            <span class="menu-text">Produits</span>
-        </a>
-        <a href="{{ path('app_caisse_planning') }}" class="menu-item" style="{% if app.request.get('_route') == 'app_caisse_planning' %}background-color: rgba(255, 255, 255, 0.2);{% endif %}">
+        <div class="menu-item" onclick="toggleSubmenu(this)">
             <i class="fas fa-calendar-alt menu-icon"></i>
             <span class="menu-text">Planning</span>
-        </a>
+            <i class="fas fa-chevron-down arrow-icon"></i>
+        </div>
+        <div class="submenu {% if app.request.get('_route') == 'app_caisse_planning' or app.request.get('_route') starts with 'app_caisse_unavailability_rule_' or app.request.get('_route') starts with 'app_caisse_dispo_prestation_' %}open{% endif %}">
+            <a href="{{ path('app_caisse_planning') }}" class="submenu-item" style="{% if app.request.get('_route') == 'app_caisse_planning' %}background-color: rgba(255,255,255,0.1); color: white;{% endif %}">Agenda</a>
+            <a href="{{ path('app_caisse_unavailability_rule_index') }}" class="submenu-item" style="{% if app.request.get('_route') starts with 'app_caisse_unavailability_rule_' %}background-color: rgba(255,255,255,0.1); color: white;{% endif %}">Indisponibilités</a>
+            <a href="{{ path('app_caisse_dispo_prestation_index') }}" class="submenu-item" style="{% if app.request.get('_route') starts with 'app_caisse_dispo_prestation_' %}background-color: rgba(255,255,255,0.1); color: white;{% endif %}">Exceptions</a>
+        </div>
         <a href="{{ path('app_caisse') }}" class="menu-item" style="{% if app.request.get('_route') == 'app_caisse' %}background-color: rgba(255, 255, 255, 0.2);{% endif %}">
             <i class="fas fa-cash-register menu-icon"></i>
             <span class="menu-text">Caisse</span>
@@ -186,18 +188,73 @@
             <a href="{{ path('app_caisse_impressions_etiquettes') }}" class="submenu-item" style="{% if app.request.get('_route') == 'app_caisse_impressions_etiquettes' %}background-color: rgba(255,255,255,0.1); color: white;{% endif %}">Etiquettes</a>
         </div>
         
+        <!-- BtoB Accordion -->
+        <div class="menu-item" onclick="toggleSubmenu(this)">
+            <i class="fas fa-handshake menu-icon"></i>
+            <span class="menu-text">BtoB</span>
+            <i class="fas fa-chevron-down arrow-icon"></i>
+        </div>
+        <div class="submenu {% if app.request.get('_route') starts with 'app_caisse_partenaire_btob_' or app.request.get('_route') starts with 'app_caisse_depot_vente_' %}open{% endif %}">
+            <a href="{{ path('app_caisse_partenaire_btob_index') }}" class="submenu-item" style="{% if app.request.get('_route') starts with 'app_caisse_partenaire_btob_' %}background-color: rgba(255,255,255,0.1); color: white;{% endif %}">Partenaires BtoB</a>
+            <a href="{{ path('app_caisse_depot_vente_index') }}" class="submenu-item" style="{% if app.request.get('_route') starts with 'app_caisse_depot_vente_' %}background-color: rgba(255,255,255,0.1); color: white;{% endif %}">Dépôt Vente</a>
+        </div>
+        
+        <!-- Activités Accordion -->
+        <div class="menu-item" onclick="toggleSubmenu(this)">
+            <i class="fas fa-tasks menu-icon"></i>
+            <span class="menu-text">Activités</span>
+            <i class="fas fa-chevron-down arrow-icon"></i>
+        </div>
+        <div class="submenu {% if app.request.get('_route') starts with 'app_caisse_commande_' or app.request.get('_route') starts with 'app_caisse_reservation_' or app.request.get('_route') == 'app_caisse_dashboard' %}open{% endif %}">
+            <a href="{{ path('app_caisse_dashboard') }}" class="submenu-item" style="{% if app.request.get('_route') == 'app_caisse_dashboard' %}background-color: rgba(255,255,255,0.1); color: white;{% endif %}">Tableau de bord</a>
+            <a href="{{ path('app_caisse_commande_index') }}" class="submenu-item" style="{% if app.request.get('_route') starts with 'app_caisse_commande_' %}background-color: rgba(255,255,255,0.1); color: white;{% endif %}">Commandes</a>
+            <a href="{{ path('app_caisse_reservation_index') }}" class="submenu-item" style="{% if app.request.get('_route') starts with 'app_caisse_reservation_' %}background-color: rgba(255,255,255,0.1); color: white;{% endif %}">Réservations</a>
+        </div>
+
+        <!-- Tables Accordion -->
+        <div class="menu-item" onclick="toggleSubmenu(this)">
+            <i class="fas fa-table menu-icon"></i>
+            <span class="menu-text">Tables</span>
+            <i class="fas fa-chevron-down arrow-icon"></i>
+        </div>
+        <div class="submenu {% if app.request.get('_route') starts with 'app_caisse_article_' or app.request.get('_route') starts with 'app_caisse_photo_' or app.request.get('_route') starts with 'app_caisse_collection_' or app.request.get('_route') starts with 'app_caisse_categorie_' or app.request.get('_route') starts with 'app_caisse_sous_categorie_' or app.request.get('_route') starts with 'app_caisse_couleur_' or app.request.get('_route') starts with 'app_caisse_tarif_' or app.request.get('_route') starts with 'app_caisse_code_' or app.request.get('_route') starts with 'app_caisse_carousel_' %}open{% endif %}">
+            <a href="{{ path('app_caisse_article_index') }}" class="submenu-item" style="{% if app.request.get('_route') starts with 'app_caisse_article_' %}background-color: rgba(255,255,255,0.1); color: white;{% endif %}">Articles</a>
+            <a href="{{ path('app_caisse_photo_index') }}" class="submenu-item" style="{% if app.request.get('_route') starts with 'app_caisse_photo_' %}background-color: rgba(255,255,255,0.1); color: white;{% endif %}">Photos</a>
+            <a href="{{ path('app_caisse_collection_index') }}" class="submenu-item" style="{% if app.request.get('_route') starts with 'app_caisse_collection_' %}background-color: rgba(255,255,255,0.1); color: white;{% endif %}">Collections</a>
+            <a href="{{ path('app_caisse_categorie_index') }}" class="submenu-item" style="{% if app.request.get('_route') starts with 'app_caisse_categorie_' %}background-color: rgba(255,255,255,0.1); color: white;{% endif %}">Catégories</a>
+            <a href="{{ path('app_caisse_sous_categorie_index') }}" class="submenu-item" style="{% if app.request.get('_route') starts with 'app_caisse_sous_categorie_' %}background-color: rgba(255,255,255,0.1); color: white;{% endif %}">Sous-catégories</a>
+            <a href="{{ path('app_caisse_couleur_index') }}" class="submenu-item" style="{% if app.request.get('_route') starts with 'app_caisse_couleur_' %}background-color: rgba(255,255,255,0.1); color: white;{% endif %}">Couleurs</a>
+            <a href="{{ path('app_caisse_tarif_index') }}" class="submenu-item" style="{% if app.request.get('_route') starts with 'app_caisse_tarif_' %}background-color: rgba(255,255,255,0.1); color: white;{% endif %}">Tarifs</a>
+            <a href="{{ path('app_caisse_code_index') }}" class="submenu-item" style="{% if app.request.get('_route') starts with 'app_caisse_code_' %}background-color: rgba(255,255,255,0.1); color: white;{% endif %}">Codes Promo</a>
+            <a href="{{ path('app_caisse_carousel_index') }}" class="submenu-item" style="{% if app.request.get('_route') starts with 'app_caisse_carousel_' %}background-color: rgba(255,255,255,0.1); color: white;{% endif %}">Carousel</a>
+        </div>
+        
         <!-- Paramètres Accordion -->
         <div class="menu-item" onclick="toggleSubmenu(this)">
             <i class="fas fa-cogs menu-icon"></i>
             <span class="menu-text">Paramètres</span>
             <i class="fas fa-chevron-down arrow-icon"></i>
         </div>
-        <div class="submenu {% if app.request.get('_route') starts with 'categorie_vente_' or app.request.get('_route') starts with 'sous_categorie_vente_' or app.request.get('_route') == 'app_caisse_parametres_generaux' or app.request.get('_route') == 'app_caisse_parametres_etiquettes' %}open{% endif %}">
+        <div class="submenu {% if app.request.get('_route') starts with 'categorie_vente_' or app.request.get('_route') starts with 'sous_categorie_vente_' or app.request.get('_route') == 'app_caisse_parametres_generaux' or app.request.get('_route') == 'app_caisse_parametres_etiquettes' or app.request.get('_route') starts with 'app_caisse_societe_' %}open{% endif %}">
+            <a href="{{ path('app_caisse_societe_index') }}" class="submenu-item" style="{% if app.request.get('_route') starts with 'app_caisse_societe_' %}background-color: rgba(255,255,255,0.1); color: white;{% endif %}">Société</a>
             <a href="{{ path('app_caisse_parametres_generaux') }}" class="submenu-item" style="{% if app.request.get('_route') == 'app_caisse_parametres_generaux' %}background-color: rgba(255,255,255,0.1); color: white;{% endif %}">Paramètres généraux</a>
             <div class="submenu-item">Horaires</div>
-            <a href="{{ path('categorie_vente_index') }}" class="submenu-item" style="{% if app.request.get('_route') starts with 'categorie_vente_' %}background-color: rgba(255,255,255,0.1); color: white;{% endif %}">Catégories</a>
-            <a href="{{ path('sous_categorie_vente_index') }}" class="submenu-item" style="{% if app.request.get('_route') starts with 'sous_categorie_vente_' %}background-color: rgba(255,255,255,0.1); color: white;{% endif %}">Sous-catégories</a>
+            <a href="{{ path('categorie_vente_index') }}" class="submenu-item" style="{% if app.request.get('_route') starts with 'categorie_vente_' %}background-color: rgba(255,255,255,0.1); color: white;{% endif %}">Catégories Caisse</a>
+            <a href="{{ path('sous_categorie_vente_index') }}" class="submenu-item" style="{% if app.request.get('_route') starts with 'sous_categorie_vente_' %}background-color: rgba(255,255,255,0.1); color: white;{% endif %}">Sous-catégories Caisse</a>
             <a href="{{ path('app_caisse_parametres_etiquettes') }}" class="submenu-item" style="{% if app.request.get('_route') == 'app_caisse_parametres_etiquettes' %}background-color: rgba(255,255,255,0.1); color: white;{% endif %}">Etiquettes</a>
+        </div>
+
+        <!-- Mentions légales Accordion -->
+        <div class="menu-item" onclick="toggleSubmenu(this)">
+            <i class="fas fa-balance-scale menu-icon"></i>
+            <span class="menu-text">Mentions légales</span>
+            <i class="fas fa-chevron-down arrow-icon"></i>
+        </div>
+        <div class="submenu {% if app.request.get('_route') starts with 'app_caisse_faq_' or app.request.get('_route') starts with 'app_caisse_cgv_' or app.request.get('_route') starts with 'app_caisse_privacy_policy_' or app.request.get('_route') starts with 'app_caisse_cookie_policy_' %}open{% endif %}">
+            <a href="{{ path('app_caisse_faq_index') }}" class="submenu-item" style="{% if app.request.get('_route') starts with 'app_caisse_faq_' %}background-color: rgba(255,255,255,0.1); color: white;{% endif %}">FAQ</a>
+            <a href="{{ path('app_caisse_cgv_index') }}" class="submenu-item" style="{% if app.request.get('_route') starts with 'app_caisse_cgv_' %}background-color: rgba(255,255,255,0.1); color: white;{% endif %}">CGV</a>
+            <a href="{{ path('app_caisse_privacy_policy_index') }}" class="submenu-item" style="{% if app.request.get('_route') starts with 'app_caisse_privacy_policy_' %}background-color: rgba(255,255,255,0.1); color: white;{% endif %}">Politique de confidentialité</a>
+            <a href="{{ path('app_caisse_cookie_policy_index') }}" class="submenu-item" style="{% if app.request.get('_route') starts with 'app_caisse_cookie_policy_' %}background-color: rgba(255,255,255,0.1); color: white;{% endif %}">Politique de cookies</a>
         </div>
 
         <!-- Journaux Accordion -->
@@ -413,6 +470,20 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            // Initialize generic TomSelect
+            document.querySelectorAll('.tom-select').forEach((el) => {
+                if (!el.tomselect) {
+                     new TomSelect(el, {
+                        plugins: ['remove_button'],
+                        create: false,
+                        sortField: {
+                            field: "text",
+                            direction: "asc"
+                        }
+                    });
+                }
+            });
+
             // Check if caisse is open (injected from controller)
             const currentRoute = '{{ app.request.get("_route") }}';
             const isCaisseOpen = {{ isCaisseOpen is defined and isCaisseOpen ? 'true' : 'false' }};

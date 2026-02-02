@@ -1,0 +1,213 @@
+{{ form_start(form) }}
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header">Informations générales</div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            {{ form_row(form.nom) }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            {{ form_row(form.categorie) }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            {{ form_row(form.sousCategorie) }}
+                        </div>
+                        <div class="col-md-12 mb-3">
+                            {{ form_row(form.description) }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header">Caractéristiques</div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            {{ form_row(form.visibilite) }}
+                        </div>
+                        <div class="col-md-6 mb-3 pt-4">
+                            {{ form_row(form.actif) }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            {{ form_row(form.origine) }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            {{ form_row(form.materiau) }}
+                        </div>
+                        <div class="col-md-12 mb-3">
+                            {{ form_row(form.compositionFabrication) }}
+                        </div>
+                        <div class="col-md-12 mb-3">
+                            {{ form_row(form.informationsLivraison) }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>Variantes et Stock</span>
+                    <button type="button" class="btn btn-sm btn-outline-primary" id="add-size-btn">
+                        <i class="fas fa-plus"></i> Ajouter une taille
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div id="sizes-container">
+                        <!-- Les lignes de taille seront injectées ici par JS -->
+                    </div>
+                    <div class="d-none">
+                        {{ form_row(form.taillesJson) }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header">Classification</div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        {{ form_row(form.collections) }}
+                    </div>
+                    <div class="mb-3">
+                        {{ form_row(form.couleurs) }}
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header">Marketing</div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        {{ form_row(form.sousTitre) }}
+                    </div>
+                    <div class="mb-3">
+                        {{ form_row(form.sousTitreContenu) }}
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header">Fournisseur</div>
+                <div class="card-body">
+                    {{ form_row(form.fournisseur) }}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="mt-4 mb-5">
+        <button class="btn btn-primary">{{ button_label|default('Enregistrer') }}</button>
+        <a href="{{ path('app_caisse_article_index') }}" class="btn btn-secondary">Annuler</a>
+    </div>
+{{ form_end(form) }}
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Tom Select Initialization
+        if (window.TomSelect) {
+            document.querySelectorAll('.tom-select').forEach(function(el) {
+                new TomSelect(el, {
+                    plugins: ['remove_button'],
+                    create: false
+                });
+            });
+        }
+
+        // Tailles JSON Editor
+        const container = document.getElementById('sizes-container');
+        const addButton = document.getElementById('add-size-btn');
+        const hiddenInput = document.getElementById('article_taillesJson'); // Check ID match
+
+        let sizes = [];
+
+        try {
+            if (hiddenInput.value) {
+                sizes = JSON.parse(hiddenInput.value);
+            }
+        } catch (e) {
+            console.error('Invalid JSON in taillesJson', e);
+            sizes = [];
+        }
+
+        function renderSizes() {
+            container.innerHTML = '';
+            
+            if (sizes.length === 0) {
+                container.innerHTML = '<p class="text-muted text-center my-3">Aucune taille définie.</p>';
+                return;
+            }
+
+            sizes.forEach((size, index) => {
+                const row = document.createElement('div');
+                row.className = 'row mb-2 align-items-center g-2';
+                row.innerHTML = `
+                    <div class="col-md-3">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text">Taille</span>
+                            <input type="text" class="form-control size-input" value="${size.taille || ''}" data-index="${index}" placeholder="S, M, 38...">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text">Prix €</span>
+                            <input type="number" step="0.01" class="form-control price-input" value="${size.prix || ''}" data-index="${index}" placeholder="0.00">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text">Stock</span>
+                            <input type="number" class="form-control stock-input" value="${size.stock || 0}" data-index="${index}" placeholder="0">
+                        </div>
+                    </div>
+                    <div class="col-md-3 text-end">
+                        <button type="button" class="btn btn-sm btn-outline-danger remove-size-btn" data-index="${index}">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+                container.appendChild(row);
+            });
+
+            // Add event listeners
+            document.querySelectorAll('.size-input').forEach(input => {
+                input.addEventListener('input', (e) => updateSize(e.target.dataset.index, 'taille', e.target.value));
+            });
+            document.querySelectorAll('.price-input').forEach(input => {
+                input.addEventListener('input', (e) => updateSize(e.target.dataset.index, 'prix', parseFloat(e.target.value) || 0));
+            });
+            document.querySelectorAll('.stock-input').forEach(input => {
+                input.addEventListener('input', (e) => updateSize(e.target.dataset.index, 'stock', parseInt(e.target.value) || 0));
+            });
+            document.querySelectorAll('.remove-size-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => removeSize(e.currentTarget.dataset.index));
+            });
+        }
+
+        function updateSize(index, field, value) {
+            sizes[index][field] = value;
+            updateHiddenInput();
+        }
+
+        function removeSize(index) {
+            sizes.splice(index, 1);
+            renderSizes();
+            updateHiddenInput();
+        }
+
+        function updateHiddenInput() {
+            hiddenInput.value = JSON.stringify(sizes);
+        }
+
+        addButton.addEventListener('click', () => {
+            sizes.push({ taille: '', prix: 0, stock: 0 });
+            renderSizes();
+            updateHiddenInput();
+        });
+
+        renderSizes();
+    });
+</script>

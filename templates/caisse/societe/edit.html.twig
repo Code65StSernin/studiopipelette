@@ -1,0 +1,168 @@
+{% extends 'caisse/layout.html.twig' %}
+
+{% block title %}Configuration Société{% endblock %}
+
+{% block body %}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Configuration Société</h1>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            {{ form_start(form) }}
+                
+                <h5 class="card-title text-primary mb-3">Informations Générales</h5>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        {{ form_row(form.nom) }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        {{ form_row(form.email) }}
+                    </div>
+                </div>
+                <div class="mb-3">
+                    {{ form_row(form.adresse) }}
+                </div>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        {{ form_row(form.codePostal) }}
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        {{ form_row(form.ville) }}
+                    </div>
+                     <div class="col-md-4 mb-3">
+                        {{ form_row(form.telephone) }}
+                    </div>
+                </div>
+                 <div class="row">
+                    <div class="col-md-6 mb-3">
+                        {{ form_row(form.siret) }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        {{ form_row(form.codeNaf) }}
+                    </div>
+                </div>
+
+                <hr>
+
+                <h5 class="card-title text-primary mb-3">Configuration Mondial Relay</h5>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        {{ form_row(form.mondialRelayLogin) }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        {{ form_row(form.mondialRelayPassword) }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        {{ form_row(form.mondialRelayCustomerId) }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        {{ form_row(form.mondialRelayBrand) }}
+                    </div>
+                </div>
+
+                <hr>
+
+                <h5 class="card-title text-primary mb-3">Configuration Stripe</h5>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        {{ form_row(form.stripePublicKey) }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        {{ form_row(form.stripeSecretKey) }}
+                    </div>
+                    <div class="col-md-12 mb-3">
+                        {{ form_row(form.stripeWebhookSecret) }}
+                    </div>
+                </div>
+
+                <hr>
+                
+                <h5 class="card-title text-primary mb-3">Frais Bancaires</h5>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        {{ form_row(form.stripeFraisPourcentage) }}
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        {{ form_row(form.stripeFraisFixe) }}
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        {{ form_row(form.tpeFraisPourcentage) }}
+                    </div>
+                </div>
+
+                <hr>
+
+                <h5 class="card-title text-primary mb-3">Charges Sociales et Fiscales</h5>
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        {{ form_row(form.pourcentageUrssafBic) }}
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        {{ form_row(form.pourcentageUrssafBnc) }}
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        {{ form_row(form.pourcentageCpf) }}
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        {{ form_row(form.pourcentageIr) }}
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        {{ form_row(form.totalSite) }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        {{ form_row(form.pourcentageMensuel) }}
+                    </div>
+                </div>
+
+                <hr>
+
+                <h5 class="card-title text-primary mb-3">Configuration SMTP (Email)</h5>
+                <div class="row">
+                    <div class="col-md-8 mb-3">
+                        {{ form_row(form.smtpHost) }}
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        {{ form_row(form.smtpPort) }}
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        {{ form_row(form.smtpUser) }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        {{ form_row(form.smtpPassword) }}
+                    </div>
+                </div>
+                <div class="mb-3">
+                    {{ form_row(form.smtpFromEmail) }}
+                </div>
+
+
+                <hr>
+
+                <h5 class="card-title text-primary mb-3">Base de Données</h5>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        {{ form_row(form.dbHost) }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        {{ form_row(form.dbName) }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        {{ form_row(form.dbUser) }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        {{ form_row(form.dbPassword) }}
+                    </div>
+                </div>
+
+                <button class="btn btn-primary">
+                    <i class="fas fa-save"></i> Enregistrer les modifications
+                </button>
+            {{ form_end(form) }}
+        </div>
+    </div>
+{% endblock %}

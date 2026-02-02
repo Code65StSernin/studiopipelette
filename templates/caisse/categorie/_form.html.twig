@@ -1,78 +1,84 @@
 {{ form_start(form) }}
     <div class="row">
         <div class="col-md-8">
-            <div class="mb-3">
-                {{ form_row(form.nom) }}
-            </div>
-
-            <div class="mb-3">
-                {{ form_row(form.prestation) }}
-            </div>
-
-            <div class="mb-3">
-                <label class="form-label d-block fw-bold">Type de visuel</label>
-                <div class="form-check form-check-inline">
-                    <input class="form-check-input" type="radio" name="visuelType" id="typeColor" value="color" checked>
-                    <label class="form-check-label" for="typeColor">Couleur</label>
-                </div>
-                <div class="form-check form-check-inline">
-                    <input class="form-check-input" type="radio" name="visuelType" id="typeImage" value="image">
-                    <label class="form-check-label" for="typeImage">Image</label>
-                </div>
-            </div>
-
-            <div class="mb-3" id="colorInputContainer">
-                {{ form_row(form.couleur) }}
-            </div>
-
-            <div class="mb-3 d-none" id="imageInputContainer">
-                {{ form_row(form.imageFile) }}
-                {% if app.request.get('_route') == 'categorie_vente_edit' and form.vars.value.image %}
-                    <div class="mt-2">
-                        <small>Image actuelle :</small><br>
-                        <img src="{{ asset('uploads/images/categories/' ~ form.vars.value.image) }}" width="100" class="mt-1 rounded border">
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <div class="mb-3">
+                        {{ form_row(form.nom) }}
                     </div>
-                {% endif %}
+                    <div class="mb-3">
+                        {{ form_row(form.prestation) }}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0">Visuel</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Type de visuel</label>
+                        <div class="d-flex gap-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="visuelType" id="visuelImage" value="image" {% if form.vars.value.image %}checked{% endif %}>
+                                <label class="form-check-label" for="visuelImage">Image</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="visuelType" id="visuelCouleur" value="couleur" {% if not form.vars.value.image %}checked{% endif %}>
+                                <label class="form-check-label" for="visuelCouleur">Couleur</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="imageSection" class="mb-3 {% if not form.vars.value.image %}d-none{% endif %}">
+                        {{ form_row(form.imageFile) }}
+                        {% if form.vars.value.image %}
+                            <div class="mt-2">
+                                <img src="{{ asset('assets/categories/' ~ form.vars.value.image) }}" alt="Aperçu" class="img-thumbnail" style="max-height: 150px;">
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div id="couleurSection" class="mb-3 {% if form.vars.value.image %}d-none{% endif %}">
+                        {{ form_row(form.couleur) }}
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
-    <div class="mt-4">
-        <button class="btn btn-success">
-            <i class="fas fa-save me-1"></i> {{ button_label|default('Enregistrer') }}
-        </button>
+    <div class="d-flex justify-content-end gap-2">
         <a href="{{ path('categorie_vente_index') }}" class="btn btn-secondary">Annuler</a>
+        <button class="btn btn-primary">{{ button_label|default('Enregistrer') }}</button>
     </div>
 {{ form_end(form) }}
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const typeColor = document.getElementById('typeColor');
-        const typeImage = document.getElementById('typeImage');
-        const colorContainer = document.getElementById('colorInputContainer');
-        const imageContainer = document.getElementById('imageInputContainer');
-        const colorInput = document.getElementById('categorie_vente_couleur');
-        const imageInput = document.getElementById('categorie_vente_imageFile');
+        const radioImage = document.getElementById('visuelImage');
+        const radioCouleur = document.getElementById('visuelCouleur');
+        const imageSection = document.getElementById('imageSection');
+        const couleurSection = document.getElementById('couleurSection');
 
-        function toggleInputs() {
-            if (typeColor.checked) {
-                colorContainer.classList.remove('d-none');
-                imageContainer.classList.add('d-none');
-                // Optional: clear file input if switching to color?
-                // imageInput.value = '';
+        function toggleSections() {
+            if (radioImage.checked) {
+                imageSection.classList.remove('d-none');
+                couleurSection.classList.add('d-none');
             } else {
-                colorContainer.classList.add('d-none');
-                imageContainer.classList.remove('d-none');
+                imageSection.classList.add('d-none');
+                couleurSection.classList.remove('d-none');
             }
         }
 
-        typeColor.addEventListener('change', toggleInputs);
-        typeImage.addEventListener('change', toggleInputs);
-
-        // Initial check based on existing data
-        {% if form.vars.value.image %}
-            typeImage.checked = true;
-            toggleInputs();
-        {% endif %}
+        radioImage.addEventListener('change', toggleSections);
+        radioCouleur.addEventListener('change', toggleSections);
+        
+        // Initial state
+        if (!radioImage.checked && !radioCouleur.checked) {
+            radioCouleur.checked = true;
+        }
+        toggleSections();
     });
 </script>

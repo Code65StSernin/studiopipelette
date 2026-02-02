@@ -1,0 +1,52 @@
+{% extends 'caisse/layout.html.twig' %}
+
+{% block title %}Politique de confidentialité{% endblock %}
+
+{% block body %}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="mb-0">Politique de confidentialité</h1>
+        <a href="{{ path('app_caisse_privacy_policy_new') }}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Nouvelle politique
+        </a>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0">
+                <thead class="bg-light">
+                    <tr>
+                        <th>ID</th>
+                        <th>Aperçu du contenu</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for policy in privacy_policies %}
+                    <tr>
+                        <td class="align-middle fw-bold">#{{ policy.id }}</td>
+                        <td class="align-middle text-truncate" style="max-width: 500px;">{{ policy.content|striptags }}</td>
+                        <td class="align-middle text-end">
+                            <a href="{{ path('app_caisse_privacy_policy_edit', {'id': policy.id}) }}" class="btn btn-sm btn-outline-primary me-1" title="Modifier">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <form method="post" action="{{ path('app_caisse_privacy_policy_delete', {'id': policy.id}) }}" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette politique ?');" style="display: inline-block;">
+                                <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ policy.id) }}">
+                                <button class="btn btn-sm btn-outline-danger" title="Supprimer">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="3" class="text-center py-4">Aucune politique trouvée</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="card-footer d-flex justify-content-center">
+            {{ knp_pagination_render(privacy_policies) }}
+        </div>
+    </div>
+{% endblock %}

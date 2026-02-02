@@ -1,0 +1,62 @@
+{% extends 'caisse/layout.html.twig' %}
+
+{% block title %}FAQ{% endblock %}
+
+{% block body %}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="d-flex align-items-center gap-3">
+            <h1 class="mb-0">FAQ</h1>
+            <form action="{{ path('app_caisse_faq_index') }}" method="get" class="d-flex">
+                <div class="input-group">
+                    <input type="text" name="q" class="form-control" placeholder="Rechercher..." value="{{ app.request.query.get('q') }}">
+                    <button class="btn btn-outline-secondary" type="submit">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+        <a href="{{ path('app_caisse_faq_new') }}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Nouvelle question
+        </a>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0">
+                <thead class="bg-light">
+                    <tr>
+                        <th>Question</th>
+                        <th>Réponse</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for faq in faqs %}
+                    <tr>
+                        <td class="align-middle fw-bold">{{ faq.question }}</td>
+                        <td class="align-middle text-truncate" style="max-width: 300px;">{{ faq.answer|striptags }}</td>
+                        <td class="align-middle text-end">
+                            <a href="{{ path('app_caisse_faq_edit', {'id': faq.id}) }}" class="btn btn-sm btn-outline-primary me-1" title="Modifier">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <form method="post" action="{{ path('app_caisse_faq_delete', {'id': faq.id}) }}" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette question ?');" style="display: inline-block;">
+                                <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ faq.id) }}">
+                                <button class="btn btn-sm btn-outline-danger" title="Supprimer">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="3" class="text-center py-4">Aucune question FAQ trouvée</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="card-footer d-flex justify-content-center">
+            {{ knp_pagination_render(faqs) }}
+        </div>
+    </div>
+{% endblock %}

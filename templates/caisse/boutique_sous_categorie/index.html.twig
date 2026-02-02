@@ -1,0 +1,54 @@
+{% extends 'caisse/layout.html.twig' %}
+
+{% block title %}Sous-Catégories{% endblock %}
+
+{% block body %}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Sous-catégories de boutique</h1>
+        <a href="{{ path('app_caisse_sous_categorie_new') }}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Nouvelle sous-catégorie
+        </a>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0">
+                <thead class="bg-light">
+                    <tr>
+                        <th>Nom</th>
+                        <th>Nombre d'articles</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for sous_categorie in sous_categories %}
+                    <tr>
+                        <td class="align-middle fw-bold">{{ sous_categorie.nom }}</td>
+                        <td class="align-middle">
+                            <span class="badge bg-secondary">{{ sous_categorie.articles|length }}</span>
+                        </td>
+                        <td class="align-middle text-end">
+                            <a href="{{ path('app_caisse_sous_categorie_edit', {'id': sous_categorie.id}) }}" class="btn btn-sm btn-outline-primary me-1">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <form method="post" action="{{ path('app_caisse_sous_categorie_delete', {'id': sous_categorie.id}) }}" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette sous-catégorie ?');" style="display: inline-block;">
+                                <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ sous_categorie.id) }}">
+                                <button class="btn btn-sm btn-outline-danger">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="3" class="text-center py-4">Aucune sous-catégorie trouvée</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="d-flex justify-content-center mt-4">
+            {{ knp_pagination_render(sous_categories) }}
+        </div>
+    </div>
+{% endblock %}

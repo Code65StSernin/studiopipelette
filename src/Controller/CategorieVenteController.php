@@ -11,7 +11,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
-#[Route('/caisse/categories')]
+#[Route('/caisse/parametres/categories')]
 class CategorieVenteController extends AbstractController
 {
     #[Route('/', name: 'categorie_vente_index', methods: ['GET'])]

@@ -20,7 +20,6 @@ class UnavailabilityRuleType extends AbstractType
         $builder
             ->add('name', TextType::class, ['label' => 'Nom'])
             ->add('recurrenceType', ChoiceType::class, [
-                'mapped' => false,
                 'label' => 'Type de récurrence',
                 'choices' => [
                     'Ponctuelle' => 'once',
@@ -31,10 +30,9 @@ class UnavailabilityRuleType extends AbstractType
                 ],
                 'required' => true,
             ])
-            ->add('startDate', DateType::class, ['widget' => 'single_text', 'required' => false, 'mapped' => false])
-            ->add('endDate', DateType::class, ['widget' => 'single_text', 'required' => false, 'mapped' => false])
+            ->add('startDate', DateType::class, ['widget' => 'single_text', 'required' => false])
+            ->add('endDate', DateType::class, ['widget' => 'single_text', 'required' => false])
             ->add('daysOfWeek', ChoiceType::class, [
-                'mapped' => false,
                 'label' => 'Jours de la semaine',
                 'choices' => [
                     'Lundi' => 1,

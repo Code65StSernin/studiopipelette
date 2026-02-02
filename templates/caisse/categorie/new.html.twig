@@ -1,13 +1,11 @@
 {% extends 'caisse/layout.html.twig' %}
 
-{% block title %}Nouvelle Catégorie{% endblock %}
+{% block title %}Nouvelle Catégorie Caisse{% endblock %}
 
 {% block body %}
-    <h1 class="mb-4">Nouvelle catégorie</h1>
-
-    <div class="card shadow-sm">
-        <div class="card-body">
-            {{ include('caisse/categorie/_form.html.twig') }}
-        </div>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Nouvelle Catégorie Caisse</h1>
     </div>
+
+    {{ include('caisse/categorie/_form.html.twig') }}
 {% endblock %}

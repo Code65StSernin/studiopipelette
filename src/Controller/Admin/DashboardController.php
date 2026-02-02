@@ -25,6 +25,8 @@ use App\Entity\CookiePolicy;
 use App\Entity\Societe;
 use App\Entity\Recette;
 use App\Entity\Depenses;
+use App\Entity\UnavailabilityRule;
+use App\Entity\DispoPrestation;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Dashboard;
 use EasyCorp\Bundle\EasyAdminBundle\Config\MenuItem;
 use App\Repository\UserRepository;
@@ -394,6 +396,11 @@ class DashboardController extends AbstractDashboardController
     {
         yield MenuItem::linkToUrl('Retour au site', 'fas fa-arrow-left', '/');
         yield MenuItem::linkToDashboard('Tableau de bord', 'fa fa-home');
+
+        yield MenuItem::section('Planning');
+        yield MenuItem::linkToRoute('Agenda', 'fas fa-calendar-alt', 'app_caisse_planning');
+        yield MenuItem::linkToCrud('Indisponibilités', 'fas fa-calendar-times', UnavailabilityRule::class);
+        yield MenuItem::linkToCrud('Exceptions', 'fas fa-exclamation-triangle', DispoPrestation::class);
 
         yield MenuItem::section('Activités');
         yield MenuItem::linkToCrud('Commandes', 'fas fa-shopping-cart', Order::class);

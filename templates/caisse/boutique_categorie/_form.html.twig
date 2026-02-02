@@ -1,0 +1,78 @@
+{{ form_start(form) }}
+    <div class="row">
+        <div class="col-md-8">
+            <div class="mb-3">
+                {{ form_row(form.nom) }}
+            </div>
+
+            <div class="mb-3">
+                {{ form_row(form.prestation) }}
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label d-block fw-bold">Type de visuel</label>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="visuelType" id="typeColor" value="color" checked>
+                    <label class="form-check-label" for="typeColor">Couleur</label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="visuelType" id="typeImage" value="image">
+                    <label class="form-check-label" for="typeImage">Image</label>
+                </div>
+            </div>
+
+            <div class="mb-3" id="colorInputContainer">
+                {{ form_row(form.couleur) }}
+            </div>
+
+            <div class="mb-3 d-none" id="imageInputContainer">
+                {{ form_row(form.imageFile) }}
+                {% if app.request.get('_route') == 'app_caisse_categorie_edit' and form.vars.value.image %}
+                    <div class="mt-2">
+                        <small>Image actuelle :</small><br>
+                        <img src="{{ asset('uploads/images/categories/' ~ form.vars.value.image) }}" width="100" class="mt-1 rounded border">
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-4">
+        <button class="btn btn-success">
+            <i class="fas fa-save me-1"></i> {{ button_label|default('Enregistrer') }}
+        </button>
+        <a href="{{ path('app_caisse_categorie_index') }}" class="btn btn-secondary">Annuler</a>
+    </div>
+{{ form_end(form) }}
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const typeColor = document.getElementById('typeColor');
+        const typeImage = document.getElementById('typeImage');
+        const colorContainer = document.getElementById('colorInputContainer');
+        const imageContainer = document.getElementById('imageInputContainer');
+        const colorInput = document.getElementById('categorie_vente_couleur');
+        const imageInput = document.getElementById('categorie_vente_imageFile');
+
+        function toggleInputs() {
+            if (typeColor.checked) {
+                colorContainer.classList.remove('d-none');
+                imageContainer.classList.add('d-none');
+                // Optional: clear file input if switching to color?
+                // imageInput.value = '';
+            } else {
+                colorContainer.classList.add('d-none');
+                imageContainer.classList.remove('d-none');
+            }
+        }
+
+        typeColor.addEventListener('change', toggleInputs);
+        typeImage.addEventListener('change', toggleInputs);
+
+        // Initial check based on existing data
+        {% if form.vars.value.image %}
+            typeImage.checked = true;
+            toggleInputs();
+        {% endif %}
+    });
+</script>

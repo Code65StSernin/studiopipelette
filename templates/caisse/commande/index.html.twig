@@ -1,0 +1,116 @@
+{% extends 'caisse/layout.html.twig' %}
+
+{% block title %}Liste des commandes{% endblock %}
+
+{% block body %}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Liste des commandes</h1>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <div class="input-group">
+                        <input type="text" name="q" class="form-control" placeholder="Rechercher par facture, nom..." value="{{ app.request.query.get('q') }}">
+                        <button class="btn btn-outline-secondary" type="submit">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </div>
+            </form>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Référence</th>
+                            <th>Date</th>
+                            <th>Client</th>
+                            <th>Total</th>
+                            <th>Statut</th>
+                            <th>Expédition</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for commande in commandes %}
+                        <tr>
+                            <td>
+                                Commande #{{ commande.id }}<br>
+                                <small class="text-muted">{{ commande.facture ? commande.facture.numero : '-' }}</small>
+                            </td>
+                            <td>{{ commande.createdAt|date('d/m/Y H:i') }}</td>
+                            <td>
+                                {% if commande.facture %}
+                                    {{ commande.facture.clientPrenom }} {{ commande.facture.clientNom }}
+                                {% else %}
+                                    {{ commande.user ? commande.user.prenom ~ ' ' ~ commande.user.nom : 'Invité' }}
+                                {% endif %}
+                            </td>
+                            <td>{{ (commande.amountTotalCents / 100)|number_format(2, ',', ' ') }} €</td>
+                            <td>
+                                {% if commande.status == 'paid' %}
+                                    <span class="badge bg-success">Payée</span>
+                                {% elseif commande.status == 'pending' %}
+                                    <span class="badge bg-warning text-dark">En attente</span>
+                                {% elseif commande.status == 'canceled' %}
+                                    <span class="badge bg-danger">Annulée</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ commande.status }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if commande.isShipped %}
+                                    <span class="badge bg-success"><i class="fas fa-check"></i> Expédiée</span>
+                                {% else %}
+                                    <span class="badge bg-warning text-dark">À expédier</span>
+                                {% endif %}
+                                {% if commande.mondialRelayShipmentNumber %}
+                                    <br><small class="text-muted">MR: {{ commande.mondialRelayShipmentNumber }}</small>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                <div class="btn-group">
+                                    {% if commande.facture %}
+                                        <a href="{{ path('app_caisse_commande_view_invoice', {'id': commande.id}) }}" class="btn btn-sm btn-outline-secondary" target="_blank" title="Voir la facture">
+                                            <i class="fas fa-file-invoice"></i>
+                                        </a>
+                                    {% endif %}
+                                    
+                                    <a href="{{ path('app_caisse_commande_configure_shipment', {'id': commande.id}) }}" class="btn btn-sm btn-outline-primary" title="Configurer l'expédition">
+                                        <i class="fas fa-box-open"></i>
+                                    </a>
+
+                                    {% if commande.mondialRelayLabelUrl %}
+                                        <a href="{{ path('app_caisse_commande_print_relay_label', {'id': commande.id}) }}" class="btn btn-sm btn-outline-info" target="_blank" title="Imprimer l'étiquette">
+                                            <i class="fas fa-print"></i>
+                                        </a>
+                                    {% endif %}
+
+                                    {% if not commande.isShipped and commande.mondialRelayShipmentNumber %}
+                                        <form action="{{ path('app_caisse_commande_ship', {'id': commande.id}) }}" method="post" class="d-inline" onsubmit="return confirm('Marquer comme expédiée ?');">
+                                            <input type="hidden" name="_token" value="{{ csrf_token('ship' ~ commande.id) }}">
+                                            <button type="submit" class="btn btn-sm btn-success" title="Marquer comme expédiée">
+                                                <i class="fas fa-truck"></i>
+                                            </button>
+                                        </form>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="7" class="text-center">Aucune commande trouvée</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="d-flex justify-content-center">
+                {{ knp_pagination_render(commandes) }}
+            </div>
+        </div>
+    </div>
+{% endblock %}

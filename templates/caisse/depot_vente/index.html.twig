@@ -1,0 +1,66 @@
+{% extends 'caisse/layout.html.twig' %}
+
+{% block title %}Dépôt-Vente{% endblock %}
+
+{% block body %}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="d-flex align-items-center gap-3">
+            <h1 class="mb-0">Dépôt-Vente</h1>
+            <form action="{{ path('app_caisse_depot_vente_index') }}" method="get" class="d-flex">
+                <div class="input-group">
+                    <input type="text" name="q" class="form-control" placeholder="Rechercher..." value="{{ app.request.query.get('q') }}">
+                    <button class="btn btn-outline-secondary" type="submit">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+        <a href="{{ path('app_caisse_depot_vente_new') }}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Nouveau dépôt-vente
+        </a>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0">
+                <thead class="bg-light">
+                    <tr>
+                        <th>Nom</th>
+                        <th>Commission</th>
+                        <th>Clients</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for depot in depot_ventes %}
+                    <tr>
+                        <td class="align-middle fw-bold">{{ depot.nom }}</td>
+                        <td class="align-middle">{{ depot.commission }}%</td>
+                        <td class="align-middle">
+                            <span class="badge bg-info text-dark">{{ depot.users|length }} clients</span>
+                        </td>
+                        <td class="align-middle text-end">
+                            <a href="{{ path('app_caisse_depot_vente_edit', {'id': depot.id}) }}" class="btn btn-sm btn-outline-primary me-1" title="Modifier">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <form method="post" action="{{ path('app_caisse_depot_vente_delete', {'id': depot.id}) }}" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce dépôt-vente ?');" style="display: inline-block;">
+                                <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ depot.id) }}">
+                                <button class="btn btn-sm btn-outline-danger" title="Supprimer">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="4" class="text-center py-4">Aucun dépôt-vente trouvé</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="card-footer d-flex justify-content-center">
+            {{ knp_pagination_render(depot_ventes) }}
+        </div>
+    </div>
+{% endblock %}

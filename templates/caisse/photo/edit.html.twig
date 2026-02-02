@@ -1,0 +1,18 @@
+{% extends 'caisse/layout.html.twig' %}
+
+{% block title %}Modifier Photo{% endblock %}
+
+{% block body %}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Modifier Photo</h1>
+        <a href="{{ path('app_caisse_photo_index') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Retour
+        </a>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            {{ include('caisse/photo/_form.html.twig', {'button_label': 'Mettre à jour'}) }}
+        </div>
+    </div>
+{% endblock %}

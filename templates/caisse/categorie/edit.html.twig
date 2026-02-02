@@ -1,13 +1,11 @@
 {% extends 'caisse/layout.html.twig' %}
 
-{% block title %}Modifier Catégorie{% endblock %}
+{% block title %}Modifier Catégorie Caisse{% endblock %}
 
 {% block body %}
-    <h1 class="mb-4">Modifier la catégorie</h1>
-
-    <div class="card shadow-sm">
-        <div class="card-body">
-            {{ include('caisse/categorie/_form.html.twig', {'button_label': 'Mettre à jour'}) }}
-        </div>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Modifier Catégorie Caisse</h1>
     </div>
+
+    {{ include('caisse/categorie/_form.html.twig', {'button_label': 'Mettre à jour'}) }}
 {% endblock %}

@@ -1,0 +1,91 @@
+{% extends 'caisse/layout.html.twig' %}
+
+{% block title %}Configurer l'expédition{% endblock %}
+
+{% block body %}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Expédition Commande #{{ order.id }}</h1>
+        <a href="{{ path('app_caisse_commande_index') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Retour
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Détails Mondial Relay</h5>
+                </div>
+                <div class="card-body">
+                    {{ form_start(form) }}
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form_row(form.mondialRelayRecipientFirstName) }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form_row(form.mondialRelayRecipientLastName) }}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                {{ form_row(form.mondialRelayLengthCm) }}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                {{ form_row(form.mondialRelayWidthCm) }}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                {{ form_row(form.mondialRelayHeightCm) }}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form_row(form.mondialRelayWeightKg) }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form_row(form.mondialRelayParcelsCount) }}
+                            </div>
+                        </div>
+                        
+                         <div class="mb-3">
+                            {{ form_row(form.mondialRelayContentDescription) }}
+                        </div>
+
+                         <div class="mb-3">
+                            {{ form_row(form.mondialRelayContentValueCents) }}
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Générer l'étiquette
+                        </button>
+                    {{ form_end(form) }}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Infos Commande</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Client:</strong> {{ order.user ? order.user.prenom ~ ' ' ~ order.user.nom : 'Invité' }}</p>
+                    <p><strong>Email:</strong> {{ order.user ? order.user.email : '-' }}</p>
+                    <p><strong>Montant:</strong> {{ (order.amountTotalCents / 100)|number_format(2, ',', ' ') }} €</p>
+                    <p><strong>Point Relais:</strong> {{ order.relayId }} ({{ order.relayName }})</p>
+                    <hr>
+                    <h6>Produits:</h6>
+                    <ul class="list-unstyled">
+                        {% if order.facture %}
+                            {% for item in order.facture.lignesFacture %}
+                                <li>{{ item.quantite }}x {{ item.articleDesignation }}</li>
+                            {% endfor %}
+                        {% else %}
+                            <li><em>Aucune facture associée</em></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

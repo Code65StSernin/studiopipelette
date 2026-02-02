@@ -1,0 +1,37 @@
+{{ form_start(form) }}
+    <div class="row">
+        <div class="col-md-12 mb-3">
+            {{ form_row(form.article) }}
+        </div>
+        <div class="col-md-12 mb-3">
+            {{ form_row(form.type) }}
+        </div>
+        <div class="col-md-12 mb-3">
+            {{ form_row(form.file) }}
+        </div>
+        
+        {% if photo is defined and photo.filename %}
+            <div class="col-md-12 mb-3">
+                <label class="form-label">Média actuel</label>
+                <div class="card">
+                    <div class="card-body text-center">
+                        {% if photo.type == 'image' and photo.article %}
+                            <img src="{{ asset('assets/img/articles/thumbnails/' ~ photo.article.id ~ '/' ~ photo.filename) }}" alt="Aperçu" class="img-fluid" style="max-height: 200px;">
+                        {% elseif photo.type == 'video' and photo.article %}
+                            <video controls class="img-fluid" style="max-height: 200px;">
+                                <source src="{{ asset('assets/videos/articles/' ~ photo.article.id ~ '/' ~ photo.filename) }}" type="video/mp4">
+                                Votre navigateur ne supporte pas la lecture de vidéos.
+                            </video>
+                        {% endif %}
+                        <p class="mt-2 text-muted small">{{ photo.filename }}</p>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+    
+    <div class="mt-4">
+        <button class="btn btn-primary">{{ button_label|default('Enregistrer') }}</button>
+        <a href="{{ path('app_caisse_photo_index') }}" class="btn btn-secondary">Annuler</a>
+    </div>
+{{ form_end(form) }}

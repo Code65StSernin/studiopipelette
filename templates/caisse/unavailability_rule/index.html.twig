@@ -1,0 +1,111 @@
+{% extends 'caisse/layout.html.twig' %}
+
+{% block title %}Indisponibilités{% endblock %}
+
+{% block body %}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="d-flex align-items-center gap-3">
+            <h1 class="mb-0">Indisponibilités</h1>
+            <form action="{{ path('app_caisse_unavailability_rule_index') }}" method="get" class="d-flex">
+                <div class="input-group">
+                    <input type="text" name="q" class="form-control" placeholder="Rechercher..." value="{{ app.request.query.get('q') }}">
+                    <button class="btn btn-outline-secondary" type="submit">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+        <a href="{{ path('app_caisse_unavailability_rule_new') }}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Nouvelle indisponibilité
+        </a>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0">
+                <thead class="bg-light">
+                    <tr>
+                        <th>Nom</th>
+                        <th>Type de récurrence</th>
+                        <th>Période</th>
+                        <th>Jours</th>
+                        <th>Horaires</th>
+                        <th>Active</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for rule in unavailability_rules %}
+                    <tr>
+                        <td class="align-middle fw-bold">{{ rule.name }}</td>
+                        <td class="align-middle">
+                            {% if rule.recurrenceType == 'once' %}
+                                <span class="badge bg-secondary">Ponctuelle</span>
+                            {% elseif rule.recurrenceType == 'daily' %}
+                                <span class="badge bg-info">Quotidienne</span>
+                            {% elseif rule.recurrenceType == 'weekly' %}
+                                <span class="badge bg-primary">Hebdomadaire</span>
+                            {% elseif rule.recurrenceType == 'monthly' %}
+                                <span class="badge bg-warning text-dark">Mensuelle</span>
+                            {% elseif rule.recurrenceType == 'yearly' %}
+                                <span class="badge bg-success">Annuelle</span>
+                            {% else %}
+                                {{ rule.recurrenceType }}
+                            {% endif %}
+                        </td>
+                        <td class="align-middle">
+                            {% if rule.startDate %}
+                                {{ rule.startDate|date('d/m/Y') }}
+                            {% endif %}
+                            {% if rule.endDate %}
+                                - {{ rule.endDate|date('d/m/Y') }}
+                            {% endif %}
+                        </td>
+                        <td class="align-middle">
+                            {% if rule.daysOfWeek is not empty %}
+                                {% for day in rule.daysOfWeek %}
+                                    {% if day == 1 %}Lun{% elseif day == 2 %}Mar{% elseif day == 3 %}Mer{% elseif day == 4 %}Jeu{% elseif day == 5 %}Ven{% elseif day == 6 %}Sam{% elseif day == 0 %}Dim{% endif %}{% if not loop.last %}, {% endif %}
+                                {% endfor %}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td class="align-middle">
+                            {% if rule.timeStart and rule.timeEnd %}
+                                {{ rule.timeStart|date('H:i') }} - {{ rule.timeEnd|date('H:i') }}
+                            {% else %}
+                                Toute la journée
+                            {% endif %}
+                        </td>
+                        <td class="align-middle">
+                            {% if rule.active %}
+                                <span class="badge bg-success">Oui</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Non</span>
+                            {% endif %}
+                        </td>
+                        <td class="align-middle text-end">
+                            <a href="{{ path('app_caisse_unavailability_rule_edit', {'id': rule.id}) }}" class="btn btn-sm btn-outline-primary me-1" title="Modifier">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <form method="post" action="{{ path('app_caisse_unavailability_rule_delete', {'id': rule.id}) }}" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette indisponibilité ?');" style="display: inline-block;">
+                                <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ rule.id) }}">
+                                <button class="btn btn-sm btn-outline-danger" title="Supprimer">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center py-4">Aucune indisponibilité trouvée</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="card-footer d-flex justify-content-center">
+            {{ knp_pagination_render(unavailability_rules) }}
+        </div>
+    </div>
+{% endblock %}

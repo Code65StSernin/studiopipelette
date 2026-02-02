@@ -1,0 +1,44 @@
+{% extends 'caisse/layout.html.twig' %}
+
+{% block title %}Modifier le tarif{% endblock %}
+
+{% block body %}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="mb-0">Modifier le tarif</h1>
+        <a href="{{ path('app_caisse_tarif_index') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Retour
+        </a>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            {{ form_start(form) }}
+                {{ form_row(form.nom) }}
+                <div class="row">
+                    <div class="col-md-6">{{ form_row(form.tarif) }}</div>
+                    <div class="col-md-6">{{ form_row(form.dureeMinutes) }}</div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">{{ form_row(form.categorieVente) }}</div>
+                    <div class="col-md-6">{{ form_row(form.sousCategorieVente) }}</div>
+                </div>
+                
+                <div class="mb-3">
+                    {% if tarif.image %}
+                        <div class="mb-2">
+                            <label class="form-label d-block">Image actuelle</label>
+                            <img src="{{ asset('images/tarifs/' ~ tarif.image) }}" alt="{{ tarif.nom }}" class="img-thumbnail" style="max-height: 100px;">
+                        </div>
+                    {% endif %}
+                    {{ form_row(form.image) }}
+                </div>
+                
+                <div class="mt-4 text-end">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Enregistrer
+                    </button>
+                </div>
+            {{ form_end(form) }}
+        </div>
+    </div>
+{% endblock %}
