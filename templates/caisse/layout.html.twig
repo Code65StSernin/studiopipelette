@@ -13,6 +13,19 @@
     <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
 
     <style>
+        @media print {
+            .sidebar, .toggle-btn, .menu-item, .submenu {
+                display: none !important;
+            }
+            .main-content {
+                margin: 0 !important;
+                padding: 0 !important;
+                width: 100% !important;
+            }
+            body {
+                background-color: white !important;
+            }
+        }
         body {
             background-color: white;
             margin: 0;
@@ -196,6 +209,18 @@
         <div class="submenu {% if app.request.get('_route') starts with 'app_caisse_partenaire_btob_' or app.request.get('_route') starts with 'app_caisse_depot_vente_' %}open{% endif %}">
             <a href="{{ path('app_caisse_partenaire_btob_index') }}" class="submenu-item" style="{% if app.request.get('_route') starts with 'app_caisse_partenaire_btob_' %}background-color: rgba(255,255,255,0.1); color: white;{% endif %}">Partenaires BtoB</a>
             <a href="{{ path('app_caisse_depot_vente_index') }}" class="submenu-item" style="{% if app.request.get('_route') starts with 'app_caisse_depot_vente_' %}background-color: rgba(255,255,255,0.1); color: white;{% endif %}">Dépôt Vente</a>
+        </div>
+
+        <!-- Comptabilité Accordion -->
+        <div class="menu-item" onclick="toggleSubmenu(this)">
+            <i class="fas fa-calculator menu-icon"></i>
+            <span class="menu-text">Comptabilité</span>
+            <i class="fas fa-chevron-down arrow-icon"></i>
+        </div>
+        <div class="submenu {% if app.request.get('_route') starts with 'app_caisse_comptabilite_' or app.request.get('_route') starts with 'app_caisse_depense_' or app.request.get('_route') starts with 'app_caisse_recette_' %}open{% endif %}">
+            <a href="{{ path('app_caisse_comptabilite_index') }}" class="submenu-item" style="{% if app.request.get('_route') == 'app_caisse_comptabilite_index' %}background-color: rgba(255,255,255,0.1); color: white;{% endif %}">Tableau de bord</a>
+            <a href="{{ path('app_caisse_recette_index') }}" class="submenu-item" style="{% if app.request.get('_route') starts with 'app_caisse_recette_' %}background-color: rgba(255,255,255,0.1); color: white;{% endif %}">Recettes</a>
+            <a href="{{ path('app_caisse_depense_index') }}" class="submenu-item" style="{% if app.request.get('_route') starts with 'app_caisse_depense_' %}background-color: rgba(255,255,255,0.1); color: white;{% endif %}">Dépenses</a>
         </div>
         
         <!-- Activités Accordion -->
