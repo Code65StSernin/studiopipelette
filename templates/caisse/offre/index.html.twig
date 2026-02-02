@@ -1,0 +1,79 @@
+{% extends 'caisse/layout.html.twig' %}
+
+{% block title %}Offres{% endblock %}
+
+{% block body %}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">Gestion des offres</h1>
+        <a href="{{ path('app_caisse_offre_new') }}" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>Nouvelle offre
+        </a>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Image</th>
+                            <th>Grand texte</th>
+                            <th>Petit texte</th>
+                            <th>Dates</th>
+                            <th>Position image</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for offre in offres %}
+                            <tr>
+                                <td>
+                                    {% if offre.image %}
+                                        <img src="{{ asset('assets/img/offres/' ~ offre.image) }}" alt="Image offre" class="rounded" style="width: 50px; height: 50px; object-fit: cover;">
+                                    {% else %}
+                                        <span class="text-muted small">Aucune</span>
+                                    {% endif %}
+                                </td>
+                                <td class="fw-bold">{{ offre.grandTexte }}</td>
+                                <td>{{ offre.petitTexte }}</td>
+                                <td>
+                                    <small class="d-block text-muted">Du {{ offre.dateDebut|date('d/m/Y') }}</small>
+                                    <small class="d-block text-muted">Au {{ offre.dateFin|date('d/m/Y') }}</small>
+                                </td>
+                                <td>
+                                    {% if offre.imageGauche %}
+                                        <span class="badge bg-info">Gauche</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Droite</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">
+                                    <a href="{{ path('app_caisse_offre_edit', {'id': offre.id}) }}" class="btn btn-sm btn-outline-primary me-1" title="Modifier">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <form method="post" action="{{ path('app_caisse_offre_delete', {'id': offre.id}) }}" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette offre ?');" class="d-inline-block">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ offre.id) }}">
+                                        <button class="btn btn-sm btn-outline-danger" title="Supprimer">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="6" class="text-center py-4 text-muted">
+                                    <i class="fas fa-bullhorn fa-2x mb-3 d-block"></i>
+                                    Aucune offre trouvée
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="d-flex justify-content-center mt-4">
+                {{ knp_pagination_render(offres) }}
+            </div>
+        </div>
+    </div>
+{% endblock %}

@@ -1,0 +1,22 @@
+{% extends 'caisse/layout.html.twig' %}
+
+{% block title %}Modifier l'offre{% endblock %}
+
+{% block body %}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">Modifier l'offre</h1>
+        <a href="{{ path('app_caisse_offre_index') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Retour
+        </a>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    {{ include('caisse/offre/_form.html.twig', {'button_label': 'Mettre à jour'}) }}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

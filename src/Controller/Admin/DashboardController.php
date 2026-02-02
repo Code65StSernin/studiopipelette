@@ -414,7 +414,6 @@ class DashboardController extends AbstractDashboardController
         yield MenuItem::linkToCrud('Sous-Catégories', 'fas fa-tag', SousCategorie::class);
         yield MenuItem::linkToCrud('Couleurs', 'fas fa-palette', Couleur::class);
         yield MenuItem::linkToCrud('Tarifs (Prestations)', 'fas fa-money-bill', Tarif::class);
-        yield MenuItem::linkToCrud('Codes Promo', 'fas fa-percent', Code::class);
 
         yield MenuItem::section('Clients');
         yield MenuItem::linkToCrud('Utilisateurs', 'fas fa-users', User::class);
@@ -429,6 +428,7 @@ class DashboardController extends AbstractDashboardController
 
         yield MenuItem::section('Paramètres');
         yield MenuItem::linkToCrud('Carousel', 'fas fa-images', Carousel::class);
+        yield MenuItem::linkToCrud('Promo', 'fas fa-percent', Code::class);
         yield MenuItem::linkToCrud('FAQ', 'fas fa-question-circle', Faq::class);
         yield MenuItem::linkToCrud('CGV', 'fas fa-file-contract', Cgv::class);
         yield MenuItem::linkToCrud('Politique Confidentialité', 'fas fa-user-shield', PrivacyPolicy::class);
