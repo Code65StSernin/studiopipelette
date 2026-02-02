@@ -35,7 +35,7 @@ class CategorieVenteController extends AbstractController
             if ($visuelType === 'image') {
                 $imageFile = $form->get('imageFile')->getData();
                 if ($imageFile) {
-                    $fichier = $pictureService->add($imageFile, '/categories', 100, 100);
+                    $fichier = $pictureService->add($imageFile, '/categories', 500, 500);
                     $categorieVente->setImage($fichier);
                 }
                 // En mode image, on vide la couleur
@@ -72,16 +72,16 @@ class CategorieVenteController extends AbstractController
                 if ($imageFile) {
                     // Suppression de l'ancienne image
                     if ($categorieVente->getImage()) {
-                        $pictureService->delete($categorieVente->getImage(), '/categories', 100, 100);
+                        $pictureService->delete($categorieVente->getImage(), '/categories', 500, 500);
                     }
-                    $fichier = $pictureService->add($imageFile, '/categories', 100, 100);
+                    $fichier = $pictureService->add($imageFile, '/categories', 500, 500);
                     $categorieVente->setImage($fichier);
                 }
                 $categorieVente->setCouleur(null);
             } else {
                 // Suppression de l'image si on passe en mode couleur
                 if ($categorieVente->getImage()) {
-                    $pictureService->delete($categorieVente->getImage(), '/categories', 100, 100);
+                    $pictureService->delete($categorieVente->getImage(), '/categories', 500, 500);
                     $categorieVente->setImage(null);
                 }
             }
@@ -105,7 +105,7 @@ class CategorieVenteController extends AbstractController
         if ($this->isCsrfTokenValid('delete'.$categorieVente->getId(), $request->request->get('_token'))) {
             // Suppression de l'image si elle existe
             if ($categorieVente->getImage()) {
-                $pictureService->delete($categorieVente->getImage(), '/categories', 100, 100);
+                $pictureService->delete($categorieVente->getImage(), '/categories', 500, 500);
             }
             
             $categorieVenteRepository->remove($categorieVente, true);

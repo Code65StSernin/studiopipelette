@@ -136,22 +136,26 @@
             <i class="fas fa-arrow-left menu-icon"></i>
             <span class="menu-text">Retour au site</span>
         </a>
-        <a href="{{ path('app_vente_index') }}" class="menu-item" style="{% if app.request.get('_route') starts with 'app_vente_' %}background-color: rgba(255, 255, 255, 0.2);{% endif %}">
-            <i class="fas fa-shopping-cart menu-icon"></i>
-            <span class="menu-text">Ventes</span>
+        <a href="{{ path('app_caisse_dashboard') }}" class="menu-item" style="{% if app.request.get('_route') == 'app_caisse_dashboard' %}background-color: rgba(255, 255, 255, 0.2);{% endif %}">
+            <i class="fas fa-tachometer-alt menu-icon"></i>
+            <span class="menu-text">Tableau de bord</span>
         </a>
-        <a href="{{ path('app_avoir_index') }}" class="menu-item" style="{% if app.request.get('_route') starts with 'app_avoir_' %}background-color: rgba(255, 255, 255, 0.2);{% endif %}">
-            <i class="fas fa-ticket-alt menu-icon"></i>
-            <span class="menu-text">Avoirs</span>
+        <a href="{{ path('app_caisse') }}" class="menu-item" style="{% if app.request.get('_route') == 'app_caisse' %}background-color: rgba(255, 255, 255, 0.2);{% endif %}">
+            <i class="fas fa-cash-register menu-icon"></i>
+            <span class="menu-text">Caisse</span>
         </a>
-        <a href="{{ path('app_bon_achat_index') }}" class="menu-item" style="{% if app.request.get('_route') starts with 'app_bon_achat_' %}background-color: rgba(255, 255, 255, 0.2);{% endif %}">
-            <i class="fas fa-gift menu-icon"></i>
-            <span class="menu-text">Bons d'achat</span>
-        </a>
-        <a href="{{ path('app_client_index') }}" class="menu-item" style="{% if app.request.get('_route') starts with 'app_client_' %}background-color: rgba(255, 255, 255, 0.2);{% endif %}">
-            <i class="fas fa-users menu-icon"></i>
-            <span class="menu-text">Clients</span>
-        </a>
+        <!-- Commerce Accordion -->
+        <div class="menu-item" onclick="toggleSubmenu(this)">
+            <i class="fas fa-store menu-icon"></i>
+            <span class="menu-text">Commerce</span>
+            <i class="fas fa-chevron-down arrow-icon"></i>
+        </div>
+        <div class="submenu {% if app.request.get('_route') starts with 'app_vente_' or app.request.get('_route') starts with 'app_avoir_' or app.request.get('_route') starts with 'app_bon_achat_' or app.request.get('_route') starts with 'app_client_' %}open{% endif %}">
+            <a href="{{ path('app_vente_index') }}" class="submenu-item" style="{% if app.request.get('_route') starts with 'app_vente_' %}background-color: rgba(255,255,255,0.1); color: white;{% endif %}">Ventes</a>
+            <a href="{{ path('app_avoir_index') }}" class="submenu-item" style="{% if app.request.get('_route') starts with 'app_avoir_' %}background-color: rgba(255,255,255,0.1); color: white;{% endif %}">Avoirs</a>
+            <a href="{{ path('app_bon_achat_index') }}" class="submenu-item" style="{% if app.request.get('_route') starts with 'app_bon_achat_' %}background-color: rgba(255,255,255,0.1); color: white;{% endif %}">Bons d'achat</a>
+            <a href="{{ path('app_client_index') }}" class="submenu-item" style="{% if app.request.get('_route') starts with 'app_client_' %}background-color: rgba(255,255,255,0.1); color: white;{% endif %}">Clients</a>
+        </div>
         <div class="menu-item" onclick="toggleSubmenu(this)">
             <i class="fas fa-calendar-alt menu-icon"></i>
             <span class="menu-text">Planning</span>
@@ -162,11 +166,6 @@
             <a href="{{ path('app_caisse_unavailability_rule_index') }}" class="submenu-item" style="{% if app.request.get('_route') starts with 'app_caisse_unavailability_rule_' %}background-color: rgba(255,255,255,0.1); color: white;{% endif %}">Indisponibilités</a>
             <a href="{{ path('app_caisse_dispo_prestation_index') }}" class="submenu-item" style="{% if app.request.get('_route') starts with 'app_caisse_dispo_prestation_' %}background-color: rgba(255,255,255,0.1); color: white;{% endif %}">Exceptions</a>
         </div>
-        <a href="{{ path('app_caisse') }}" class="menu-item" style="{% if app.request.get('_route') == 'app_caisse' %}background-color: rgba(255, 255, 255, 0.2);{% endif %}">
-            <i class="fas fa-cash-register menu-icon"></i>
-            <span class="menu-text">Caisse</span>
-        </a>
-
         <!-- Stock Accordion -->
         <div class="menu-item" onclick="toggleSubmenu(this)">
             <i class="fas fa-boxes menu-icon"></i>
@@ -205,8 +204,7 @@
             <span class="menu-text">Activités</span>
             <i class="fas fa-chevron-down arrow-icon"></i>
         </div>
-        <div class="submenu {% if app.request.get('_route') starts with 'app_caisse_commande_' or app.request.get('_route') starts with 'app_caisse_reservation_' or app.request.get('_route') == 'app_caisse_dashboard' %}open{% endif %}">
-            <a href="{{ path('app_caisse_dashboard') }}" class="submenu-item" style="{% if app.request.get('_route') == 'app_caisse_dashboard' %}background-color: rgba(255,255,255,0.1); color: white;{% endif %}">Tableau de bord</a>
+        <div class="submenu {% if app.request.get('_route') starts with 'app_caisse_commande_' or app.request.get('_route') starts with 'app_caisse_reservation_' %}open{% endif %}">
             <a href="{{ path('app_caisse_commande_index') }}" class="submenu-item" style="{% if app.request.get('_route') starts with 'app_caisse_commande_' %}background-color: rgba(255,255,255,0.1); color: white;{% endif %}">Commandes</a>
             <a href="{{ path('app_caisse_reservation_index') }}" class="submenu-item" style="{% if app.request.get('_route') starts with 'app_caisse_reservation_' %}background-color: rgba(255,255,255,0.1); color: white;{% endif %}">Réservations</a>
         </div>

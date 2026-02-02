@@ -5,24 +5,27 @@
 {% block body %}
     <div class="row h-100 g-0">
         <div class="col-10 pe-3 d-flex flex-column">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1>
-                    {% if isTarifView %}
-                         <span class="text-muted">Sous-catégorie :</span> {{ currentSousCategorie.nom }}
-                    {% elseif isArticleView %}
-                        {% if currentShopCategory %}
-                            <span class="text-muted">Catégorie Boutique :</span> {{ currentShopCategory.nom }}
-                        {% elseif currentFournisseur %}
-                            <span class="text-muted">Fournisseur :</span> {{ currentFournisseur.nom }} {{ currentFournisseur.prenom }}
-                        {% elseif currentSousCategorie %}
-                            <span class="text-muted">Sous-catégorie :</span> {{ currentSousCategorie.nom }}
+            {% set isRootView = not isTarifView and not isArticleView and not isSousCategorieView and not isShopCategoryView %}
+            <div class="d-flex {{ isRootView ? 'justify-content-center' : 'justify-content-between' }} align-items-center mb-4">
+                {% if isRootView %}
+                    <img src="{{ asset('assets/img/logo_petit_noir.png') }}" alt="Studio Pipelette" style="height: 100px;">
+                {% else %}
+                    <h1>
+                        {% if isTarifView %}
+                             <span class="text-muted">Sous-catégorie :</span> {{ currentSousCategorie.nom }}
+                        {% elseif isArticleView %}
+                            {% if currentShopCategory %}
+                                <span class="text-muted">Catégorie Boutique :</span> {{ currentShopCategory.nom }}
+                            {% elseif currentFournisseur %}
+                                <span class="text-muted">Fournisseur :</span> {{ currentFournisseur.nom }} {{ currentFournisseur.prenom }}
+                            {% elseif currentSousCategorie %}
+                                <span class="text-muted">Sous-catégorie :</span> {{ currentSousCategorie.nom }}
+                            {% endif %}
+                        {% elseif isSousCategorieView or isShopCategoryView %}
+                            <span class="text-muted">Catégorie :</span> {{ currentCategorie.nom }}
                         {% endif %}
-                    {% elseif isSousCategorieView or isShopCategoryView %}
-                        <span class="text-muted">Catégorie :</span> {{ currentCategorie.nom }}
-                    {% else %}
-                        Catégories de vente
-                    {% endif %}
-                </h1>
+                    </h1>
+                {% endif %}
                 {% if isTarifView %}
                      <a href="{{ path('app_caisse', {'categorie': currentCategorie.id}) }}" class="btn btn-secondary">
                         <i class="fas fa-arrow-left"></i> Retour aux sous-catégories
