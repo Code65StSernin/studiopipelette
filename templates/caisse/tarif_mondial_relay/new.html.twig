@@ -1,0 +1,11 @@
+{% extends 'caisse/layout.html.twig' %}
+
+{% block title %}Nouveau Tarif Mondial Relay{% endblock %}
+
+{% block body %}
+    <h1>Nouveau Tarif Mondial Relay</h1>
+
+    {{ include('caisse/tarif_mondial_relay/_form.html.twig') }}
+
+    <a href="{{ path('app_caisse_tarif_mondial_relay_index') }}" class="btn btn-secondary mt-3">Retour à la liste</a>
+{% endblock %}

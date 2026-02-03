@@ -37,6 +37,12 @@ class Societe
     #[ORM\Column(length: 20, nullable: true)]
     private ?string $codeNaf = null;
 
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $lienFacebook = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $lienInstagram = null;
+
     // Mondial Relay
     #[ORM\Column(length: 100, nullable: true)]
     private ?string $mondialRelayLogin = null;
@@ -134,6 +140,9 @@ class Societe
     #[ORM\Column(length: 20, options: ['default' => 'visits'])]
     private string $fideliteMode = 'visits'; // 'visits' or 'points'
 
+    #[ORM\Column(length: 20, options: ['default' => 'both'])]
+    private string $fideliteScope = 'both'; // 'caisse', 'boutique', 'both'
+
     #[ORM\Column(type: 'integer', nullable: true)]
     private ?int $fideliteVisitsX = null;
 
@@ -148,6 +157,13 @@ class Societe
 
     #[ORM\Column(type: 'float', nullable: true)]
     private ?float $fidelitePointsZ = null; // Récompense Euro
+
+    // Options d'expédition
+    #[ORM\Column(type: 'boolean', options: ['default' => true])]
+    private ?bool $enableMondialRelay = true;
+
+    #[ORM\Column(type: 'boolean', options: ['default' => false])]
+    private ?bool $enableLettreSuivie = false;
 
     public function getId(): ?int
     {
@@ -246,6 +262,30 @@ class Societe
     public function setCodeNaf(?string $codeNaf): self
     {
         $this->codeNaf = $codeNaf;
+
+        return $this;
+    }
+
+    public function getLienFacebook(): ?string
+    {
+        return $this->lienFacebook;
+    }
+
+    public function setLienFacebook(?string $lienFacebook): self
+    {
+        $this->lienFacebook = $lienFacebook;
+
+        return $this;
+    }
+
+    public function getLienInstagram(): ?string
+    {
+        return $this->lienInstagram;
+    }
+
+    public function setLienInstagram(?string $lienInstagram): self
+    {
+        $this->lienInstagram = $lienInstagram;
 
         return $this;
     }
@@ -560,6 +600,17 @@ class Societe
         return $this;
     }
 
+    public function getFideliteScope(): string
+    {
+        return $this->fideliteScope;
+    }
+
+    public function setFideliteScope(string $fideliteScope): self
+    {
+        $this->fideliteScope = $fideliteScope;
+        return $this;
+    }
+
     public function getFideliteVisitsX(): ?int
     {
         return $this->fideliteVisitsX;
@@ -651,6 +702,28 @@ class Societe
     public function __toString(): string
     {
         return $this->nom ?? 'Société #' . $this->id;
+    }
+
+    public function isEnableMondialRelay(): ?bool
+    {
+        return $this->enableMondialRelay;
+    }
+
+    public function setEnableMondialRelay(bool $enableMondialRelay): self
+    {
+        $this->enableMondialRelay = $enableMondialRelay;
+        return $this;
+    }
+
+    public function isEnableLettreSuivie(): ?bool
+    {
+        return $this->enableLettreSuivie;
+    }
+
+    public function setEnableLettreSuivie(bool $enableLettreSuivie): self
+    {
+        $this->enableLettreSuivie = $enableLettreSuivie;
+        return $this;
     }
 }
 

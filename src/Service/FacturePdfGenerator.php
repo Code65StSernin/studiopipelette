@@ -76,8 +76,8 @@ class FacturePdfGenerator
             return '';
         }
 
-        // Si c'est une commande en ligne avec livraison à domicile
-        if ($order && $facture->getModeLivraison() === 'domicile') {
+        // Si c'est une commande en ligne avec livraison à domicile ou lettre suivie
+        if ($order && in_array($facture->getModeLivraison(), ['domicile', 'lettre_suivie'])) {
             // 1) On tente de reconstruire l'adresse à partir des adresses de l'utilisateur
             $user = $order->getUser();
             $addressText = null;

@@ -92,6 +92,7 @@
                 <div class="card-body">
                     <form id="livraisonForm" method="post" action="{{ path('app_livraison_valider') }}">
 
+                        {% if enableMondialRelay %}
                         <!-- Livraison en point relais -->
                         <div class="custom-control custom-radio mb-4">
                             <input
@@ -100,11 +101,17 @@
                                 id="modeRelais"
                                 name="mode_livraison"
                                 value="relais"
-                                checked
+                                {% if enableMondialRelay %}checked{% endif %}
                             >
                             <label class="custom-control-label" for="modeRelais">
                                 <strong>Livraison en point relais Mondial Relay</strong>
-                                <span class="ml-2 text-success">(Gratuit)</span>
+                                <span class="ml-2 text-success">
+                                    {% if coutMondialRelay == 0 %}
+                                        (Gratuit)
+                                    {% else %}
+                                        ({{ coutMondialRelay|number_format(2, ',', ' ') }} €)
+                                    {% endif %}
+                                </span>
                                 <p class="text-muted mb-0 mt-1">
                                     Choisissez un point relais proche de chez vous
                                 </p>
@@ -132,31 +139,34 @@
                             <input type="hidden" id="MR_SelectedRelais_Nom" name="point_relais_nom">
                             <input type="hidden" id="MR_SelectedRelais_Adresse" name="point_relais_adresse">
                         </div>
-
+                        
                         <hr class="my-4">
+                        {% endif %}
 
-                        <!-- Livraison à domicile -->
+                        {% if enableLettreSuivie %}
+                        <!-- Livraison Lettre Suivie -->
                         <div class="custom-control custom-radio mb-4">
                             <input
                                 type="radio"
                                 class="custom-control-input"
-                                id="modeDomicile"
+                                id="modeLettreSuivie"
                                 name="mode_livraison"
-                                value="domicile"
+                                value="lettre_suivie"
+                                {% if not enableMondialRelay %}checked{% endif %}
                             >
-                            <label class="custom-control-label" for="modeDomicile">
-                                <strong>Livraison à domicile</strong>
-                                <span class="ml-2 text-primary">(5,90 €)</span>
+                            <label class="custom-control-label" for="modeLettreSuivie">
+                                <strong>Lettre Suivie La Poste</strong>
+                                <span class="ml-2 text-primary">({{ coutLettreSuivie|number_format(2, ',', ' ') }} €)</span>
                                 <p class="text-muted mb-0 mt-1">
-                                    Livraison à votre adresse sous 3–5 jours ouvrés
+                                    Livraison à votre adresse
                                 </p>
                             </label>
                         </div>
 
                         <div
-                            id="zoneDomicile"
+                            id="zoneLettreSuivie"
                             class="mb-4 p-3"
-                            style="display: none; border: 2px solid #D19C97; border-radius: 5px; background-color: #f8f9fa;"
+                            style="{% if enableMondialRelay %}display: none;{% endif %} border: 2px solid #D19C97; border-radius: 5px; background-color: #f8f9fa;"
                         >
                             <p class="mb-2">
                                 <i class="fa fa-info-circle text-primary mr-2"></i>
@@ -206,6 +216,7 @@
                         </div>
 
                         <hr class="my-4">
+                        {% endif %}
 
                         <!-- Boutons -->
                         <div class="d-flex justify-content-between">
@@ -278,16 +289,16 @@
             $('input[name="mode_livraison"]').on('change', function () {
                 if (this.value === 'relais') {
                     $('#zoneWidgetRelais').show();
-                    $('#zoneDomicile').hide();
+                    $('#zoneLettreSuivie').hide();
 
                     if (!$('#MR_SelectedRelais').val()) {
                         $('#btnValider').prop('disabled', true);
                     }
                 }
 
-                if (this.value === 'domicile') {
+                if (this.value === 'lettre_suivie') {
                     $('#zoneWidgetRelais').hide();
-                    $('#zoneDomicile').show();
+                    $('#zoneLettreSuivie').show();
 
                     $("#mrSelectedResume").addClass("d-none");
 
@@ -310,7 +321,7 @@
                 }
 
                 {% if not app.user or app.user.addresses|length == 0 %}
-                if (mode === 'domicile') {
+                if (mode === 'lettre_suivie') {
                     e.preventDefault();
                     alert("Veuillez d'abord ajouter une adresse de livraison.");
                     return false;

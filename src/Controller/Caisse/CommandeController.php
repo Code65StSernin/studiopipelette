@@ -8,6 +8,9 @@ use App\Repository\OrderRepository;
 use App\Service\FacturePdfGenerator;
 use App\Service\MondialRelayService;
 use App\Service\OrderMailer;
+use App\Service\SocieteConfig;
+use Dompdf\Dompdf;
+use Dompdf\Options;
 use Doctrine\ORM\EntityManagerInterface;
 use Knp\Component\Pager\PaginatorInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -24,6 +27,7 @@ class CommandeController extends AbstractController
         private FacturePdfGenerator $pdfGenerator,
         private MondialRelayService $mondialRelayService,
         private OrderMailer $orderMailer,
+        private SocieteConfig $societeConfig,
     ) {
     }
 
@@ -51,6 +55,64 @@ class CommandeController extends AbstractController
 
         return $this->render('caisse/commande/index.html.twig', [
             'commandes' => $pagination,
+            'enableMondialRelay' => $this->societeConfig->isEnableMondialRelay(),
+        ]);
+    }
+
+    #[Route('/{id}/print-address-label', name: 'app_caisse_commande_print_address_label', methods: ['GET'])]
+    public function printAddressLabel(Order $order): Response
+    {
+        $facture = $order->getFacture();
+        $addressText = null;
+
+        if ($facture) {
+            $ligne1 = trim((string) $facture->getClientAdresse());
+            $ligne2Parts = [];
+            if ($facture->getClientCodePostal() || $facture->getClientVille()) {
+                $ligne2Parts[] = trim(($facture->getClientCodePostal() ?? '') . ' ' . ($facture->getClientVille() ?? ''));
+            }
+            if ($facture->getClientPays()) {
+                $ligne2Parts[] = $facture->getClientPays();
+            }
+            $ligne2 = implode(' - ', array_filter($ligne2Parts));
+            $addressText = trim($ligne1 . "\n" . $ligne2);
+        }
+
+        // Fallback user addresses if facture empty (rare)
+        if (empty($addressText) && ($user = $order->getUser())) {
+            foreach ($user->getAddresses() as $addr) {
+                if ($addr->isDefault()) {
+                     $addressText = $addr->getStreetNumber() . ' ' . $addr->getStreet() . "\n";
+                     $addressText .= $addr->getPostalCode() . ' ' . $addr->getCity();
+                     break;
+                }
+            }
+        }
+
+        if (empty($addressText)) {
+            $this->addFlash('warning', 'Aucune adresse trouvée.');
+            return $this->redirectToRoute('app_caisse_commande_index');
+        }
+
+        // Generate PDF
+        $html = '<html><body style="font-family: sans-serif; font-size: 14pt; padding: 40px; text-align: center;">';
+        $html .= '<div style="border: 1px solid #ccc; padding: 20px; display: inline-block; margin-top: 50px;">';
+        $html .= '<h3>Destinataire :</h3>';
+        $html .= '<p>' . nl2br($facture ? ($facture->getClientPrenom() . ' ' . $facture->getClientNom()) : ($order->getUser()->getPrenom() . ' ' . $order->getUser()->getNom())) . '</p>';
+        $html .= '<p>' . nl2br($addressText) . '</p>';
+        $html .= '</div>';
+        $html .= '</body></html>';
+
+        $options = new Options();
+        $options->set('defaultFont', 'DejaVu Sans');
+        $dompdf = new Dompdf($options);
+        $dompdf->loadHtml($html);
+        $dompdf->setPaper('A6', 'landscape'); // Format étiquette
+        $dompdf->render();
+
+        return new Response($dompdf->output(), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="adresse-' . $order->getId() . '.pdf"',
         ]);
     }
 

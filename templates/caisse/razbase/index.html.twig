@@ -1,0 +1,185 @@
+{% extends 'caisse/layout.html.twig' %}
+
+{% block title %}Réinitialisation de la Base de Données{% endblock %}
+
+{% block page_title %}Réinitialisation Complète{% endblock %}
+
+{% block body %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0"><i class="fas fa-exclamation-triangle mr-2"></i>Zone de Danger - Réinitialisation</h5>
+                </div>
+                <div class="card-body">
+                    <p class="lead text-danger font-weight-bold">Attention : Cette action est irréversible.</p>
+                    <p>
+                        Vous êtes sur le point de vider une grande partie de la base de données. 
+                        Ceci supprimera définitivement :
+                    </p>
+                    <ul class="list-group list-group-flush mb-4">
+                        <li class="list-group-item"><i class="fas fa-shopping-cart text-danger mr-2"></i> Paniers en cours</li>
+                        <li class="list-group-item"><i class="fas fa-cash-register text-danger mr-2"></i> Ventes, Avoirs, Bons d'achat</li>
+                        <li class="list-group-item"><i class="fas fa-box-open text-danger mr-2"></i> Commandes et Réservations</li>
+                        <li class="list-group-item"><i class="fas fa-file-invoice-dollar text-danger mr-2"></i> Données comptables (Recettes/Dépenses)</li>
+                        <li class="list-group-item"><i class="fas fa-bullhorn text-danger mr-2"></i> Marketing (Codes promo, Offres, Carousels)</li>
+                        <li class="list-group-item"><i class="fas fa-handshake text-danger mr-2"></i> BtoB et Dépôt Vente</li>
+                        <li class="list-group-item"><i class="fas fa-tshirt text-danger mr-2"></i> Articles et Photos</li>
+                        <li class="list-group-item"><i class="fas fa-users text-danger mr-2"></i> Clients (sauf Administrateurs)</li>
+                    </ul>
+
+                    <div id="pin-section" class="text-center mt-4">
+                        <p>Veuillez saisir votre code PIN administrateur pour confirmer :</p>
+                        <div class="form-group d-inline-block">
+                            <input type="password" id="admin-pin" class="form-control text-center form-control-lg" placeholder="Code PIN" style="width: 200px; letter-spacing: 5px;">
+                        </div>
+                        <br>
+                        <button id="btn-start-raz" class="btn btn-danger btn-lg mt-3">
+                            <i class="fas fa-trash-alt mr-2"></i> CONFIRMER LA RÉINITIALISATION
+                        </button>
+                    </div>
+
+                    <div id="progress-section" style="display: none;">
+                        <h4 class="text-center mb-4">Nettoyage en cours...</h4>
+                        
+                        <div class="progress mb-3" style="height: 25px;">
+                            <div id="main-progress-bar" class="progress-bar progress-bar-striped progress-bar-animated bg-danger" role="progressbar" style="width: 0%">0%</div>
+                        </div>
+
+                        <div class="list-group" id="step-list">
+                            <!-- Steps will be updated here -->
+                        </div>
+                        
+                        <div id="success-message" class="alert alert-success mt-4 text-center" style="display: none;">
+                            <i class="fas fa-check-circle fa-2x mb-2"></i><br>
+                            <strong>Réinitialisation terminée avec succès !</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal PIN (Optional if we use inline, but inline is fine as above) -->
+
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const btnStart = document.getElementById('btn-start-raz');
+            const pinInput = document.getElementById('admin-pin');
+            const pinSection = document.getElementById('pin-section');
+            const progressSection = document.getElementById('progress-section');
+
+            const mainProgressBar = document.getElementById('main-progress-bar');
+            const stepList = document.getElementById('step-list');
+            const successMessage = document.getElementById('success-message');
+
+            const steps = [
+                { id: 'paniers', label: 'Suppression des paniers' },
+                { id: 'ventes', label: 'Suppression des ventes et avoirs' },
+                { id: 'commandes', label: 'Suppression des commandes' },
+                { id: 'reservations', label: 'Suppression des réservations' },
+                { id: 'comptabilite', label: 'Nettoyage comptabilité' },
+                { id: 'marketing', label: 'Suppression données marketing' },
+                { id: 'btob_depot', label: 'Nettoyage BtoB et Dépôt Vente' },
+                { id: 'articles', label: 'Suppression des articles et photos' },
+                { id: 'clients', label: 'Suppression des clients' }
+            ];
+
+            // Initialize step list UI
+            steps.forEach(step => {
+                const item = document.createElement('div');
+                item.className = 'list-group-item d-flex justify-content-between align-items-center';
+                item.id = `step-row-${step.id}`;
+                item.innerHTML = `
+                    <span>${step.label}</span>
+                    <span class="badge badge-secondary badge-pill" id="step-badge-${step.id}">En attente</span>
+                `;
+                stepList.appendChild(item);
+            });
+
+            if (btnStart) {
+                btnStart.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    const pin = pinInput.value;
+                    if (!pin) {
+                        alert('Veuillez saisir le code PIN.');
+                        return;
+                    }
+
+                    // Check PIN
+                    fetch('{{ path('app_razbase_check_pin') }}', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pin: pin })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.valid) {
+                        if (confirm('DERNIÈRE CONFIRMATION : Êtes-vous ABSOLUMENT SÛR de vouloir tout supprimer ?')) {
+                            startRazProcess();
+                        }
+                    } else {
+                        alert(data.message || 'Code PIN incorrect.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Une erreur est survenue lors de la vérification du PIN.');
+                });
+            });
+            }
+
+            async function startRazProcess() {
+                pinSection.style.display = 'none';
+                progressSection.style.display = 'block';
+
+                let completedSteps = 0;
+                const totalSteps = steps.length;
+                const baseUrl = "{{ path('app_razbase_execute', {'step': 'PLACEHOLDER'}) }}";
+
+                for (const step of steps) {
+                    // Update UI to running
+                    const badge = document.getElementById(`step-badge-${step.id}`);
+                    badge.className = 'badge badge-warning badge-pill';
+                    badge.innerHTML = '<i class="fas fa-spinner fa-spin"></i> En cours';
+
+                    try {
+                        const url = baseUrl.replace('PLACEHOLDER', step.id);
+                        const response = await fetch(url, { method: 'POST' });
+                        const result = await response.json();
+
+                        if (result.success) {
+                            badge.className = 'badge badge-success badge-pill';
+                            badge.innerHTML = '<i class="fas fa-check"></i> Terminé';
+                        } else {
+                            badge.className = 'badge badge-danger badge-pill';
+                            badge.innerHTML = '<i class="fas fa-times"></i> Erreur';
+                            alert(`Erreur lors de l'étape ${step.label} : ${result.message}`);
+                            return; // Stop on error
+                        }
+                    } catch (error) {
+                        console.error(error);
+                        badge.className = 'badge badge-danger badge-pill';
+                        badge.innerHTML = '<i class="fas fa-times"></i> Erreur réseau';
+                        alert(`Erreur réseau lors de l'étape ${step.label}`);
+                        return;
+                    }
+
+                    completedSteps++;
+                    const percent = Math.round((completedSteps / totalSteps) * 100);
+                    mainProgressBar.style.width = `${percent}%`;
+                    mainProgressBar.innerText = `${percent}%`;
+                }
+
+                successMessage.style.display = 'block';
+            }
+        });
+    </script>
+{% endblock %}

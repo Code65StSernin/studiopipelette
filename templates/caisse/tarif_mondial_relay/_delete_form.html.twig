@@ -1,0 +1,4 @@
+<form method="post" action="{{ path('app_caisse_tarif_mondial_relay_delete', {'id': tarif_mondial_relay.id}) }}" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce tarif ?');" style="display: inline-block;">
+    <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ tarif_mondial_relay.id) }}">
+    <button class="btn btn-danger">Supprimer</button>
+</form>

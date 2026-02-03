@@ -9,6 +9,7 @@ use App\Repository\OrderRepository;
 use App\Repository\FactureRepository;
 use App\Service\PanierService;
 use App\Service\SocieteConfig;
+use App\Service\ShippingService;
 use Doctrine\ORM\EntityManagerInterface;
 use App\Service\FacturePdfGenerator;
 use App\Service\OrderMailer;
@@ -33,6 +34,7 @@ class PaiementController extends AbstractController
         private OrderRepository $orderRepository,
         private FactureRepository $factureRepository,
         private SocieteConfig $societeConfig,
+        private ShippingService $shippingService,
     ) {}
 
     #[Route('/paiement', name: 'app_paiement', methods: ['GET'])]
@@ -51,7 +53,7 @@ class PaiementController extends AbstractController
             return $this->redirectToRoute('app_livraison_choix');
         }
 
-        $fraisLivraison = $livraison['mode'] === 'domicile' ? 5.90 : 0.00;
+        $fraisLivraison = $this->calculateShippingCost($livraison['mode'], $panier);
 
         $netBtoB = (float) $panier->getTotalTTC();
         $montantRemiseBtoB = $this->panierService->calculerMontantRemiseBtoB($panier);
@@ -92,7 +94,7 @@ class PaiementController extends AbstractController
             return $this->redirectToRoute('app_livraison_choix');
         }
 
-        $fraisLivraison = ($livraison['mode'] === 'domicile') ? 5.90 : 0.00;
+        $fraisLivraison = $this->calculateShippingCost($livraison['mode'], $panier);
 
         $totalProduits = (float) $panier->getTotalTTC();
         $remisePourcentage = $panier->getCodePromoPourcentage() ?? 0.0;
@@ -282,7 +284,47 @@ class PaiementController extends AbstractController
                 }
             }
 
-            // 4) Vider le panier
+            // 4) Gestion Fidélité (Acquisition)
+            $scope = $this->societeConfig->getFideliteScope();
+            if ($this->societeConfig->isFideliteActive() && ($scope === 'boutique' || $scope === 'both')) {
+                if ($user) {
+                     $mode = $this->societeConfig->getFideliteMode();
+                     
+                     // On incrémente toujours les visites
+                     $user->setFideliteVisits(($user->getFideliteVisits() ?? 0) + 1);
+                     
+                     if ($mode === 'points') {
+                         $x = $this->societeConfig->getFidelitePointsX(); // points par euro
+                         if ($x) {
+                             // On calcule sur le montant des produits (hors frais de port)
+                             $amountEur = $order->getAmountProductsCents() / 100;
+                             $pointsGagnes = $amountEur * $x;
+                             $newPoints = ($user->getFidelitePoints() ?? 0) + $pointsGagnes;
+
+                             // Conversion automatique des points en cagnotte
+                             $threshold = $this->societeConfig->getFidelitePointsY(); // Seuil (ex: 100)
+                             $gain = $this->societeConfig->getFidelitePointsZ();      // Gain (ex: 10€)
+
+                             if ($threshold > 0 && $gain > 0) {
+                                 $numRewards = floor($newPoints / $threshold);
+                                 if ($numRewards > 0) {
+                                     $pointsToDeduct = $numRewards * $threshold;
+                                     $moneyGained = $numRewards * $gain;
+                                     
+                                     $newPoints -= $pointsToDeduct;
+                                     $user->setFideliteCagnotte(($user->getFideliteCagnotte() ?? 0) + $moneyGained);
+                                 }
+                             }
+                             
+                             $user->setFidelitePoints($newPoints);
+                         }
+                     }
+                     
+                     $this->em->persist($user);
+                }
+            }
+
+            // 5) Vider le panier
             $this->panierService->viderPanier();
             $this->em->commit();
 
@@ -348,6 +390,8 @@ class PaiementController extends AbstractController
     }
 
 
+
+
     /**
      * Crée la facture pour la commande
      */
@@ -375,8 +419,8 @@ class PaiementController extends AbstractController
             $facture->setRemisePourcentage((float) $panier->getCodePromoPourcentage());
         }
 
-        // Adresse de livraison figée sur la facture (pour les domiciliations)
-        if ($order->getShippingMode() === 'domicile') {
+        // Adresse de livraison figée sur la facture (pour les domiciliations et lettre suivie)
+        if (in_array($order->getShippingMode(), ['domicile', 'lettre_suivie'])) {
             $adresseLivraison = null;
             $cp = null;
             $ville = null;
@@ -456,5 +500,14 @@ class PaiementController extends AbstractController
         // Le flush se fera lors du commit de la transaction dans la méthode success()
 
         return $facture;
+    }
+
+    private function calculateShippingCost(string $mode, $panier): float
+    {
+        return $this->shippingService->calculateShippingCost(
+            $panier->getLignes(),
+            $mode,
+            $panier->getCodePromo()
+        );
     }
 }

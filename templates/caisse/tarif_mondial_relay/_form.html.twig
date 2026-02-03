@@ -1,0 +1,11 @@
+{{ form_start(form) }}
+    <div class="row">
+        <div class="col-md-6">
+            {{ form_row(form.poids) }}
+        </div>
+        <div class="col-md-6">
+            {{ form_row(form.tarif) }}
+        </div>
+    </div>
+    <button class="btn btn-primary">{{ button_label|default('Enregistrer') }}</button>
+{{ form_end(form) }}

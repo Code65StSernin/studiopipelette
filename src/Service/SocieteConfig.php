@@ -37,6 +37,8 @@ class SocieteConfig
     public function getEmail(): ?string       { return $this->get()?->getEmail(); }
     public function getSiret(): ?string       { return $this->get()?->getSiret(); }
     public function getCodeNaf(): ?string     { return $this->get()?->getCodeNaf(); }
+    public function getLienFacebook(): ?string { return $this->get()?->getLienFacebook(); }
+    public function getLienInstagram(): ?string { return $this->get()?->getLienInstagram(); }
 
     // Mondial Relay
     public function getMondialRelayLogin(): ?string       { return $this->get()?->getMondialRelayLogin(); }
@@ -83,9 +85,14 @@ class SocieteConfig
     // Programme de fidélité
     public function isFideliteActive(): bool      { return (bool) $this->get()?->isFideliteActive(); }
     public function getFideliteMode(): string     { return (string) $this->get()?->getFideliteMode(); }
+    public function getFideliteScope(): string    { return (string) ($this->get()?->getFideliteScope() ?? 'caisse'); }
     public function getFideliteVisitsX(): ?int    { return $this->get()?->getFideliteVisitsX(); }
     public function getFideliteVisitsY(): ?float  { return $this->get()?->getFideliteVisitsY(); }
     public function getFidelitePointsX(): ?float  { return $this->get()?->getFidelitePointsX(); }
     public function getFidelitePointsY(): ?float  { return $this->get()?->getFidelitePointsY(); }
     public function getFidelitePointsZ(): ?float  { return $this->get()?->getFidelitePointsZ(); }
+
+    // Options d'expédition
+    public function isEnableMondialRelay(): bool { return (bool) ($this->get()?->isEnableMondialRelay() ?? true); }
+    public function isEnableLettreSuivie(): bool { return (bool) ($this->get()?->isEnableLettreSuivie() ?? false); }
 }

@@ -8,6 +8,7 @@ use Symfony\Component\Form\Extension\Core\Type\EmailType;
 use Symfony\Component\Form\Extension\Core\Type\NumberType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\Extension\Core\Type\IntegerType;
+use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
@@ -55,6 +56,32 @@ class SocieteType extends AbstractType
                 'label' => 'Code NAF',
                 'required' => false,
                 'attr' => ['class' => 'form-control']
+            ])
+
+            // Réseaux Sociaux
+            ->add('lienFacebook', TextType::class, [
+                'label' => 'Lien Facebook',
+                'required' => false,
+                'help' => 'URL complète (ex: https://facebook.com/votrepage)',
+                'attr' => ['class' => 'form-control']
+            ])
+            ->add('lienInstagram', TextType::class, [
+                'label' => 'Lien Instagram',
+                'required' => false,
+                'help' => 'URL complète (ex: https://instagram.com/votrecompte)',
+                'attr' => ['class' => 'form-control']
+            ])
+
+            // Transporteurs
+            ->add('enableMondialRelay', CheckboxType::class, [
+                'label' => 'Activer Mondial Relay',
+                'required' => false,
+                'attr' => ['class' => 'form-check-input']
+            ])
+            ->add('enableLettreSuivie', CheckboxType::class, [
+                'label' => 'Activer Lettre Suivie',
+                'required' => false,
+                'attr' => ['class' => 'form-check-input']
             ])
 
             // Mondial Relay

@@ -34,6 +34,9 @@ class Code
     #[ORM\Column(type: 'boolean')]
     private bool $premiereCommandeSeulement = false;
 
+    #[ORM\Column(type: 'boolean', options: ['default' => false])]
+    private bool $fraisPortOfferts = false;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -95,6 +98,18 @@ class Code
     public function setUsageUnique(bool $usageUnique): self
     {
         $this->usageUnique = $usageUnique;
+
+        return $this;
+    }
+
+    public function isFraisPortOfferts(): bool
+    {
+        return $this->fraisPortOfferts;
+    }
+
+    public function setFraisPortOfferts(bool $fraisPortOfferts): self
+    {
+        $this->fraisPortOfferts = $fraisPortOfferts;
 
         return $this;
     }

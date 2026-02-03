@@ -61,6 +61,16 @@
                                 {% endif %}
                             </td>
                             <td>
+                                {% if commande.shippingMode == 'domicile' %}
+                                    <span class="badge bg-primary">Domicile</span>
+                                {% elseif commande.shippingMode == 'lettre_suivie' %}
+                                    <span class="badge bg-info text-dark">Lettre Suivie</span>
+                                {% elseif commande.shippingMode == 'relais' %}
+                                    <span class="badge bg-warning text-dark">Mondial Relay</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ commande.shippingMode }}</span>
+                                {% endif %}
+                                <br>
                                 {% if commande.isShipped %}
                                     <span class="badge bg-success"><i class="fas fa-check"></i> Expédiée</span>
                                 {% else %}
@@ -78,12 +88,18 @@
                                         </a>
                                     {% endif %}
                                     
-                                    <a href="{{ path('app_caisse_commande_configure_shipment', {'id': commande.id}) }}" class="btn btn-sm btn-outline-primary" title="Configurer l'expédition">
-                                        <i class="fas fa-box-open"></i>
-                                    </a>
+                                    {% if enableMondialRelay and commande.shippingMode != 'lettre_suivie' %}
+                                        <a href="{{ path('app_caisse_commande_configure_shipment', {'id': commande.id}) }}" class="btn btn-sm btn-outline-primary" title="Configurer l'expédition">
+                                            <i class="fas fa-box-open"></i>
+                                        </a>
+                                    {% endif %}
 
-                                    {% if commande.mondialRelayLabelUrl %}
-                                        <a href="{{ path('app_caisse_commande_print_relay_label', {'id': commande.id}) }}" class="btn btn-sm btn-outline-info" target="_blank" title="Imprimer l'étiquette">
+                                    {% if commande.shippingMode == 'lettre_suivie' %}
+                                        <a href="{{ path('app_caisse_commande_print_address_label', {'id': commande.id}) }}" class="btn btn-sm btn-outline-info" target="_blank" title="Imprimer l'étiquette adresse">
+                                            <i class="fas fa-print"></i>
+                                        </a>
+                                    {% elseif commande.mondialRelayLabelUrl %}
+                                        <a href="{{ path('app_caisse_commande_print_relay_label', {'id': commande.id}) }}" class="btn btn-sm btn-outline-info" target="_blank" title="Imprimer l'étiquette MR">
                                             <i class="fas fa-print"></i>
                                         </a>
                                     {% endif %}

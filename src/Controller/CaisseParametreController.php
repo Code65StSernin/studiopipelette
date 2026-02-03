@@ -47,13 +47,24 @@ class CaisseParametreController extends AbstractController
                 'required' => false,
             ])
             ->add('fideliteMode', ChoiceType::class, [
-                'label' => 'Mode de fonctionnement',
+                'label' => 'Mode de fidélité',
                 'choices' => [
-                    'Toutes les X ventes, ajouter Y €' => 'visits',
-                    'Cumuler X points/€, à Y points gagner Z €' => 'points',
+                    'Par visites (X passages = Y € offerts)' => 'visits',
+                    'Par points (X pts/€ -> Y pts = Z € offerts)' => 'points',
                 ],
                 'expanded' => true,
                 'multiple' => false,
+            ])
+            ->add('fideliteScope', ChoiceType::class, [
+                'label' => 'Génération des points',
+                'choices' => [
+                    'Uniquement en Caisse' => 'caisse',
+                    'Uniquement Boutique en ligne' => 'boutique',
+                    'Caisse et Boutique' => 'both',
+                ],
+                'expanded' => true,
+                'multiple' => false,
+                'help' => 'Choisissez où les achats génèrent des points/visites.'
             ])
             // Mode "Visits"
             ->add('fideliteVisitsX', IntegerType::class, [
@@ -87,6 +98,16 @@ class CaisseParametreController extends AbstractController
                 'attr' => ['placeholder' => 'ex: 20.00'],
             ])
             
+            // Options d'expédition
+            ->add('enableMondialRelay', CheckboxType::class, [
+                'label' => 'Activer Mondial Relay',
+                'required' => false,
+            ])
+            ->add('enableLettreSuivie', CheckboxType::class, [
+                'label' => 'Activer Lettre Suivie La Poste',
+                'required' => false,
+            ])
+
             ->add('currentPin', TextType::class, [
                 'mapped' => false,
                 'required' => false,

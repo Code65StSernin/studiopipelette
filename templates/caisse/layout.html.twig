@@ -13,6 +13,25 @@
     <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
 
     <style>
+        :root {
+            --primary: #d4807e;      /* Vieux rose */
+            --secondary: #a16877;    /* Parme */
+            --accent: #d3573b;       /* Orange */
+        }
+
+        /* Bootstrap Overrides for Caisse */
+        .bg-primary { background-color: #d4807e !important; }
+        .text-primary { color: #d4807e !important; }
+        .btn-primary { background-color: #d4807e !important; border-color: #d4807e !important; }
+        .btn-primary:hover { background-color: #a16877 !important; border-color: #a16877 !important; }
+        .btn-outline-primary { color: #d4807e !important; border-color: #d4807e !important; }
+        .btn-outline-primary:hover { background-color: #d4807e !important; color: white !important; }
+        
+        .bg-secondary { background-color: #a16877 !important; }
+        .text-secondary { color: #a16877 !important; }
+        .btn-secondary { background-color: #a16877 !important; border-color: #a16877 !important; }
+        .btn-secondary:hover { background-color: #d4807e !important; border-color: #d4807e !important; }
+
         @media print {
             .sidebar, .toggle-btn, .menu-item, .submenu {
                 display: none !important;
@@ -38,7 +57,7 @@
         /* Sidebar Styling */
         .sidebar {
             width: 250px;
-            background-color: #1e3a8a; /* Dark Blue */
+            background-color: #a16877; /* Parme */
             color: white;
             display: flex;
             flex-direction: column;
@@ -111,7 +130,7 @@
         /* Accordion Submenu Styles */
         .submenu {
             display: none;
-            background-color: #172554; /* Slightly darker blue */
+            background-color: #d4807e; /* Vieux rose */
             flex-direction: column;
         }
         
@@ -122,7 +141,7 @@
         .submenu-item {
             display: block;
             padding: 12px 20px 12px 70px; /* Indented */
-            color: #dbeafe;
+            color: rgba(255, 255, 255, 0.9);
             text-decoration: none;
             font-size: 0.9rem;
             cursor: pointer;
@@ -247,7 +266,9 @@
             <a href="{{ path('app_caisse_categorie_index') }}" class="submenu-item" style="{% if app.request.get('_route') starts with 'app_caisse_categorie_' %}background-color: rgba(255,255,255,0.1); color: white;{% endif %}">Catégories</a>
             <a href="{{ path('app_caisse_sous_categorie_index') }}" class="submenu-item" style="{% if app.request.get('_route') starts with 'app_caisse_sous_categorie_' %}background-color: rgba(255,255,255,0.1); color: white;{% endif %}">Sous-catégories</a>
             <a href="{{ path('app_caisse_couleur_index') }}" class="submenu-item" style="{% if app.request.get('_route') starts with 'app_caisse_couleur_' %}background-color: rgba(255,255,255,0.1); color: white;{% endif %}">Couleurs</a>
-            <a href="{{ path('app_caisse_tarif_index') }}" class="submenu-item" style="{% if app.request.get('_route') starts with 'app_caisse_tarif_' %}background-color: rgba(255,255,255,0.1); color: white;{% endif %}">Tarifs</a>
+            <a href="{{ path('app_caisse_tarif_index') }}" class="submenu-item" style="{% if app.request.get('_route') starts with 'app_caisse_tarif_' and not (app.request.get('_route') starts with 'app_caisse_tarif_lettre_suivie_') and not (app.request.get('_route') starts with 'app_caisse_tarif_mondial_relay_') %}background-color: rgba(255,255,255,0.1); color: white;{% endif %}">Tarifs</a>
+            <a href="{{ path('app_caisse_tarif_lettre_suivie_index') }}" class="submenu-item" style="{% if app.request.get('_route') starts with 'app_caisse_tarif_lettre_suivie_' %}background-color: rgba(255,255,255,0.1); color: white;{% endif %}">Tarifs Lettre Suivie</a>
+            <a href="{{ path('app_caisse_tarif_mondial_relay_index') }}" class="submenu-item" style="{% if app.request.get('_route') starts with 'app_caisse_tarif_mondial_relay_' %}background-color: rgba(255,255,255,0.1); color: white;{% endif %}">Tarifs Mondial Relay</a>
             <a href="{{ path('app_caisse_code_index') }}" class="submenu-item" style="{% if app.request.get('_route') starts with 'app_caisse_code_' %}background-color: rgba(255,255,255,0.1); color: white;{% endif %}">Codes Promo</a>
             <a href="{{ path('app_caisse_offre_index') }}" class="submenu-item" style="{% if app.request.get('_route') starts with 'app_caisse_offre_' %}background-color: rgba(255,255,255,0.1); color: white;{% endif %}">Offres</a>
             <a href="{{ path('app_caisse_carousel_index') }}" class="submenu-item" style="{% if app.request.get('_route') starts with 'app_caisse_carousel_' %}background-color: rgba(255,255,255,0.1); color: white;{% endif %}">Carousel</a>
@@ -340,9 +361,9 @@
     <div class="modal fade" id="remiseBanqueModal" tabindex="-1" aria-hidden="true">
       <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content">
-          <div class="modal-header">
+          <div class="modal-header bg-primary text-white">
             <h5 class="modal-title">Remise en banque</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
             <p class="small text-muted mb-2">Saisissez les quantités prélevées pour chaque valeur :</p>
@@ -737,16 +758,40 @@
             window.open('{{ path("app_caisse_x") }}', '_blank');
         }
 
-        function ouvrirZCaisse(event) {
+        function ouvrirZCaisse(event, dateStr = null) {
             if (event) {
                 event.stopPropagation();
             }
             
             // Open modal instead of direct PDF
             const modalEl = document.getElementById('clotureCaisseModal');
-            const modal = new bootstrap.Modal(modalEl);
+            const modal = new bootstrap.Modal(modalEl, {
+                backdrop: dateStr ? 'static' : true, // Force static if it's a forced closure
+                keyboard: !dateStr
+            });
             const input = document.getElementById('clotureCaisseInput');
             const errorEl = document.getElementById('clotureCaisseError');
+            const titleEl = document.getElementById('clotureCaisseTitle');
+            const msgEl = document.getElementById('clotureCaisseMessage');
+            const confirmBtn = document.getElementById('clotureCaisseConfirmBtn');
+
+            // Store date on button
+            if (confirmBtn) {
+                if (dateStr) {
+                    confirmBtn.dataset.date = dateStr;
+                } else {
+                    delete confirmBtn.dataset.date;
+                }
+            }
+
+            // Update UI for specific date
+            if (dateStr) {
+                titleEl.textContent = 'Clôture de caisse du ' + dateStr;
+                msgEl.innerHTML = 'Cette session n\'a pas été clôturée correctement.<br>Saisissez le montant réel en caisse pour le ' + dateStr + ' :';
+            } else {
+                titleEl.textContent = 'Clôture de caisse';
+                msgEl.textContent = 'Saisissez le montant réel en caisse pour la clôture (sera le fond de caisse de demain) :';
+            }
 
             if (input) {
                 input.value = '';
@@ -767,6 +812,7 @@
         function enregistrerClotureCaisse() {
             const input = document.getElementById('clotureCaisseInput');
             const errorEl = document.getElementById('clotureCaisseError');
+            const confirmBtn = document.getElementById('clotureCaisseConfirmBtn');
 
             if (!input) {
                 return;
@@ -785,10 +831,16 @@
                 errorEl.classList.add('d-none');
             }
 
+            const dateStr = confirmBtn ? confirmBtn.dataset.date : null;
+            const payload = { montant: value };
+            if (dateStr) {
+                payload.date = dateStr;
+            }
+
             fetch('{{ path("app_caisse_cloturer") }}', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ montant: value })
+                body: JSON.stringify(payload)
             })
                 .then(response => response.json())
                 .then(data => {
@@ -799,7 +851,11 @@
                             modal.hide();
                         }
                         // Open Z PDF
-                        window.open('{{ path("app_caisse_z") }}', '_blank');
+                        let zUrl = '{{ path("app_caisse_z") }}';
+                        if (dateStr) {
+                            zUrl += '?date=' + dateStr;
+                        }
+                        window.open(zUrl, '_blank');
                         
                         // Reload page to reflect closed state
                         setTimeout(() => {
@@ -1176,5 +1232,6 @@
         }
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    {% block javascripts %}{% endblock %}
 </body>
 </html>

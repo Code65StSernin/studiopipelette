@@ -15,6 +15,10 @@ class Order
     public const STATUS_PAID = 'paid';
     public const STATUS_CANCELED = 'canceled';
 
+    public const SHIPPING_MODE_RELAIS = 'relais';
+    public const SHIPPING_MODE_DOMICILE = 'domicile';
+    public const SHIPPING_MODE_LETTRE_SUIVIE = 'lettre_suivie';
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: 'integer')]
@@ -37,7 +41,7 @@ class Order
     private int $amountShippingCents = 0;
 
     #[ORM\Column(length: 20)]
-    private string $shippingMode = 'relais'; // relais|domicile
+    private string $shippingMode = 'relais'; // relais|domicile|lettre_suivie
 
     #[ORM\Column(length: 50, nullable: true)]
     private ?string $relayId = null;

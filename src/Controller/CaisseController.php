@@ -59,9 +59,11 @@ class CaisseController extends AbstractController
         $isCaisseClosed = $fondAujourdhui !== null && $fondAujourdhui->isCloture();
         $montantPrecedent = 0.0;
         
+        $previousSessionNotClosed = false;
+        $previousSessionDate = null;
+
         if (!$isCaisseOpen && !$isCaisseClosed) {
             // On cherche le dernier fond de caisse STRICTEMENT avant aujourd'hui
-            // pour récupérer la valeur de clôture de la veille
             $dernierFond = $fondCaisseRepo->createQueryBuilder('f')
                 ->where('f.date < :today')
                 ->setParameter('today', $today)
@@ -71,50 +73,57 @@ class CaisseController extends AbstractController
                 ->getOneOrNullResult();
             
             if ($dernierFond) {
-                if ($dernierFond->getMontantCloture() !== null) {
-                    // Si on a un montant de clôture explicite, on l'utilise
-                    $montantPrecedent = $dernierFond->getMontantCloture();
+                // Si la session précédente n'est pas clôturée, on signale le problème
+                if (!$dernierFond->isCloture()) {
+                    $previousSessionNotClosed = true;
+                    $previousSessionDate = $dernierFond->getDate()->format('Y-m-d');
                 } else {
-                    // Fallback: calcul théorique pour les anciens enregistrements
-                    $datePrecedente = $dernierFond->getDate();
-                    $montantFondPrecedent = $dernierFond->getMontant();
-                    
-                    // Ventes espèces du jour précédent
-                    $start = \DateTimeImmutable::createFromMutable($datePrecedente)->setTime(0, 0, 0);
-                    $end = \DateTimeImmutable::createFromMutable($datePrecedente)->setTime(23, 59, 59);
-                    
-                    $venteRepo = $entityManager->getRepository(Vente::class);
-                    $ventesEspeceLegacy = $venteRepo->createQueryBuilder('v')
-                        ->select('SUM(v.montantTotal)')
-                        ->where('v.dateVente BETWEEN :start AND :end')
-                        ->andWhere('v.modePaiement LIKE :mode')
-                        ->setParameter('start', $start)
-                        ->setParameter('end', $end)
-                        ->setParameter('mode', 'Espece%')
-                        ->getQuery()
-                        ->getSingleScalarResult();
-
-                    $ventesEspecePaiements = $entityManager->getRepository(Paiement::class)->createQueryBuilder('p')
-                        ->select('SUM(p.montant)')
-                        ->where('p.datePaiement BETWEEN :start AND :end')
-                        ->andWhere('p.methode LIKE :mode')
-                        ->setParameter('start', $start)
-                        ->setParameter('end', $end)
-                        ->setParameter('mode', 'Espece%')
-                        ->getQuery()
-                        ->getSingleScalarResult();
-
-                    $ventesEspece = (float)($ventesEspeceLegacy ?? 0.0) + (float)($ventesEspecePaiements ?? 0.0);
-                    
-                    // Remises en banque du jour précédent
-                    $remiseRepo = $entityManager->getRepository(RemiseBanque::class);
-                    $remises = $remiseRepo->findBy(['date' => $datePrecedente]);
-                    $montantRemis = 0.0;
-                    foreach ($remises as $r) {
-                        $montantRemis += $r->getMontant();
+                    // Sinon on récupère le montant de clôture pour le fond de caisse
+                    if ($dernierFond->getMontantCloture() !== null) {
+                        // Si on a un montant de clôture explicite, on l'utilise
+                        $montantPrecedent = $dernierFond->getMontantCloture();
+                    } else {
+                        // Fallback: calcul théorique pour les anciens enregistrements
+                        $datePrecedente = $dernierFond->getDate();
+                        $montantFondPrecedent = $dernierFond->getMontant();
+                        
+                        // Ventes espèces du jour précédent
+                        $start = \DateTimeImmutable::createFromMutable($datePrecedente)->setTime(0, 0, 0);
+                        $end = \DateTimeImmutable::createFromMutable($datePrecedente)->setTime(23, 59, 59);
+                        
+                        $venteRepo = $entityManager->getRepository(Vente::class);
+                        $ventesEspeceLegacy = $venteRepo->createQueryBuilder('v')
+                            ->select('SUM(v.montantTotal)')
+                            ->where('v.dateVente BETWEEN :start AND :end')
+                            ->andWhere('v.modePaiement LIKE :mode')
+                            ->setParameter('start', $start)
+                            ->setParameter('end', $end)
+                            ->setParameter('mode', 'Espece%')
+                            ->getQuery()
+                            ->getSingleScalarResult();
+    
+                        $ventesEspecePaiements = $entityManager->getRepository(Paiement::class)->createQueryBuilder('p')
+                            ->select('SUM(p.montant)')
+                            ->where('p.datePaiement BETWEEN :start AND :end')
+                            ->andWhere('p.methode LIKE :mode')
+                            ->setParameter('start', $start)
+                            ->setParameter('end', $end)
+                            ->setParameter('mode', 'Espece%')
+                            ->getQuery()
+                            ->getSingleScalarResult();
+    
+                        $ventesEspece = (float)($ventesEspeceLegacy ?? 0.0) + (float)($ventesEspecePaiements ?? 0.0);
+                        
+                        // Remises en banque du jour précédent
+                        $remiseRepo = $entityManager->getRepository(RemiseBanque::class);
+                        $remises = $remiseRepo->findBy(['date' => $datePrecedente]);
+                        $montantRemis = 0.0;
+                        foreach ($remises as $r) {
+                            $montantRemis += $r->getMontant();
+                        }
+                        
+                        $montantPrecedent = $montantFondPrecedent + (float)$ventesEspece - $montantRemis;
                     }
-                    
-                    $montantPrecedent = $montantFondPrecedent + (float)$ventesEspece - $montantRemis;
                 }
             }
         }
@@ -199,6 +208,8 @@ class CaisseController extends AbstractController
             'isCaisseOpen' => $isCaisseOpen,
             'isCaisseClosed' => $isCaisseClosed,
             'montantPrecedent' => $montantPrecedent,
+            'previousSessionNotClosed' => $previousSessionNotClosed,
+            'previousSessionDate' => $previousSessionDate,
         ]);
     }
 
@@ -651,7 +662,8 @@ class CaisseController extends AbstractController
         $entityManager->persist($vente);
 
         // --- GESTION ACQUISITION FIDELITE ---
-        if ($societeConfig->isFideliteActive()) {
+        $scope = $societeConfig->getFideliteScope();
+        if ($societeConfig->isFideliteActive() && ($scope === 'caisse' || $scope === 'both')) {
             $mode = $societeConfig->getFideliteMode();
             
             // On incrémente toujours les visites
@@ -661,12 +673,29 @@ class CaisseController extends AbstractController
                 $x = $societeConfig->getFidelitePointsX(); // points par euro
                 if ($x) {
                     $pointsGagnes = $total * $x;
-                    $client->setFidelitePoints($client->getFidelitePoints() + $pointsGagnes);
+                    $newPoints = $client->getFidelitePoints() + $pointsGagnes;
+
+                    // Conversion automatique des points en cagnotte
+                    $threshold = $societeConfig->getFidelitePointsY(); // Seuil (ex: 100)
+                    $gain = $societeConfig->getFidelitePointsZ();      // Gain (ex: 10€)
+
+                    if ($threshold > 0 && $gain > 0) {
+                        $numRewards = floor($newPoints / $threshold);
+                        if ($numRewards > 0) {
+                            $pointsToDeduct = $numRewards * $threshold;
+                            $moneyGained = $numRewards * $gain;
+                            
+                            $newPoints -= $pointsToDeduct;
+                            $client->setFideliteCagnotte($client->getFideliteCagnotte() + $moneyGained);
+                        }
+                    }
+
+                    $client->setFidelitePoints($newPoints);
                 }
             }
             
-            // Note: On ne convertit plus automatiquement en cagnotte.
-            // Les points s'accumulent et sont déduits lors de l'utilisation (Paiement).
+            // Note: Les points sont convertis automatiquement en cagnotte si le seuil est atteint.
+            // Le reste des points est conservé pour la prochaine fois.
             
             $entityManager->persist($client);
         }
@@ -874,18 +903,33 @@ class CaisseController extends AbstractController
     {
         $data = json_decode($request->getContent(), true);
         $montant = isset($data['montant']) ? (float) $data['montant'] : null;
+        $dateStr = isset($data['date']) ? $data['date'] : null;
 
         if ($montant === null || $montant < 0) {
             return new JsonResponse(['status' => 'error', 'message' => 'Montant invalide'], 400);
         }
 
-        $today = new \DateTime('today');
-
         $fondRepo = $entityManager->getRepository(FondCaisse::class);
-        $fond = $fondRepo->findOneBy(['date' => $today]);
+        $fond = null;
+
+        if ($dateStr) {
+             try {
+                 $targetDate = new \DateTime($dateStr);
+                 $fond = $fondRepo->findOneBy(['date' => $targetDate]);
+             } catch (\Exception $e) {
+                 return new JsonResponse(['status' => 'error', 'message' => 'Date invalide'], 400);
+             }
+        } else {
+             $today = new \DateTime('today');
+             $fond = $fondRepo->findOneBy(['date' => $today]);
+        }
 
         if (!$fond) {
+            if ($dateStr) {
+                 return new JsonResponse(['status' => 'error', 'message' => 'Caisse introuvable pour la date donnée'], 404);
+            }
             // Should not happen normally if opened, but create if missing
+            $today = new \DateTime('today');
             $fond = new FondCaisse();
             $fond->setDate($today);
             $fond->setMontant(0.0); // Should have been opened
@@ -1156,11 +1200,22 @@ class CaisseController extends AbstractController
 
     #[Route('/caisse/journaux/z', name: 'app_caisse_z', methods: ['GET'])]
     public function zDeCaisse(
+        Request $request,
         VenteRepository $venteRepository,
         EntityManagerInterface $entityManager,
         SocieteConfig $societeConfig
     ): Response {
-        $today = new \DateTime('today');
+        $dateStr = $request->query->get('date');
+        
+        if ($dateStr) {
+            try {
+                $today = new \DateTime($dateStr);
+            } catch (\Exception $e) {
+                $today = new \DateTime('today');
+            }
+        } else {
+            $today = new \DateTime('today');
+        }
         
         $start = \DateTimeImmutable::createFromMutable($today)->setTime(0, 0, 0);
         $end = \DateTimeImmutable::createFromMutable($today)->setTime(23, 59, 59);

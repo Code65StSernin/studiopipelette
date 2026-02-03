@@ -10,6 +10,8 @@ use EasyCorp\Bundle\EasyAdminBundle\Field\IdField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\TextField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\IntegerField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\NumberField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\BooleanField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\ChoiceField;
 
 class SocieteCrudController extends AbstractCrudController
 {
@@ -91,6 +93,48 @@ class SocieteCrudController extends AbstractCrudController
             ->setNumDecimals(2)
             ->setColumns(4)
             ->setHelp('Commission TPE pour les paiements CB en caisse (ex: 1.75%)');
+
+        // Onglet 9 : Fidélité
+        yield FormField::addTab('Fidélité')->setIcon('fa fa-star');
+        yield BooleanField::new('fideliteActive', 'Activer le programme de fidélité')
+            ->setColumns(12);
+        
+        yield ChoiceField::new('fideliteMode', 'Mode de fidélité')
+            ->setChoices([
+                'Par visites (X passages = Y € offerts)' => 'visits',
+                'Par points (X pts/€ -> Y pts = Z € offerts)' => 'points',
+            ])
+            ->setColumns(12)
+            ->renderAsBadges(false);
+
+        yield ChoiceField::new('fideliteScope', 'Génération des points')
+            ->setChoices([
+                'Uniquement en Caisse' => 'caisse',
+                'Uniquement Boutique en ligne' => 'boutique',
+                'Caisse et Boutique' => 'both',
+            ])
+            ->setColumns(12)
+            ->setHelp('Choisissez où les achats génèrent des points/visites.');
+
+        // Visites
+        yield FormField::addFieldset('Mode Visites')->setHelp('Utilisé si le mode "Par visites" est sélectionné');
+        yield IntegerField::new('fideliteVisitsX', 'Nombre de ventes (X)')
+            ->setColumns(6);
+        yield NumberField::new('fideliteVisitsY', 'Montant offert (Y)')
+            ->setNumDecimals(2)
+            ->setColumns(6);
+
+        // Points
+        yield FormField::addFieldset('Mode Points')->setHelp('Utilisé si le mode "Par points" est sélectionné');
+        yield NumberField::new('fidelitePointsX', 'Points par Euro (X)')
+            ->setNumDecimals(2)
+            ->setColumns(4);
+        yield NumberField::new('fidelitePointsY', 'Seuil de points (Y)')
+            ->setNumDecimals(2)
+            ->setColumns(4);
+        yield NumberField::new('fidelitePointsZ', 'Montant offert (Z)')
+            ->setNumDecimals(2)
+            ->setColumns(4);
 
         // Onglet 4 : Base de données
         yield FormField::addTab('Base de données')->setIcon('fa fa-database');

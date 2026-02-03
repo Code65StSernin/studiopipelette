@@ -18,6 +18,8 @@ use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
+use Symfony\Component\Form\Extension\Core\Type\IntegerType;
+
 class ArticleType extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options): void
@@ -25,6 +27,11 @@ class ArticleType extends AbstractType
         $builder
             ->add('nom', TextType::class, [
                 'label' => 'Nom de l\'article',
+                'attr' => ['class' => 'form-control']
+            ])
+            ->add('poids', IntegerType::class, [
+                'label' => 'Poids (en grammes)',
+                'required' => false,
                 'attr' => ['class' => 'form-control']
             ])
             ->add('categorie', EntityType::class, [

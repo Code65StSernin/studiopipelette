@@ -1,0 +1,28 @@
+{% extends 'caisse/layout.html.twig' %}
+
+{% block title %}Tarif Lettre Suivie{% endblock %}
+
+{% block body %}
+    <h1>Tarif Lettre Suivie</h1>
+
+    <table class="table">
+        <tbody>
+            <tr>
+                <th>Id</th>
+                <td>{{ tarif_lettre_suivie.id }}</td>
+            </tr>
+            <tr>
+                <th>Poids</th>
+                <td>{{ tarif_lettre_suivie.poids }} g</td>
+            </tr>
+            <tr>
+                <th>Tarif</th>
+                <td>{{ tarif_lettre_suivie.tarif }} €</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <a href="{{ path('app_caisse_tarif_lettre_suivie_index') }}" class="btn btn-link">Retour à la liste</a>
+    <a href="{{ path('app_caisse_tarif_lettre_suivie_edit', {'id': tarif_lettre_suivie.id}) }}" class="btn btn-primary">Modifier</a>
+    {{ include('caisse/tarif_lettre_suivie/_delete_form.html.twig') }}
+{% endblock %}

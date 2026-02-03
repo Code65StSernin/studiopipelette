@@ -1,0 +1,14 @@
+{% extends 'caisse/layout.html.twig' %}
+
+{% block title %}Modifier Tarif Lettre Suivie{% endblock %}
+
+{% block body %}
+    <h1>Modifier Tarif Lettre Suivie</h1>
+
+    {{ include('caisse/tarif_lettre_suivie/_form.html.twig', {'button_label': 'Mettre à jour'}) }}
+
+    <div class="mt-3">
+        <a href="{{ path('app_caisse_tarif_lettre_suivie_index') }}" class="btn btn-link">Retour à la liste</a>
+        {{ include('caisse/tarif_lettre_suivie/_delete_form.html.twig') }}
+    </div>
+{% endblock %}

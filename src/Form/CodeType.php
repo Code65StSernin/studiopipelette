@@ -5,6 +5,7 @@ namespace App\Form;
 use App\Entity\Code;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
+use Symfony\Component\Form\Extension\Core\Type\DateTimeType;
 use Symfony\Component\Form\Extension\Core\Type\DateType;
 use Symfony\Component\Form\Extension\Core\Type\NumberType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
@@ -47,6 +48,12 @@ class CodeType extends AbstractType
                 'label' => 'Uniquement pour la première commande',
                 'required' => false,
                 'attr' => ['class' => 'form-check-input']
+            ])
+            ->add('fraisPortOfferts', CheckboxType::class, [
+                'label' => 'Offrir les frais de port',
+                'required' => false,
+                'attr' => ['class' => 'form-check-input'],
+                'help' => 'Si coché, les frais de port seront gratuits pour ce code promo, quel que soit le mode de livraison.'
             ])
         ;
     }

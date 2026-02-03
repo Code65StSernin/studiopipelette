@@ -1,0 +1,43 @@
+{% extends 'caisse/layout.html.twig' %}
+
+{% block title %}Tarifs Mondial Relay{% endblock %}
+
+{% block body %}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Tarifs Mondial Relay</h1>
+        <a href="{{ path('app_caisse_tarif_mondial_relay_new') }}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Nouveau tarif
+        </a>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Poids max (g)</th>
+                        <th>Tarif (€)</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for tarif_mondial_relay in tarif_mondial_relays %}
+                    <tr>
+                        <td>{{ tarif_mondial_relay.poids }} g</td>
+                        <td>{{ tarif_mondial_relay.tarif }} €</td>
+                        <td class="text-end">
+                            <a href="{{ path('app_caisse_tarif_mondial_relay_edit', {'id': tarif_mondial_relay.id}) }}" class="btn btn-sm btn-outline-secondary">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="3" class="text-center">Aucun tarif trouvé</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}

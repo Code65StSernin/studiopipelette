@@ -99,6 +99,21 @@ class Article
     #[ORM\Column]
     private ?bool $actif = false;
 
+    #[ORM\Column(nullable: true)]
+    private ?int $poids = null;
+
+    public function getPoids(): ?int
+    {
+        return $this->poids;
+    }
+
+    public function setPoids(?int $poids): static
+    {
+        $this->poids = $poids;
+
+        return $this;
+    }
+
     #[ORM\Column(length: 20)]
     private ?string $visibilite = self::VISIBILITY_BOTH;
 

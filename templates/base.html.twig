@@ -39,12 +39,16 @@
                 </div>
                 <div class="col-lg-6 text-center text-lg-right">
                     <div class="d-inline-flex align-items-center">
-                        <a class="text-dark px-2" href="#">
-                            <i class="fab fa-facebook-f"></i>
-                        </a>
-                        <a class="text-dark px-2" href="#">
-                            <i class="fab fa-instagram"></i>
-                        </a>
+                        {% if societe.lienFacebook %}
+                            <a class="text-dark px-2" href="{{ societe.lienFacebook }}" target="_blank">
+                                <i class="fab fa-facebook-f"></i>
+                            </a>
+                        {% endif %}
+                        {% if societe.lienInstagram %}
+                            <a class="text-dark px-2" href="{{ societe.lienInstagram }}" target="_blank">
+                                <i class="fab fa-instagram"></i>
+                            </a>
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -67,6 +71,12 @@
                     </form>
                 </div>
                 <div class="col-lg-3 col-6 text-right">
+                    {% if app.user %}
+                        <span class="btn border" title="Vos points de fidélité">
+                            <i class="fas fa-coins text-primary"></i>
+                            <span class="badge text-dark">{{ app.user.fidelitePoints|default(0)|number_format(0) }} Pts</span>
+                        </span>
+                    {% endif %}
                     <a href="{{ path('app_favoris') }}" class="btn border">
                         <i class="fas fa-heart text-primary"></i>
                         <span class="badge" id="favori-count">{{ favoriService.nombreArticles|default(0) }}</span>
@@ -119,10 +129,7 @@
                                 {% endif %}
                                 <a href="#" class="nav-item nav-link" data-toggle="modal" data-target="#contactModal">Contact</a>
                                 {% if is_granted('ROLE_ADMIN') %}
-                                    <a href="#" class="nav-item nav-link" title="Caisse" onclick="openCaisseModal(event)">Caisse</a>
-                                    <a href="{{ path('admin') }}" class="nav-item nav-link" title="Administration">
-                                        <i class="fas fa-cog"></i>
-                                    </a>
+                                    <a href="#" class="nav-item nav-link" title="Caisse" onclick="openCaisseModal(event)">Caisse et Administration</a>
                                 {% endif %}
                             </div>
                             <div class="navbar-nav ml-auto py-0">
