@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        @page {
+            size: A4;
+            margin-top: {{ format.margeHaut }}cm;
+            margin-bottom: {{ format.margeBas }}cm;
+            margin-left: {{ format.margeGauche }}cm;
+            margin-right: {{ format.margeDroite }}cm;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        .etiquettes-table {
+            border-collapse: collapse;
+            border: 0;
+            margin: 0;
+            padding: 0;
+        }
+        .etiquette-cell {
+            width: {{ format.largeur }}cm;
+            height: {{ format.hauteur }}cm;
+            padding: 0;
+            padding-right: {{ format.distanceHorizontale }}cm;
+            padding-bottom: {{ format.distanceVerticale }}cm;
+            vertical-align: top;
+        }
+        .etiquette-wrapper {
+            width: {{ format.largeur }}cm;
+            height: {{ format.hauteur }}cm;
+            overflow: hidden;
+            box-sizing: border-box;
+            position: relative;
+            font-size: 9pt;
+            padding: 2mm;
+        }
+        
+        /* Table layout for PDF compatibility */
+        .layout-table {
+            width: 100%;
+            height: 100%;
+            border-collapse: collapse;
+        }
+        .logo-cell {
+            width: 30%;
+            vertical-align: middle;
+            text-align: center;
+            padding-right: 2mm;
+        }
+        .text-cell {
+            width: 70%;
+            vertical-align: middle;
+            text-align: left;
+        }
+        
+        .logo-img {
+            max-width: 100%;
+            max-height: {{ format.hauteur * 0.8 }}cm;
+            height: auto;
+        }
+        
+        .sender-label {
+            font-weight: bold;
+            font-size: 8pt;
+            margin-bottom: 1mm;
+            text-transform: uppercase;
+            color: #555;
+        }
+        .company-name {
+            font-weight: bold;
+            font-size: 10pt;
+            margin-bottom: 1mm;
+        }
+        .company-address {
+            font-size: 9pt;
+            line-height: 1.3;
+        }
+    </style>
+</head>
+<body>
+    <table class="etiquettes-table">
+        {% for row in etiquettes|batch(cols) %}
+            <tr>
+                {% for societe_item in row %}
+                    <td class="etiquette-cell">
+                        <div class="etiquette-wrapper">
+                            {% if societe_item %}
+                                <table class="layout-table">
+                                    <tr>
+                                        <td class="logo-cell">
+                                            {% if logoSrc %}
+                                                <img src="{{ logoSrc }}" class="logo-img">
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-cell">
+                                            <div class="sender-label">Expéditeur :</div>
+                                            <div class="company-name">{{ societe_item.nom }}</div>
+                                            <div class="company-address">
+                                                {{ societe_item.adresse }}<br>
+                                                {{ societe_item.codePostal }} {{ societe_item.ville }}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </table>
+                            {% endif %}
+                        </div>
+                    </td>
+                {% endfor %}
+            </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>

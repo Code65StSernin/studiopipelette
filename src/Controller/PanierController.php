@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\Article;
 use App\Repository\ArticleRepository;
 use App\Repository\CodeRepository;
+use App\Repository\SocieteRepository;
 use App\Service\PanierService;
 use Doctrine\ORM\EntityManagerInterface;
 use App\Repository\FactureRepository;
@@ -23,6 +24,7 @@ class PanierController extends AbstractController
         private PanierService $panierService,
         private EntityManagerInterface $em,
         private FactureRepository $factureRepository,
+        private SocieteRepository $societeRepository,
     ) {
     }
 
@@ -46,6 +48,16 @@ class PanierController extends AbstractController
 
         $btoBDiscountPercentage = $this->panierService->getBtoBDiscountPercentage();
 
+        // Calcul du montant restant pour le franco de port
+        $societe = $this->societeRepository->findOneBy([]);
+        $francoPortActif = $societe ? $societe->isFrancoPortActif() : false;
+        $francoPortMontant = $societe ? $societe->getFrancoPortMontant() : 0.0;
+        
+        $montantManquantFranco = 0.0;
+        if ($francoPortActif && $francoPortMontant > 0) {
+            $montantManquantFranco = max(0, $francoPortMontant - $totalApresRemise);
+        }
+
         $response = $this->render('panier/index.html.twig', [
             'panier' => $panier,
             'erreursStock' => $erreursStock,
@@ -56,6 +68,8 @@ class PanierController extends AbstractController
             'btoBDiscountPercentage' => $btoBDiscountPercentage,
             'btoBDiscountTotal' => $montantRemiseBtoB,
             'totalApresRemise' => $totalApresRemise,
+            'francoPortActif' => $francoPortActif,
+            'montantManquantFranco' => $montantManquantFranco,
         ]);
 
         $this->panierService->addSessionCookie($response);
@@ -86,7 +100,6 @@ class PanierController extends AbstractController
 
         try {
             $this->panierService->ajouterArticle($article, $taille, $quantite);
-            $this->addFlash('success', 'Article ajouté au panier avec succès !');
         } catch (\Exception $e) {
             $this->addFlash('danger', $e->getMessage());
         }
@@ -109,7 +122,6 @@ class PanierController extends AbstractController
 
         try {
             $this->panierService->modifierQuantite($id, $quantite);
-            $this->addFlash('success', 'Quantité mise à jour');
         } catch (\Exception $e) {
             $this->addFlash('danger', $e->getMessage());
         }
@@ -140,8 +152,6 @@ class PanierController extends AbstractController
 
             $nouvelleQuantite = $ligne->getQuantite() + 1;
             $this->panierService->modifierQuantite($id, $nouvelleQuantite);
-            
-            $this->addFlash('success', 'Quantité mise à jour');
         } catch (\Exception $e) {
             $this->addFlash('danger', $e->getMessage());
         }
@@ -178,8 +188,6 @@ class PanierController extends AbstractController
             }
 
             $this->panierService->modifierQuantite($id, $nouvelleQuantite);
-            
-            $this->addFlash('success', 'Quantité mise à jour');
         } catch (\Exception $e) {
             $this->addFlash('danger', $e->getMessage());
         }

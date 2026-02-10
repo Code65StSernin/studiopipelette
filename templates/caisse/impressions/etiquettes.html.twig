@@ -167,6 +167,7 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     let skippedIndices = new Set();
+    let currentTotalLabels = 0;
 
     // Helper: Save to storage
     function saveStorage() {
@@ -206,6 +207,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
+        currentTotalLabels = totalLabels;
+
         // Update counter
         counterBadge.textContent = `${selection.size} articles (${totalLabels} étiquettes)`;
 
@@ -215,6 +218,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         saveStorage();
+        generateGrid();
     }
 
     // Generate grid (Immediate)
@@ -225,6 +229,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Assume A4 page size in cm
         const PAGE_WIDTH = 21.0;
         const PAGE_HEIGHT = 29.7;
+        const pxPerCm = 20; // Scale for display
 
         // Calculate columns and rows
         const availableWidth = PAGE_WIDTH - format.margeGauche - format.margeDroite;
@@ -244,47 +249,63 @@ document.addEventListener('DOMContentLoaded', function() {
         // Total slots
         const totalSlots = cols * rows;
 
-        // Create grid wrapper with calculated width to center it
-        const gridWrapper = document.createElement('div');
-        gridWrapper.style.display = 'grid';
-        gridWrapper.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
-        gridWrapper.style.gap = '4px'; // Visual gap for UI
-        gridWrapper.style.width = 'fit-content';
+        // Create page wrapper
+        const pageDiv = document.createElement('div');
+        pageDiv.style.width = (PAGE_WIDTH * pxPerCm) + 'px';
+        pageDiv.style.height = (PAGE_HEIGHT * pxPerCm) + 'px';
+        pageDiv.style.backgroundColor = 'white';
+        pageDiv.style.border = '1px solid #ccc';
+        pageDiv.style.position = 'relative';
+        pageDiv.style.margin = '0 auto';
         
+        let filledCount = 0;
+
         for (let i = 0; i < totalSlots; i++) {
+            const row = Math.floor(i / cols);
+            const col = i % cols;
+            
+            const x = format.margeGauche + (col * (format.width + format.distH));
+            const y = format.margeHaut + (row * (format.height + format.distV));
+            
             const cell = document.createElement('div');
-            cell.className = 'etiquette-cell border rounded d-flex align-items-center justify-content-center';
-            cell.style.width = '35px';
-            cell.style.height = '25px';
+            cell.style.position = 'absolute';
+            cell.style.left = (x * pxPerCm) + 'px';
+            cell.style.top = (y * pxPerCm) + 'px';
+            cell.style.width = (format.width * pxPerCm) + 'px';
+            cell.style.height = (format.height * pxPerCm) + 'px';
+            cell.className = 'border d-flex align-items-center justify-content-center';
             cell.style.cursor = 'pointer';
             cell.style.fontSize = '9px';
             cell.style.userSelect = 'none';
-            cell.textContent = i + 1;
+            cell.title = `Emplacement ${i + 1}`;
             
-            if (skippedIndices.has(i)) {
-                cell.classList.add('bg-secondary', 'text-white', 'opacity-50');
-                cell.title = 'Emplacement indisponible';
+            const isSkipped = skippedIndices.has(i);
+            
+            if (isSkipped) {
+                cell.className += ' bg-secondary text-white opacity-50';
+                cell.innerHTML = '<i class="fas fa-times"></i>';
+            } else if (filledCount < currentTotalLabels) {
+                cell.className += ' bg-info text-white';
+                filledCount++;
+                cell.textContent = filledCount;
             } else {
-                cell.classList.add('bg-white', 'text-dark');
-                cell.title = 'Disponible';
+                cell.className += ' bg-white text-dark';
+                // cell.textContent = i + 1; // Optional: show slot number
             }
 
             cell.addEventListener('click', function() {
                 if (skippedIndices.has(i)) {
                     skippedIndices.delete(i);
-                    this.classList.remove('bg-secondary', 'text-white', 'opacity-50');
-                    this.classList.add('bg-white', 'text-dark');
                 } else {
                     skippedIndices.add(i);
-                    this.classList.remove('bg-white', 'text-dark');
-                    this.classList.add('bg-secondary', 'text-white', 'opacity-50');
                 }
+                generateGrid();
             });
 
-            gridWrapper.appendChild(cell);
+            pageDiv.appendChild(cell);
         }
 
-        gridContainer.appendChild(gridWrapper);
+        gridContainer.appendChild(pageDiv);
     }
 
     // Generate grid on load

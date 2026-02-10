@@ -111,7 +111,7 @@ class LivraisonController extends AbstractController
                 'point_relais_adresse' => $pointRelaisAdresse,
             ]);
 
-            $this->addFlash('success', 'Point relais sélectionné : ' . $pointRelaisNom);
+            // $this->addFlash('success', 'Point relais sélectionné : ' . $pointRelaisNom);
         } elseif ($modeLivraison === 'lettre_suivie') {
              if (!$this->societeConfig->isEnableLettreSuivie()) {
                  $this->addFlash('danger', 'Ce mode de livraison n\'est pas activé.');
@@ -129,14 +129,14 @@ class LivraisonController extends AbstractController
                 'mode' => 'lettre_suivie',
             ]);
 
-            $this->addFlash('success', 'Livraison en Lettre Suivie sélectionnée');
+            // $this->addFlash('success', 'Livraison en Lettre Suivie sélectionnée');
         } elseif ($modeLivraison === 'domicile') {
             // Legacy support or if user enables it explicitly (not currently in request)
             $session->set('livraison', [
                 'mode' => 'domicile',
             ]);
 
-            $this->addFlash('success', 'Livraison à domicile sélectionnée');
+            // $this->addFlash('success', 'Livraison à domicile sélectionnée');
         } else {
             $this->addFlash('danger', 'Mode de livraison invalide');
             return $this->redirectToRoute('app_livraison_choix');

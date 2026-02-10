@@ -161,13 +161,12 @@
                     <div class="tab-content" id="topTabsContent">
                         {# TAB ONLINE #}
                         <div class="tab-pane fade show active" id="online" role="tabpanel">
-                            <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                            <div class="table-responsive" style="height: 350px; overflow-y: auto;">
                                 <table class="table table-dark table-sm table-hover mb-0">
                                     <thead class="sticky-top bg-dark">
                                         <tr>
                                             <th>Article</th>
                                             <th class="text-end">Qté</th>
-                                            <th class="text-end">CA</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -175,10 +174,9 @@
                                             <tr>
                                                 <td>{{ row.designation }}</td>
                                                 <td class="text-end">{{ row.quantite }}</td>
-                                                <td class="text-end">{{ (row.ca / 100)|number_format(2, ',', ' ') }} €</td>
                                             </tr>
                                         {% else %}
-                                            <tr><td colspan="3" class="text-center text-muted">Aucune donnée</td></tr>
+                                            <tr><td colspan="2" class="text-center text-muted">Aucune donnée</td></tr>
                                         {% endfor %}
                                     </tbody>
                                 </table>
@@ -186,13 +184,12 @@
                         </div>
                         {# TAB CAISSE #}
                         <div class="tab-pane fade" id="caisse" role="tabpanel">
-                            <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                            <div class="table-responsive" style="height: 350px; overflow-y: auto;">
                                 <table class="table table-dark table-sm table-hover mb-0">
                                     <thead class="sticky-top bg-dark">
                                         <tr>
                                             <th>Article</th>
                                             <th class="text-end">Qté</th>
-                                            <th class="text-end">CA</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -200,10 +197,9 @@
                                             <tr>
                                                 <td>{{ row.designation }}</td>
                                                 <td class="text-end">{{ row.quantite }}</td>
-                                                <td class="text-end">{{ (row.ca / 100)|number_format(2, ',', ' ') }} €</td>
                                             </tr>
                                         {% else %}
-                                            <tr><td colspan="3" class="text-center text-muted">Aucune donnée</td></tr>
+                                            <tr><td colspan="2" class="text-center text-muted">Aucune donnée</td></tr>
                                         {% endfor %}
                                     </tbody>
                                 </table>

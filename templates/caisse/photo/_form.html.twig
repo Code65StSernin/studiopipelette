@@ -1,4 +1,17 @@
 {{ form_start(form) }}
+    <div class="alert alert-danger" style="display:none">
+        {{ form_errors(form) }}
+    </div>
+    {% if not form.vars.valid %}
+        <div class="alert alert-danger">
+            <ul>
+                {% for error in form.vars.errors %}
+                    <li>{{ error.message }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+
     <div class="row">
         <div class="col-md-12 mb-3">
             {{ form_row(form.article) }}

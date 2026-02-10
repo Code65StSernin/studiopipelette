@@ -50,7 +50,6 @@ class FavoriController extends AbstractController
 
         try {
             $this->favoriService->ajouterArticle($article);
-            $this->addFlash('success', 'Article ajouté aux favoris !');
         } catch (\Exception $e) {
             $this->addFlash('danger', $e->getMessage());
         }
@@ -112,7 +111,6 @@ class FavoriController extends AbstractController
 
         try {
             $this->favoriService->retirerArticle($article);
-            $this->addFlash('success', 'Article retiré des favoris');
         } catch (\Exception $e) {
             $this->addFlash('danger', $e->getMessage());
         }
@@ -128,7 +126,6 @@ class FavoriController extends AbstractController
     {
         try {
             $this->favoriService->viderFavoris();
-            $this->addFlash('success', 'Favoris vidés');
         } catch (\Exception $e) {
             $this->addFlash('danger', $e->getMessage());
         }

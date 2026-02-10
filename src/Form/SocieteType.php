@@ -72,18 +72,6 @@ class SocieteType extends AbstractType
                 'attr' => ['class' => 'form-control']
             ])
 
-            // Transporteurs
-            ->add('enableMondialRelay', CheckboxType::class, [
-                'label' => 'Activer Mondial Relay',
-                'required' => false,
-                'attr' => ['class' => 'form-check-input']
-            ])
-            ->add('enableLettreSuivie', CheckboxType::class, [
-                'label' => 'Activer Lettre Suivie',
-                'required' => false,
-                'attr' => ['class' => 'form-check-input']
-            ])
-
             // Mondial Relay
             ->add('mondialRelayLogin', TextType::class, [
                 'label' => 'Login',

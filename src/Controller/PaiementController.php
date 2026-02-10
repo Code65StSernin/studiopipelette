@@ -348,13 +348,19 @@ class PaiementController extends AbstractController
         $pdfPath = $pdfGenerator->generate($facture);
         $orderMailer->sendOrderConfirmation($order, $facture, $pdfPath);
 
-        $this->addFlash('success', 'Votre commande a bien été validée. Merci pour votre achat 🙏');
+        // $this->addFlash('success', 'Votre commande a bien été validée. Merci pour votre achat 🙏');
 
-        $response = $this->redirectToRoute('app_home');
+        $response = $this->redirectToRoute('app_paiement_success_page');
         // Nettoyer aussi le cookie de panier côté navigateur
         $this->panierService->clearSessionCookie($response);
 
         return $response;
+    }
+
+    #[Route('/paiement/succes', name: 'app_paiement_success_page', methods: ['GET'])]
+    public function successPage(): Response
+    {
+        return $this->render('paiement/success.html.twig');
     }
 
 

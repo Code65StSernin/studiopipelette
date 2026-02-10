@@ -147,9 +147,24 @@
                     </div>
                 </div>
 
-                <!-- Résumé du panier -->
-                <div class="row justify-content-end">
-                    <div class="col-lg-5">
+                <!-- Section Résumé et Offres -->
+                <div class="row px-xl-5">
+                    <!-- Colonne gauche : Message Franco de Port -->
+                    <div class="col-lg-8 mb-5">
+                        {% if francoPortActif and montantManquantFranco > 0 %}
+                            <div class="card border-secondary">
+                                <div class="card-body text-center">
+                                    <p class="mb-3">Il ne vous manque que <strong>{{ montantManquantFranco|number_format(2, ',', ' ') }} €</strong> pour bénéficier du port GRATUIT !</p>
+                                    <a href="{{ path('app_boutique') }}" class="btn btn-primary py-2 px-4">
+                                        <i class="fa fa-arrow-left mr-2"></i>Continuer mes achats
+                                    </a>
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Colonne droite : Résumé du panier -->
+                    <div class="col-lg-4">
                         <div class="card border-secondary mb-5">
                             <div class="card-header bg-secondary border-0">
                                 <h4 class="font-weight-semi-bold m-0">Résumé du panier</h4>

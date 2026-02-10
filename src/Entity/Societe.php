@@ -158,12 +158,21 @@ class Societe
     #[ORM\Column(type: 'float', nullable: true)]
     private ?float $fidelitePointsZ = null; // Récompense Euro
 
+    #[ORM\Column(type: 'boolean', options: ['default' => false])]
+    private bool $fideliteCumul = false;
+
     // Options d'expédition
     #[ORM\Column(type: 'boolean', options: ['default' => true])]
     private ?bool $enableMondialRelay = true;
 
     #[ORM\Column(type: 'boolean', options: ['default' => false])]
     private ?bool $enableLettreSuivie = false;
+
+    #[ORM\Column(type: 'boolean', options: ['default' => false])]
+    private bool $francoPortActif = false;
+
+    #[ORM\Column(type: 'float', nullable: true)]
+    private ?float $francoPortMontant = null;
 
     public function getId(): ?int
     {
@@ -723,6 +732,39 @@ class Societe
     public function setEnableLettreSuivie(bool $enableLettreSuivie): self
     {
         $this->enableLettreSuivie = $enableLettreSuivie;
+        return $this;
+    }
+
+    public function isFideliteCumul(): bool
+    {
+        return $this->fideliteCumul;
+    }
+
+    public function setFideliteCumul(bool $fideliteCumul): self
+    {
+        $this->fideliteCumul = $fideliteCumul;
+        return $this;
+    }
+
+    public function isFrancoPortActif(): bool
+    {
+        return $this->francoPortActif;
+    }
+
+    public function setFrancoPortActif(bool $francoPortActif): self
+    {
+        $this->francoPortActif = $francoPortActif;
+        return $this;
+    }
+
+    public function getFrancoPortMontant(): ?float
+    {
+        return $this->francoPortMontant;
+    }
+
+    public function setFrancoPortMontant(?float $francoPortMontant): self
+    {
+        $this->francoPortMontant = $francoPortMontant;
         return $this;
     }
 }

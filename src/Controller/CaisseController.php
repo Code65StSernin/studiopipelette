@@ -521,6 +521,7 @@ class CaisseController extends AbstractController
         $vente->setMontantTotal((string) $total);
 
         $modePaiementParts = [];
+        $loyaltyPaymentAmount = 0.0;
         
         foreach ($payments as $p) {
             $amount = (float)($p['amount'] ?? 0);
@@ -529,6 +530,7 @@ class CaisseController extends AbstractController
             if ($amount <= 0) continue;
 
             if ($methodName === 'Fidelite') {
+                $loyaltyPaymentAmount += $amount;
                 // Paiement par cagnotte fidélité
                 // Calcul du solde total disponible (Cagnotte stockée + Virtuelle)
                 $storedCagnotte = $client->getFideliteCagnotte();
@@ -672,7 +674,8 @@ class CaisseController extends AbstractController
             if ($mode === 'points') {
                 $x = $societeConfig->getFidelitePointsX(); // points par euro
                 if ($x) {
-                    $pointsGagnes = $total * $x;
+                    $eligibleTotal = max(0, $total - $loyaltyPaymentAmount);
+                    $pointsGagnes = $eligibleTotal * $x;
                     $newPoints = $client->getFidelitePoints() + $pointsGagnes;
 
                     // Conversion automatique des points en cagnotte
@@ -680,13 +683,29 @@ class CaisseController extends AbstractController
                     $gain = $societeConfig->getFidelitePointsZ();      // Gain (ex: 10€)
 
                     if ($threshold > 0 && $gain > 0) {
+                        $isCumul = $societeConfig->isFideliteCumul();
+                        $currentCagnotte = $client->getFideliteCagnotte();
+                        
                         $numRewards = floor($newPoints / $threshold);
+                        
+                        if (!$isCumul) {
+                            // Mode Non-Cumulatif : 
+                            // 1. Si on a déjà une cagnotte, on ne génère rien.
+                            // 2. Si on n'a pas de cagnotte, on génère MAX 1 récompense (même si on a les points pour 2).
+                            if ($currentCagnotte > 0) {
+                                $numRewards = 0;
+                            } else {
+                                $numRewards = ($numRewards > 0) ? 1 : 0;
+                            }
+                        }
+                        // Mode Cumulatif (else) : On prend tous les rewards possibles et on les ajoute au solde existant.
+
                         if ($numRewards > 0) {
                             $pointsToDeduct = $numRewards * $threshold;
                             $moneyGained = $numRewards * $gain;
                             
                             $newPoints -= $pointsToDeduct;
-                            $client->setFideliteCagnotte($client->getFideliteCagnotte() + $moneyGained);
+                            $client->setFideliteCagnotte($currentCagnotte + $moneyGained);
                         }
                     }
 

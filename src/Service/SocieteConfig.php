@@ -91,8 +91,11 @@ class SocieteConfig
     public function getFidelitePointsX(): ?float  { return $this->get()?->getFidelitePointsX(); }
     public function getFidelitePointsY(): ?float  { return $this->get()?->getFidelitePointsY(); }
     public function getFidelitePointsZ(): ?float  { return $this->get()?->getFidelitePointsZ(); }
+    public function isFideliteCumul(): bool       { return (bool) ($this->get()?->isFideliteCumul() ?? false); }
 
     // Options d'expédition
     public function isEnableMondialRelay(): bool { return (bool) ($this->get()?->isEnableMondialRelay() ?? true); }
     public function isEnableLettreSuivie(): bool { return (bool) ($this->get()?->isEnableLettreSuivie() ?? false); }
+    public function isFrancoPortActif(): bool { return (bool) ($this->get()?->isFrancoPortActif() ?? false); }
+    public function getFrancoPortMontant(): ?float { return $this->get()?->getFrancoPortMontant(); }
 }

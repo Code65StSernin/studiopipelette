@@ -334,12 +334,36 @@
                     </span>
                 </div>
                 
-                {# Formulaire ajouter au panier #}
-                <form method="post" action="{{ path('app_panier_ajouter', {id: article.id}) }}" id="addToCartForm">
+                {# Espace réservé pour ne pas que le contenu soit caché par le bouton sticky #}
+                <div style="height: 80px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# Barre sticky Ajout au panier #}
+<div class="sticky-add-to-cart">
+    <div class="container-fluid px-xl-5">
+        <div class="row">
+            <div class="col-12 col-lg-7 offset-lg-5">
+                <form method="post" action="{{ path('app_panier_ajouter', {id: article.id}) }}" id="addToCartForm" class="d-flex align-items-center justify-content-center justify-content-lg-start">
                     <input type="hidden" name="taille" id="selectedSize" value="{% if article.tailles and article.tailles|length > 0 %}{{ article.tailles|first.taille }}{% endif %}">
                     <input type="hidden" name="quantite" value="1">
-                    <button type="submit" class="btn btn-primary px-3" id="addToCartBtn">
-                        <i class="fa fa-shopping-cart mr-1"></i> AJOUTER AU PANIER
+                    
+                    {# Rappel du prix pour mobile/desktop #}
+                    <div class="mr-3 d-flex align-items-baseline">
+                        <span class="h4 mb-0 font-weight-bold text-primary" id="stickyPrice">
+                            {% if article.prixMin %}
+                                {{ article.prixMin|number_format(2, ',', ' ') }}
+                            {% else %}
+                                20,00
+                            {% endif %}
+                        </span>
+                        <span class="h5 mb-0 font-weight-bold text-primary ml-1">€</span>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary px-5 py-3 shadow-sm font-weight-bold" id="addToCartBtn" style="border-radius: 30px; min-width: 250px;">
+                        <i class="fa fa-shopping-cart mr-2"></i> AJOUTER AU PANIER
                     </button>
                 </form>
             </div>
@@ -431,6 +455,11 @@ function selectSize(element) {
     }
     
     document.getElementById('currentPrice').textContent = price.toFixed(2).replace('.', ',');
+    // Mettre à jour le prix sticky aussi
+    const stickyPrice = document.getElementById('stickyPrice');
+    if (stickyPrice) {
+        stickyPrice.textContent = price.toFixed(2).replace('.', ',');
+    }
     
     // Mettre à jour le prix barré et le badge de réduction
     const barredPriceElement = document.getElementById('barredPrice');
@@ -555,6 +584,68 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 });
+
+// Animation ajout au panier
+document.getElementById('addToCartForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const form = this;
+    const btn = document.getElementById('addToCartBtn');
+    
+    // Désactiver le bouton pour éviter double clic
+    if(btn) btn.disabled = true;
+
+    const mainImage = document.getElementById('mainImage');
+    // Chercher l'icône du panier dans le header (en utilisant une classe plus précise si possible, ou le lien panier)
+    const cartLink = document.querySelector('a[href*="panier"]');
+    const cartIcon = cartLink ? cartLink.querySelector('i') : null;
+
+    // Vérifier si l'image est visible (pas cachée par une vidéo)
+    const isImageVisible = mainImage && mainImage.style.display !== 'none';
+
+    if (isImageVisible && cartIcon) {
+        // Créer le clone
+        const clone = mainImage.cloneNode(true);
+        const rect = mainImage.getBoundingClientRect();
+        const cartRect = cartIcon.getBoundingClientRect();
+
+        clone.style.position = 'fixed';
+        clone.style.top = rect.top + 'px';
+        clone.style.left = rect.left + 'px';
+        clone.style.width = rect.width + 'px';
+        clone.style.height = rect.height + 'px';
+        clone.style.zIndex = '9999';
+        clone.style.transition = 'all 1s cubic-bezier(0.25, 0.46, 0.45, 0.94)'; // Courbe d'animation fluide
+        clone.style.objectFit = 'contain';
+        clone.style.opacity = '0.9';
+        clone.style.pointerEvents = 'none'; // Éviter les interférences
+
+        document.body.appendChild(clone);
+
+        // Forcer le reflow pour que la position initiale soit prise en compte
+        void clone.offsetWidth;
+
+        // Démarrer l'animation vers l'icône
+        // On vise le centre de l'icône
+        const targetWidth = 30;
+        const targetHeight = 30;
+        
+        clone.style.top = (cartRect.top + (cartRect.height - targetHeight) / 2) + 'px';
+        clone.style.left = (cartRect.left + (cartRect.width - targetWidth) / 2) + 'px';
+        clone.style.width = targetWidth + 'px';
+        clone.style.height = targetHeight + 'px';
+        clone.style.opacity = '0'; // Disparait à la fin
+        clone.style.transform = 'scale(0.1)'; // Réduction supplémentaire
+
+        // Nettoyage et soumission après l'animation
+        setTimeout(() => {
+            clone.remove();
+            form.submit();
+        }, 1000);
+    } else {
+        // Si pas d'image visible ou icône introuvable, soumettre directement
+        form.submit();
+    }
+});
 </script>
 
 <style>
@@ -596,6 +687,40 @@ document.addEventListener('DOMContentLoaded', function() {
 
 .accordion .btn-link:hover {
     text-decoration: none;
+}
+
+.sticky-add-to-cart {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: #fff;
+    padding: 15px 0;
+    box-shadow: 0 -4px 15px rgba(0,0,0,0.1);
+    z-index: 1030;
+    border-top: 1px solid #eee;
+    animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+}
+
+/* Ajustement responsive pour la barre sticky */
+@media (max-width: 991.98px) {
+    .sticky-add-to-cart .col-12 {
+        padding: 0;
+    }
+    .sticky-add-to-cart form {
+        justify-content: space-between !important;
+        padding: 0 15px;
+    }
+    .sticky-add-to-cart #addToCartBtn {
+        min-width: auto;
+        flex-grow: 1;
+        margin-left: 15px;
+    }
 }
 
 .thumbnail-item img {

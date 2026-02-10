@@ -29,6 +29,7 @@
             flex-direction: row;
             padding: 5mm;
             box-sizing: border-box;
+            position: relative; /* Pour positionnement absolu du code barre */
         }
         
         /* Left Section */
@@ -61,9 +62,10 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: space-between;
+            justify-content: flex-start; /* Changé de space-between pour éviter les décalages */
             text-align: center;
             padding-left: 10px;
+            position: relative;
         }
         .title {
             font-size: 22px;
@@ -90,10 +92,16 @@
         .dates {
             font-size: 10px;
             line-height: 1.4;
+            margin-top: 2px;
         }
         .barcode-container {
-            margin-top: 5px;
+            width: 100%;
             text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin: 5px 0;
         }
         /* Hide SVG background if any */
         svg { background: transparent; }
@@ -112,6 +120,15 @@
             <div class="logo-container">
                 <img src="{{ asset('assets/img/logo_petit_noir.png') }}" alt="Studio Pipelette">
             </div>
+
+            <div class="barcode-container">
+                <svg id="barcode"></svg>
+                <div class="dates">
+                    Date d'émission : {{ bon.dateCreation|date('d/m/Y') }}<br>
+                    Valable jusqu'au : {{ bon.dateExpiration|date('d/m/Y') }}
+                </div>
+            </div>
+
             <div class="legal-text">
                 Ce bon d'achat est utilisable en une ou plusieurs fois uniquement dans la boutique physique (pas sur le site Internet). Il ne peut être ni échangé, ni remboursé.
             </div>
@@ -131,23 +148,12 @@
             </div>
             {% endif %}
 
-            <div style="width: 100%; text-align: center; margin-top: auto; margin-bottom: auto;">
+            <div style="width: 100%; text-align: center; margin-top: 10px;">
                 <div class="value-label">Valeur initiale</div>
                 <div class="amount" style="font-size: 20px;">{{ bon.montantInitial|number_format(2, ',', ' ') }} €</div>
                 
                 <div class="value-label">Solde restant</div>
                 <div class="amount">{{ bon.montantRestant|number_format(2, ',', ' ') }} €</div>
-            </div>
-
-            <div style="width: 100%; text-align: center;">
-                <div class="dates">
-                    Date d'émission : {{ bon.dateCreation|date('d/m/Y') }}<br>
-                    Valable jusqu'au : {{ bon.dateExpiration|date('d/m/Y') }}
-                </div>
-                
-                <div class="barcode-container">
-                    <svg id="barcode"></svg>
-                </div>
             </div>
         </div>
     </div>

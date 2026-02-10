@@ -37,6 +37,9 @@ class EtiquetteFormat
     #[ORM\Column(type: 'float')]
     private ?float $hauteur = null;
 
+    #[ORM\Column(length: 20, options: ['default' => 'barcode'])]
+    private ?string $type = 'barcode';
+
     public function getId(): ?int
     {
         return $this->id;
@@ -127,6 +130,17 @@ class EtiquetteFormat
     public function setHauteur(float $hauteur): static
     {
         $this->hauteur = $hauteur;
+        return $this;
+    }
+
+    public function getType(): ?string
+    {
+        return $this->type;
+    }
+
+    public function setType(string $type): static
+    {
+        $this->type = $type;
         return $this;
     }
 }

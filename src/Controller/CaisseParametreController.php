@@ -97,6 +97,11 @@ class CaisseParametreController extends AbstractController
                 'scale' => 2,
                 'attr' => ['placeholder' => 'ex: 20.00'],
             ])
+            ->add('fideliteCumul', CheckboxType::class, [
+                'label' => 'Cumuler les avantages fidélité',
+                'required' => false,
+                'help' => 'Si coché, permet de générer plusieurs récompenses d\'un coup selon le solde de points. Si décoché, bloque la création d\'une nouvelle récompense tant que la précédente n\'est pas utilisée.',
+            ])
             
             // Options d'expédition
             ->add('enableMondialRelay', CheckboxType::class, [
@@ -106,6 +111,22 @@ class CaisseParametreController extends AbstractController
             ->add('enableLettreSuivie', CheckboxType::class, [
                 'label' => 'Activer Lettre Suivie La Poste',
                 'required' => false,
+            ])
+            ->add('francoPortActif', CheckboxType::class, [
+                'label' => 'Gérer le franco de port',
+                'required' => false,
+            ])
+            ->add('francoPortMontant', NumberType::class, [
+                'label' => 'Montant pour franco de port',
+                'required' => false,
+                'scale' => 2,
+                'attr' => [
+                    'placeholder' => '0.00',
+                    'step' => '0.01',
+                    'min' => '0',
+                    'class' => 'form-control'
+                ],
+                'help' => 'Montant minimum de commande pour offrir les frais de port (si activé).'
             ])
 
             ->add('currentPin', TextType::class, [
@@ -171,10 +192,102 @@ class CaisseParametreController extends AbstractController
         EtiquetteFormatRepository $etiquetteFormatRepository,
         EntityManagerInterface $entityManager
     ): Response {
-        $etiquetteFormat = $etiquetteFormatRepository->findOneBy([]);
+        $etiquetteFormat = $etiquetteFormatRepository->findOneBy(['type' => 'barcode']);
+        
+        if (!$etiquetteFormat) {
+            // Check if we have one without type (migration fallback)
+            $etiquetteFormat = $etiquetteFormatRepository->findOneBy([]);
+            if ($etiquetteFormat && !$etiquetteFormat->getType()) {
+                $etiquetteFormat->setType('barcode');
+            } else {
+                // Really new
+                $etiquetteFormat = new EtiquetteFormat();
+                $etiquetteFormat->setType('barcode');
+                // Default values
+                $etiquetteFormat->setMargeHaut(0.0);
+                $etiquetteFormat->setMargeBas(0.0);
+                $etiquetteFormat->setMargeGauche(0.0);
+                $etiquetteFormat->setMargeDroite(0.0);
+                $etiquetteFormat->setDistanceHorizontale(0.0);
+                $etiquetteFormat->setDistanceVerticale(0.0);
+                $etiquetteFormat->setLargeur(0.0);
+                $etiquetteFormat->setHauteur(0.0);
+            }
+            $entityManager->persist($etiquetteFormat);
+        }
+
+        $form = $this->createFormBuilder($etiquetteFormat)
+            ->add('margeHaut', NumberType::class, [
+                'label' => 'Marge Haute (cm)',
+                'scale' => 2,
+                'attr' => ['step' => '0.01', 'class' => 'etiquette-input'],
+            ])
+            ->add('margeBas', NumberType::class, [
+                'label' => 'Marge Basse (cm)',
+                'scale' => 2,
+                'attr' => ['step' => '0.01', 'class' => 'etiquette-input'],
+            ])
+            ->add('margeGauche', NumberType::class, [
+                'label' => 'Marge Gauche (cm)',
+                'scale' => 2,
+                'attr' => ['step' => '0.01', 'class' => 'etiquette-input'],
+            ])
+            ->add('margeDroite', NumberType::class, [
+                'label' => 'Marge Droite (cm)',
+                'scale' => 2,
+                'attr' => ['step' => '0.01', 'class' => 'etiquette-input'],
+            ])
+            ->add('distanceHorizontale', NumberType::class, [
+                'label' => 'Ecart Horizontal (cm)',
+                'scale' => 2,
+                'attr' => ['step' => '0.01', 'class' => 'etiquette-input'],
+            ])
+            ->add('distanceVerticale', NumberType::class, [
+                'label' => 'Ecart Vertical (cm)',
+                'scale' => 2,
+                'attr' => ['step' => '0.01', 'class' => 'etiquette-input'],
+            ])
+            ->add('largeur', NumberType::class, [
+                'label' => 'Largeur Etiquette (cm)',
+                'scale' => 2,
+                'attr' => ['step' => '0.01', 'class' => 'etiquette-input'],
+            ])
+            ->add('hauteur', NumberType::class, [
+                'label' => 'Hauteur Etiquette (cm)',
+                'scale' => 2,
+                'attr' => ['step' => '0.01', 'class' => 'etiquette-input'],
+            ])
+            ->add('save', SubmitType::class, [
+                'label' => 'Enregistrer',
+                'attr' => ['class' => 'btn btn-primary w-100']
+            ])
+            ->getForm();
+
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $entityManager->flush();
+            $this->addFlash('success', 'Format d\'étiquettes Code-barre enregistré avec succès.');
+            return $this->redirectToRoute('app_caisse_parametres_etiquettes');
+        }
+
+        return $this->render('caisse/parametres/etiquettes.html.twig', [
+            'form' => $form->createView(),
+            'title' => 'Configuration Etiquettage Code-barre'
+        ]);
+    }
+
+    #[Route('/etiquettes-adresse', name: 'app_caisse_parametres_etiquettes_adresse')]
+    public function etiquettesAdresse(
+        Request $request,
+        EtiquetteFormatRepository $etiquetteFormatRepository,
+        EntityManagerInterface $entityManager
+    ): Response {
+        $etiquetteFormat = $etiquetteFormatRepository->findOneBy(['type' => 'address']);
         
         if (!$etiquetteFormat) {
             $etiquetteFormat = new EtiquetteFormat();
+            $etiquetteFormat->setType('address');
             // Default values
             $etiquetteFormat->setMargeHaut(0.0);
             $etiquetteFormat->setMargeBas(0.0);
@@ -238,12 +351,13 @@ class CaisseParametreController extends AbstractController
 
         if ($form->isSubmitted() && $form->isValid()) {
             $entityManager->flush();
-            $this->addFlash('success', 'Format d\'étiquettes enregistré avec succès.');
-            return $this->redirectToRoute('app_caisse_parametres_etiquettes');
+            $this->addFlash('success', 'Format d\'étiquettes Adresse enregistré avec succès.');
+            return $this->redirectToRoute('app_caisse_parametres_etiquettes_adresse');
         }
 
         return $this->render('caisse/parametres/etiquettes.html.twig', [
             'form' => $form->createView(),
+            'title' => 'Configuration Etiquettes Adresse'
         ]);
     }
 }

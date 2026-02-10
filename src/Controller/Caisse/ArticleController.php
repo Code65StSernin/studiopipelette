@@ -113,6 +113,19 @@ class ArticleController extends AbstractController
         ]);
     }
 
+    #[Route('/{id}/toggle-actif', name: 'app_caisse_article_toggle_actif', methods: ['POST'])]
+    public function toggleActif(Article $article, EntityManagerInterface $entityManager): Response
+    {
+        $article->setActif(!$article->isActif());
+        $entityManager->flush();
+
+        return $this->json([
+            'success' => true,
+            'actif' => $article->isActif(),
+            'message' => 'Statut de l\'article mis à jour.'
+        ]);
+    }
+
     #[Route('/{id}', name: 'app_caisse_article_delete', methods: ['POST'])]
     public function delete(Request $request, Article $article, EntityManagerInterface $entityManager): Response
     {

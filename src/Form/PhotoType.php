@@ -11,11 +11,34 @@ use Symfony\Component\Form\Extension\Core\Type\FileType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints\File;
+use Symfony\Component\Validator\Constraints\NotBlank;
 
 class PhotoType extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
+        $fileConstraints = [
+            new File([
+                'maxSize' => '5M',
+                'mimeTypes' => [
+                    'image/jpeg',
+                    'image/png',
+                    'image/gif',
+                    'image/webp',
+                    'video/mp4',
+                    'video/webm',
+                    'video/ogg',
+                ],
+                'mimeTypesMessage' => 'Veuillez uploader une image (JPG, PNG, GIF, WEBP) ou une vidéo (MP4, WEBM, OGG) de maximum 5Mo.',
+            ])
+        ];
+
+        if ($options['is_new']) {
+            $fileConstraints[] = new NotBlank([
+                'message' => 'Veuillez sélectionner un fichier.',
+            ]);
+        }
+
         $builder
             ->add('article', EntityType::class, [
                 'class' => Article::class,
@@ -41,21 +64,7 @@ class PhotoType extends AbstractType
                     'accept' => 'image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,video/ogg',
                     'class' => 'form-control'
                 ],
-                'constraints' => [
-                    new File([
-                        'maxSize' => '5M',
-                        'mimeTypes' => [
-                            'image/jpeg',
-                            'image/png',
-                            'image/gif',
-                            'image/webp',
-                            'video/mp4',
-                            'video/webm',
-                            'video/ogg',
-                        ],
-                        'mimeTypesMessage' => 'Veuillez uploader une image (JPG, PNG, GIF, WEBP) ou une vidéo (MP4, WEBM, OGG) de maximum 5Mo.',
-                    ])
-                ],
+                'constraints' => $fileConstraints,
                 'help' => 'Images: JPG, PNG, GIF, WEBP. Vidéos: MP4, WEBM, OGG (max 5Mo).'
             ])
         ;

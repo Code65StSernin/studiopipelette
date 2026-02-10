@@ -34,6 +34,7 @@ use App\Repository\OrderRepository;
 use App\Repository\ArticleRepository;
 use App\Repository\NewsletterSubscriberRepository;
 use App\Repository\LigneFactureRepository;
+use App\Repository\LigneVenteRepository;
 use App\Repository\FactureRepository;
 use App\Repository\DepensesRepository;
 use App\Repository\RecetteRepository;
@@ -54,6 +55,7 @@ class DashboardController extends AbstractDashboardController
         private ArticleRepository $articleRepository,
         private NewsletterSubscriberRepository $newsletterSubscriberRepository,
         private LigneFactureRepository $ligneFactureRepository,
+        private LigneVenteRepository $ligneVenteRepository,
         private FactureRepository $factureRepository,
         private DepensesRepository $depensesRepository,
         private RecetteRepository $recetteRepository,
@@ -304,8 +306,8 @@ class DashboardController extends AbstractDashboardController
         }
 
         // --- 5. TOP ARTICLES ---
-        $topOnline = $this->ligneFactureRepository->findTopArticlesOnline($fromFilter, $toFilter, 5);
-        $topCaisse = $this->ligneFactureRepository->findTopArticlesCaisse($fromFilter, $toFilter, 5);
+        $topOnline = $this->ligneFactureRepository->findTopArticlesOnline($fromFilter, $toFilter, 9);
+        $topCaisse = $this->ligneVenteRepository->findTopArticlesCaisse($fromFilter, $toFilter, 9);
 
         // --- 6. RUPTURES DE STOCK ---
         $outOfStockArticles = [];

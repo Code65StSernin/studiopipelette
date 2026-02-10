@@ -109,12 +109,29 @@ class Order
     #[ORM\Column(type: 'boolean')]
     private bool $debloque = false;
 
+    #[ORM\Column(type: 'datetime', nullable: true)]
+    private ?\DateTimeInterface $addressLabelPrintedAt = null;
+
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
     }
 
-    public function getId(): ?int { return $this->id; }
+    public function getId(): ?int
+    {
+        return $this->id;
+    }
+
+    public function getAddressLabelPrintedAt(): ?\DateTimeInterface
+    {
+        return $this->addressLabelPrintedAt;
+    }
+
+    public function setAddressLabelPrintedAt(?\DateTimeInterface $addressLabelPrintedAt): static
+    {
+        $this->addressLabelPrintedAt = $addressLabelPrintedAt;
+        return $this;
+    }
 
     public function getUser(): ?User { return $this->user; }
     public function setUser(?User $user): self { $this->user = $user; return $this; }

@@ -385,6 +385,45 @@ class ImageService
     }
 
     /**
+     * Déplace une image d'un article vers un autre
+     * @param string $filename
+     * @param int $oldArticleId
+     * @param int $newArticleId
+     */
+    public function moveImage(string $filename, int $oldArticleId, int $newArticleId): void
+    {
+        // Chemins source
+        $oldPath = $this->uploadDir . '/' . $oldArticleId . '/' . $filename;
+        $oldThumbPath = $this->thumbnailDir . '/' . $oldArticleId . '/' . $filename;
+
+        // Dossiers destination
+        $newDir = $this->uploadDir . '/' . $newArticleId;
+        $newThumbDir = $this->thumbnailDir . '/' . $newArticleId;
+        
+        if (!is_dir($newDir)) mkdir($newDir, 0777, true);
+        if (!is_dir($newThumbDir)) mkdir($newThumbDir, 0777, true);
+
+        // Chemins destination
+        $newPath = $newDir . '/' . $filename;
+        $newThumbPath = $newThumbDir . '/' . $filename;
+
+        // Déplacement
+        if (file_exists($oldPath)) {
+            rename($oldPath, $newPath);
+        }
+        if (file_exists($oldThumbPath)) {
+            rename($oldThumbPath, $newThumbPath);
+        }
+
+        // Nettoyage des anciens dossiers
+        $oldDir = $this->uploadDir . '/' . $oldArticleId;
+        $oldThumbDir = $this->thumbnailDir . '/' . $oldArticleId;
+
+        if (is_dir($oldDir) && count(scandir($oldDir)) === 2) rmdir($oldDir);
+        if (is_dir($oldThumbDir) && count(scandir($oldThumbDir)) === 2) rmdir($oldThumbDir);
+    }
+
+    /**
      * Retourne le chemin public d'une image
      * @param string $filename
      * @param int $articleId ID de l'article

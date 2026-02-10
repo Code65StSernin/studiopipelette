@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        @page {
+            size: A4;
+            margin-top: {{ format.margeHaut }}cm;
+            margin-bottom: {{ format.margeBas }}cm;
+            margin-left: {{ format.margeGauche }}cm;
+            margin-right: {{ format.margeDroite }}cm;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        .etiquettes-table {
+            border-collapse: collapse;
+            border: 0;
+            margin: 0;
+            padding: 0;
+        }
+        .etiquette-cell {
+            width: {{ format.largeur }}cm;
+            height: {{ format.hauteur }}cm;
+            padding: 0;
+            padding-right: {{ format.distanceHorizontale }}cm;
+            padding-bottom: {{ format.distanceVerticale }}cm;
+            vertical-align: top;
+        }
+        .etiquette-wrapper {
+            width: {{ format.largeur }}cm;
+            height: {{ format.hauteur }}cm;
+            overflow: hidden;
+            box-sizing: border-box;
+            position: relative;
+            font-size: 10pt; /* Larger font for addresses */
+            padding: 2mm;
+            /* border: 1px solid #ddd; Debugging border */
+        }
+        
+        .address-content {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
+        .recipient-name {
+            font-weight: bold;
+            margin-bottom: 2mm;
+            font-size: 11pt;
+        }
+        
+        .recipient-address {
+            white-space: pre-line;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+    <table class="etiquettes-table">
+        {% for row in etiquettes|batch(cols) %}
+            <tr>
+                {% for etiquette in row %}
+                    <td class="etiquette-cell">
+                        <div class="etiquette-wrapper">
+                            {% if etiquette %}
+                                <div class="address-content">
+                                    <div style="font-weight: bold; margin-bottom: 2mm;">Destinataire :</div>
+                                    <div class="recipient-name">{{ etiquette.name }}</div>
+                                    <div class="recipient-address">{{ etiquette.address }}</div>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </td>
+                {% endfor %}
+            </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>

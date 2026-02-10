@@ -1,13 +1,60 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Paiement confirmé - Studio Pipelette{% endblock %}
+{% block title %}Commande Validée{% endblock %}
 
-{% block content_right %}
-    <div class="alert alert-success">
-        <strong>Merci !</strong> Ton paiement a été reçu.
-        <br>
-        <small>Session Stripe : {{ session_id }}</small>
+{% block body %}
+    <div id="orderSuccessOverlay" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.95); z-index:9999; display:flex; justify-content:center; align-items:center; flex-direction:column; text-align:center;">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-md-8">
+                    <i class="fas fa-check-circle text-success mb-4" style="font-size: 5rem;"></i>
+                    <h1 class="display-4 font-weight-bold mb-3 text-dark">Merci mille fois !!!</h1>
+                    <p class="lead text-muted mb-5">Vôtre commande est validée, nous allons vous la préparer au plus vite</p>
+                    <a href="{{ path('app_boutique') }}" class="btn btn-primary btn-lg px-5">
+                        <i class="fas fa-shopping-bag mr-2"></i>Retour à la boutique
+                    </a>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <a href="{{ path('app_home') }}" class="btn btn-outline-primary">Retour accueil</a>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Effet de confettis multicolores pendant 5 secondes
+            if (typeof confetti === 'function') {
+                var duration = 5 * 1000;
+                var animationEnd = Date.now() + duration;
+                var defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 10000 };
+
+                var randomInRange = function(min, max) {
+                    return Math.random() * (max - min) + min;
+                };
+
+                var interval = setInterval(function() {
+                    var timeLeft = animationEnd - Date.now();
+
+                    if (timeLeft <= 0) {
+                        return clearInterval(interval);
+                    }
+
+                    var particleCount = 50 * (timeLeft / duration);
+                    
+                    // Confettis tombant du haut de l'écran
+                    confetti(Object.assign({}, defaults, { 
+                        particleCount, 
+                        origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } 
+                    }));
+                    confetti(Object.assign({}, defaults, { 
+                        particleCount, 
+                        origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } 
+                    }));
+                    // Ajout central pour couvrir plus de surface
+                    confetti(Object.assign({}, defaults, { 
+                        particleCount, 
+                        origin: { x: randomInRange(0.4, 0.6), y: Math.random() - 0.2 } 
+                    }));
+                }, 250);
+            }
+        });
+    </script>
 {% endblock %}

@@ -1,0 +1,324 @@
+{% extends 'caisse/layout.html.twig' %}
+
+{% block title %}Impression Etiquettes Adresse - Caisse{% endblock %}
+
+{% block body %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="h3 mb-0 text-gray-800">Impression Etiquettes Adresse</h2>
+        <div>
+            <button type="button" class="btn btn-primary" id="btn-print-action" disabled>
+                <i class="fas fa-print me-2"></i>Imprimer (<span id="count-selected">0</span>)
+            </button>
+            <form action="{{ path('app_caisse_impressions_adresses_print') }}" method="post" id="print-form" class="d-none" target="_blank">
+                <input type="hidden" name="skipped_indices" id="hidden-skipped-indices">
+                <!-- Order IDs will be appended dynamically -->
+            </form>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Left Column: Order Selection List -->
+        <div class="col-md-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">Sélection Commandes</h6>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="select-all">
+                        <label class="form-check-label small" for="select-all">Tout cocher</label>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush" style="max-height: 70vh; overflow-y: auto;">
+                        {% set hasPending = false %}
+                        {% set hasPrinted = false %}
+
+                        {% for order in orders %}
+                            {% if order.addressLabelPrintedAt is null %}
+                                {% set hasPending = true %}
+                            {% else %}
+                                {% set hasPrinted = true %}
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if orders|length == 0 %}
+                            <div class="p-4 text-center text-muted">Aucune commande à imprimer</div>
+                        {% endif %}
+
+                        {# Pending Orders Group #}
+                        {% if hasPending %}
+                            <div class="list-group-item bg-light text-uppercase font-weight-bold text-xs text-primary py-2 sticky-top" style="z-index: 5;">
+                                À Imprimer
+                            </div>
+                            {% for order in orders %}
+                                {% if order.addressLabelPrintedAt is null %}
+                                    <label class="list-group-item list-group-item-action d-flex align-items-center gap-3">
+                                        <input class="form-check-input flex-shrink-0 me-2 order-checkbox" type="checkbox" value="{{ order.id }}" 
+                                            {% if preselectedOrderId and preselectedOrderId == order.id %}checked{% endif %}>
+                                        <div class="flex-grow-1">
+                                            <div class="d-flex w-100 justify-content-between">
+                                                <h6 class="mb-1">Commande #{{ order.id }}</h6>
+                                                <small class="text-dark fw-bold">{{ (order.amountTotalCents / 100)|number_format(2, ',', ' ') }} €</small>
+                                            </div>
+                                            <div class="d-flex w-100 justify-content-between">
+                                                <small class="text-muted">
+                                                    {% if order.facture %}
+                                                        {{ order.facture.clientPrenom }} {{ order.facture.clientNom }}
+                                                    {% elseif order.user %}
+                                                        {{ order.user.prenom }} {{ order.user.nom }}
+                                                    {% else %}
+                                                        Invité
+                                                    {% endif %}
+                                                </small>
+                                                <small class="text-muted">{{ order.createdAt|date('d/m/Y H:i') }}</small>
+                                            </div>
+                                        </div>
+                                    </label>
+                                {% endif %}
+                            {% endfor %}
+                        {% endif %}
+
+                        {# Printed Orders Group #}
+                        {% if hasPrinted %}
+                            <div class="list-group-item bg-light text-uppercase font-weight-bold text-xs text-secondary py-2 sticky-top" style="z-index: 5; top: {% if hasPending %}35px{% else %}0{% endif %};">
+                                Déjà Imprimées
+                            </div>
+                            {% for order in orders %}
+                                {% if order.addressLabelPrintedAt is not null %}
+                                    <label class="list-group-item list-group-item-action d-flex align-items-center gap-3 bg-light text-muted">
+                                        <input class="form-check-input flex-shrink-0 me-2 order-checkbox" type="checkbox" value="{{ order.id }}"
+                                            {% if preselectedOrderId and preselectedOrderId == order.id %}checked{% endif %}>
+                                        <div class="flex-grow-1 opacity-75">
+                                            <div class="d-flex w-100 justify-content-between">
+                                                <h6 class="mb-1">Commande #{{ order.id }}</h6>
+                                                <small>{{ (order.amountTotalCents / 100)|number_format(2, ',', ' ') }} €</small>
+                                            </div>
+                                            <div class="d-flex w-100 justify-content-between">
+                                                <small>
+                                                    {% if order.facture %}
+                                                        {{ order.facture.clientPrenom }} {{ order.facture.clientNom }}
+                                                    {% elseif order.user %}
+                                                        {{ order.user.prenom }} {{ order.user.nom }}
+                                                    {% else %}
+                                                        Invité
+                                                    {% endif %}
+                                                </small>
+                                                <small>Imprimé le {{ order.addressLabelPrintedAt|date('d/m H:i') }}</small>
+                                            </div>
+                                        </div>
+                                    </label>
+                                {% endif %}
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Grid -->
+        <div class="col-md-6">
+            <div class="card shadow mb-4 sticky-top" style="top: 20px; z-index: 900;">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">Aperçu Planche</h6>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-reset-grid">
+                        <i class="fas fa-undo me-1"></i>Réinitialiser
+                    </button>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small mb-3">
+                        Cliquez sur les cases pour marquer les étiquettes <strong>déjà utilisées</strong> (en gris).<br>
+                        Les commandes sélectionnées rempliront les cases <strong>libres</strong> (en bleu).
+                    </p>
+                    <div id="etiquette-grid-container" class="border p-3 bg-light d-flex flex-wrap justify-content-center" style="min-height: 400px; max-height: 80vh; overflow-y: auto;">
+                        <!-- Grid generated by JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // State
+    let selectedOrderIds = new Set();
+    let skippedIndices = new Set();
+    
+    // Elements
+    const checkboxes = document.querySelectorAll('.order-checkbox');
+    const selectAllCheckbox = document.getElementById('select-all');
+    const btnPrint = document.getElementById('btn-print-action');
+    const countSelectedSpan = document.getElementById('count-selected');
+    const printForm = document.getElementById('print-form');
+    const hiddenSkipped = document.getElementById('hidden-skipped-indices');
+    const gridContainer = document.getElementById('etiquette-grid-container');
+    const btnResetGrid = document.getElementById('btn-reset-grid');
+
+    // Format Data
+    const format = {
+        width: {{ format ? format.largeur : 0 }},
+        height: {{ format ? format.hauteur : 0 }},
+        margeHaut: {{ format ? format.margeHaut : 0 }},
+        margeGauche: {{ format ? format.margeGauche : 0 }},
+        margeBas: {{ format ? format.margeBas : 0 }},
+        margeDroite: {{ format ? format.margeDroite : 0 }},
+        distH: {{ format ? format.distanceHorizontale : 0 }},
+        distV: {{ format ? format.distanceVerticale : 0 }}
+    };
+
+    // Initialize
+    checkboxes.forEach(cb => {
+        if (cb.checked) selectedOrderIds.add(cb.value);
+        cb.addEventListener('change', updateSelection);
+    });
+    
+    selectAllCheckbox.addEventListener('change', function() {
+        checkboxes.forEach(cb => {
+            cb.checked = this.checked;
+            if (this.checked) selectedOrderIds.add(cb.value);
+            else selectedOrderIds.delete(cb.value);
+        });
+        updateState();
+    });
+
+    btnResetGrid.addEventListener('click', () => {
+        skippedIndices.clear();
+        renderGrid();
+    });
+    
+    btnPrint.addEventListener('click', function() {
+        if (selectedOrderIds.size === 0) return;
+        
+        // Prepare Form
+        hiddenSkipped.value = JSON.stringify(Array.from(skippedIndices));
+        
+        // Remove old dynamic inputs
+        printForm.querySelectorAll('.dynamic-order-id').forEach(el => el.remove());
+        
+        // Add current selected IDs
+        // Important: maintain order? 
+        // We'll iterate the checkboxes in DOM order to respect list order
+        checkboxes.forEach(cb => {
+            if (cb.checked) {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'order_ids[]';
+                input.value = cb.value;
+                input.className = 'dynamic-order-id';
+                printForm.appendChild(input);
+            }
+        });
+        
+        printForm.submit();
+        
+        // Optional: Refresh page after delay to update status?
+        setTimeout(() => location.reload(), 3000);
+    });
+
+    renderGrid();
+    updateState();
+
+    function updateSelection(e) {
+        if (e.target.checked) selectedOrderIds.add(e.target.value);
+        else selectedOrderIds.delete(e.target.value);
+        updateState();
+    }
+    
+    function updateState() {
+        countSelectedSpan.textContent = selectedOrderIds.size;
+        btnPrint.disabled = selectedOrderIds.size === 0;
+        renderGrid();
+    }
+
+    // Grid Logic
+    function renderGrid() {
+        gridContainer.innerHTML = '';
+        
+        const pxPerCm = 20; 
+        const pageW = 21.0;
+        const pageH = 29.7;
+        const availW = pageW - format.margeGauche - format.margeDroite;
+        const availH = pageH - format.margeHaut - format.margeBas;
+        
+        let cols = 1;
+        if (format.width > 0) {
+            cols = Math.floor((availW + format.distH) / (format.width + format.distH));
+             if (format.width <= availW) {
+                cols = 1 + Math.floor((availW - format.width) / (format.width + format.distH));
+            }
+        }
+        
+        let rows = 1;
+        if (format.height > 0) {
+            if (format.height <= availH) {
+                rows = 1 + Math.floor((availH - format.height) / (format.height + format.distV));
+            }
+        }
+        
+        const totalSlots = cols * rows;
+        const selectionCount = selectedOrderIds.size;
+        
+        const pageDiv = document.createElement('div');
+        pageDiv.style.width = (pageW * pxPerCm) + 'px';
+        pageDiv.style.height = (pageH * pxPerCm) + 'px';
+        pageDiv.style.backgroundColor = 'white';
+        pageDiv.style.border = '1px solid #ccc';
+        pageDiv.style.position = 'relative';
+        pageDiv.style.margin = '0 auto';
+        
+        // Calculate which slots will be filled
+        // Logic: iterate slots 0..N. If skipped, skip. If not skipped, use one from selection.
+        let filledCount = 0;
+        
+        for (let i = 0; i < totalSlots; i++) {
+            const row = Math.floor(i / cols);
+            const col = i % cols;
+            
+            const x = format.margeGauche + (col * (format.width + format.distH));
+            const y = format.margeHaut + (row * (format.height + format.distV));
+            
+            const slot = document.createElement('div');
+            slot.style.position = 'absolute';
+            slot.style.left = (x * pxPerCm) + 'px';
+            slot.style.top = (y * pxPerCm) + 'px';
+            slot.style.width = (format.width * pxPerCm) + 'px';
+            slot.style.height = (format.height * pxPerCm) + 'px';
+            slot.style.border = '1px solid #ddd';
+            slot.style.cursor = 'pointer';
+            slot.style.fontSize = '10px';
+            slot.style.display = 'flex';
+            slot.style.alignItems = 'center';
+            slot.style.justifyContent = 'center';
+            slot.title = `Emplacement ${i + 1}`;
+            
+            const isSkipped = skippedIndices.has(i);
+            
+            if (isSkipped) {
+                slot.style.backgroundColor = '#e2e6ea'; // Gray (Used)
+                slot.innerHTML = '<i class="fas fa-times text-muted"></i>';
+            } else if (filledCount < selectionCount) {
+                slot.style.backgroundColor = '#36b9cc'; // Info/Blue (Will print here)
+                slot.style.color = 'white';
+                filledCount++;
+                slot.innerHTML = filledCount; // 1, 2, 3... order
+            } else {
+                slot.style.backgroundColor = 'white'; // Empty
+            }
+            
+            slot.onclick = () => {
+                if (skippedIndices.has(i)) {
+                    skippedIndices.delete(i);
+                } else {
+                    skippedIndices.add(i);
+                }
+                renderGrid();
+            };
+            
+            pageDiv.appendChild(slot);
+        }
+        
+        gridContainer.appendChild(pageDiv);
+    }
+});
+</script>
+{% endblock %}

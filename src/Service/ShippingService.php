@@ -24,8 +24,9 @@ class ShippingService
             return 0.0;
         }
 
-        // 2. Calculer le poids total
+        // 2. Calculer le poids total et le montant total
         $totalWeight = 0;
+        $totalAmount = 0.0;
         foreach ($items as $item) {
             // Support both PanierLigne and LigneVente/Order items if they have similar structure
             // Assuming PanierLigne here which has getArticle()
@@ -34,10 +35,23 @@ class ShippingService
                 $weight = $article->getPoids() ?? 0;
                 $quantity = $item->getQuantite();
                 $totalWeight += $weight * $quantity;
+
+                if (method_exists($item, 'getPrixUnitaire')) {
+                    $prix = $item->getPrixUnitaire();
+                    $totalAmount += (float)$prix * $quantity;
+                }
             }
         }
 
-        // 3. Calculer le coût selon le mode
+        // 3. Vérifier le franco de port
+        if ($this->societeConfig->isFrancoPortActif()) {
+            $francoMontant = $this->societeConfig->getFrancoPortMontant();
+            if ($francoMontant !== null && $totalAmount >= $francoMontant) {
+                return 0.0;
+            }
+        }
+
+        // 4. Calculer le coût selon le mode
         if ($shippingMode === Order::SHIPPING_MODE_LETTRE_SUIVIE) {
             if (!$this->societeConfig->isEnableLettreSuivie()) {
                 return 0.0; // Or throw exception? Default to 0 if not enabled but requested seems safe or fallback

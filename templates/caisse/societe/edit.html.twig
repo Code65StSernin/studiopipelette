@@ -159,10 +159,69 @@
                     </div>
                 </div>
 
-                <button class="btn btn-primary">
-                    <i class="fas fa-save"></i> Enregistrer les modifications
-                </button>
+                <div id="sticky-save-bar" class="sticky-save-bar">
+                    <div class="container">
+                        <div class="row justify-content-center">
+                            <div class="col-md-6">
+                                <div class="d-grid">
+                                    <button class="btn btn-primary btn-lg shadow">
+                                        <i class="fas fa-save"></i> Enregistrer
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
             {{ form_end(form) }}
         </div>
     </div>
+
+<style>
+    .sticky-save-bar {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: white;
+        padding: 1rem;
+        box-shadow: 0 -4px 10px rgba(0,0,0,0.1);
+        z-index: 1050;
+        transform: translateY(100%);
+        transition: transform 0.3s ease-out;
+        border-top: 1px solid #dee2e6;
+    }
+    
+    .sticky-save-bar.visible {
+        transform: translateY(0);
+    }
+    
+    /* Ensure content is not hidden behind the bar when scrolled to bottom */
+    body {
+        padding-bottom: 80px;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.querySelector('form[name="societe"]');
+        const stickyBar = document.getElementById('sticky-save-bar');
+        
+        if (form && stickyBar) {
+            const showStickyBar = () => {
+                stickyBar.classList.add('visible');
+            };
+
+            // Detect changes on all input types
+            form.addEventListener('change', showStickyBar);
+            form.addEventListener('input', showStickyBar);
+            
+            const inputs = form.querySelectorAll('input, select, textarea');
+            inputs.forEach(input => {
+                input.addEventListener('change', showStickyBar);
+                input.addEventListener('input', showStickyBar);
+            });
+        }
+    });
+</script>
 {% endblock %}

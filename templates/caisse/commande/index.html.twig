@@ -95,7 +95,7 @@
                                     {% endif %}
 
                                     {% if commande.shippingMode == 'lettre_suivie' %}
-                                        <a href="{{ path('app_caisse_commande_print_address_label', {'id': commande.id}) }}" class="btn btn-sm btn-outline-info" target="_blank" title="Imprimer l'étiquette adresse">
+                                        <a href="{{ path('app_caisse_impressions_adresses', {'order': commande.id}) }}" class="btn btn-sm btn-outline-info" title="Imprimer l'étiquette adresse">
                                             <i class="fas fa-print"></i>
                                         </a>
                                     {% elseif commande.mondialRelayLabelUrl %}

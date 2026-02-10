@@ -25,7 +25,7 @@ class PhotoController extends AbstractController
     {
         $q = $request->query->get('q');
         $queryBuilder = $photoRepository->createQueryBuilder('p')
-            ->leftJoin('p.article', 'a')
+            ->innerJoin('p.article', 'a')
             ->addSelect('a')
             ->orderBy('p.createdAt', 'DESC');
 
@@ -82,15 +82,34 @@ class PhotoController extends AbstractController
     #[Route('/{id}/edit', name: 'app_caisse_photo_edit', methods: ['GET', 'POST'])]
     public function edit(Request $request, Photo $photo, EntityManagerInterface $entityManager): Response
     {
+        // Capture original state before form handling
+        $originalArticle = $photo->getArticle();
+        $originalArticleId = $originalArticle ? $originalArticle->getId() : null;
+        $originalFilename = $photo->getFilename();
+        $originalType = $photo->getType();
+
         $form = $this->createForm(PhotoType::class, $photo, ['is_new' => false]);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
             $uploadedFile = $form->get('file')->getData();
+            $newArticle = $photo->getArticle();
+            $newArticleId = $newArticle ? $newArticle->getId() : null;
 
-            if ($uploadedFile && $photo->getArticle()) {
-                // Supprimer l'ancien fichier
-                $this->deleteFile($photo);
+            if ($uploadedFile && $newArticle) {
+                // Supprimer l'ancien fichier (depuis l'ancien emplacement)
+                if ($originalArticleId && $originalFilename) {
+                    if ($originalType === 'video') {
+                        $videoPath = $this->imageService->getProjectDir() . '/public/assets/videos/articles/' . $originalArticleId . '/' . $originalFilename;
+                        if (file_exists($videoPath)) unlink($videoPath);
+                        
+                        // Cleanup old dir if empty
+                        $oldVideoDir = $this->imageService->getProjectDir() . '/public/assets/videos/articles/' . $originalArticleId;
+                        if (is_dir($oldVideoDir) && count(scandir($oldVideoDir)) === 2) rmdir($oldVideoDir);
+                    } else {
+                        $this->imageService->deleteImage($originalFilename, $originalArticleId);
+                    }
+                }
                 
                 // Uploader le nouveau
                 try {
@@ -102,12 +121,35 @@ class PhotoController extends AbstractController
                         'form' => $form->createView(),
                     ]);
                 }
+            } elseif ($originalArticleId !== $newArticleId && $originalFilename && $newArticleId) {
+                // Article changé sans nouveau fichier -> Déplacer le fichier existant
+                if ($originalType === 'video') {
+                    $projectDir = $this->imageService->getProjectDir();
+                    $oldVideoPath = $projectDir . '/public/assets/videos/articles/' . $originalArticleId . '/' . $originalFilename;
+                    $newVideoDir = $projectDir . '/public/assets/videos/articles/' . $newArticleId;
+                    $newVideoPath = $newVideoDir . '/' . $originalFilename;
+
+                    if (file_exists($oldVideoPath)) {
+                        if (!is_dir($newVideoDir)) mkdir($newVideoDir, 0755, true);
+                        rename($oldVideoPath, $newVideoPath);
+                        
+                        // Cleanup old dir if empty
+                        $oldVideoDir = $projectDir . '/public/assets/videos/articles/' . $originalArticleId;
+                        if (is_dir($oldVideoDir) && count(scandir($oldVideoDir)) === 2) rmdir($oldVideoDir);
+                    }
+                } else {
+                    $this->imageService->moveImage($originalFilename, $originalArticleId, $newArticleId);
+                }
             }
 
             $entityManager->flush();
 
             $this->addFlash('success', 'La photo a bien été modifiée.');
             return $this->redirectToRoute('app_caisse_photo_index', [], Response::HTTP_SEE_OTHER);
+        } elseif ($form->isSubmitted()) {
+            foreach ($form->getErrors(true) as $error) {
+                $this->addFlash('error', $error->getMessage());
+            }
         }
 
         return $this->render('caisse/photo/edit.html.twig', [

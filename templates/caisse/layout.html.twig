@@ -215,8 +215,10 @@
             <span class="menu-text">Impressions</span>
             <i class="fas fa-chevron-down arrow-icon"></i>
         </div>
-        <div class="submenu {% if app.request.get('_route') == 'app_caisse_impressions_etiquettes' %}open{% endif %}">
+        <div class="submenu {% if app.request.get('_route') == 'app_caisse_impressions_etiquettes' or app.request.get('_route') == 'app_caisse_impressions_adresses' %}open{% endif %}">
             <a href="{{ path('app_caisse_impressions_etiquettes') }}" class="submenu-item" style="{% if app.request.get('_route') == 'app_caisse_impressions_etiquettes' %}background-color: rgba(255,255,255,0.1); color: white;{% endif %}">Etiquettes</a>
+            <a href="{{ path('app_caisse_impressions_adresses') }}" class="submenu-item" style="{% if app.request.get('_route') == 'app_caisse_impressions_adresses' %}background-color: rgba(255,255,255,0.1); color: white;{% endif %}">Adresses</a>
+            <a href="{{ path('app_caisse_impressions_expediteur') }}" class="submenu-item" style="{% if app.request.get('_route') == 'app_caisse_impressions_expediteur' %}background-color: rgba(255,255,255,0.1); color: white;{% endif %}">Expéditeur</a>
         </div>
         
         <!-- BtoB Accordion -->
@@ -283,10 +285,10 @@
         <div class="submenu {% if app.request.get('_route') starts with 'categorie_vente_' or app.request.get('_route') starts with 'sous_categorie_vente_' or app.request.get('_route') == 'app_caisse_parametres_generaux' or app.request.get('_route') == 'app_caisse_parametres_etiquettes' or app.request.get('_route') starts with 'app_caisse_societe_' %}open{% endif %}">
             <a href="{{ path('app_caisse_societe_index') }}" class="submenu-item" style="{% if app.request.get('_route') starts with 'app_caisse_societe_' %}background-color: rgba(255,255,255,0.1); color: white;{% endif %}">Société</a>
             <a href="{{ path('app_caisse_parametres_generaux') }}" class="submenu-item" style="{% if app.request.get('_route') == 'app_caisse_parametres_generaux' %}background-color: rgba(255,255,255,0.1); color: white;{% endif %}">Paramètres généraux</a>
-            <div class="submenu-item">Horaires</div>
             <a href="{{ path('categorie_vente_index') }}" class="submenu-item" style="{% if app.request.get('_route') starts with 'categorie_vente_' %}background-color: rgba(255,255,255,0.1); color: white;{% endif %}">Catégories Caisse</a>
             <a href="{{ path('sous_categorie_vente_index') }}" class="submenu-item" style="{% if app.request.get('_route') starts with 'sous_categorie_vente_' %}background-color: rgba(255,255,255,0.1); color: white;{% endif %}">Sous-catégories Caisse</a>
-            <a href="{{ path('app_caisse_parametres_etiquettes') }}" class="submenu-item" style="{% if app.request.get('_route') == 'app_caisse_parametres_etiquettes' %}background-color: rgba(255,255,255,0.1); color: white;{% endif %}">Etiquettes</a>
+            <a href="{{ path('app_caisse_parametres_etiquettes') }}" class="submenu-item" style="{% if app.request.get('_route') == 'app_caisse_parametres_etiquettes' %}background-color: rgba(255,255,255,0.1); color: white;{% endif %}">Etiquettage Code-barre</a>
+                            <a href="{{ path('app_caisse_parametres_etiquettes_adresse') }}" class="submenu-item" style="{% if app.request.get('_route') == 'app_caisse_parametres_etiquettes_adresse' %}background-color: rgba(255,255,255,0.1); color: white;{% endif %}">Etiquettes Adresse</a>
         </div>
 
         <!-- Mentions légales Accordion -->
@@ -415,11 +417,11 @@
       <div class="modal-dialog modal-dialog-centered modal-sm">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title">Clôture de caisse</h5>
+            <h5 class="modal-title" id="clotureCaisseTitle">Clôture de caisse</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
-            <p class="small text-muted mb-2">Saisissez le montant réel en caisse pour la clôture (sera le fond de caisse de demain) :</p>
+            <p class="small text-muted mb-2" id="clotureCaisseMessage">Saisissez le montant réel en caisse pour la clôture (sera le fond de caisse de demain) :</p>
             <div class="input-group">
                 <input type="number" id="clotureCaisseInput" class="form-control text-end" step="0.01" min="0" placeholder="0,00">
                 <span class="input-group-text">€</span>
@@ -533,7 +535,7 @@
             const currentRoute = '{{ app.request.get("_route") }}';
             const isCaisseOpen = {{ isCaisseOpen is defined and isCaisseOpen ? 'true' : 'false' }};
             const isCaisseClosed = {{ isCaisseClosed is defined and isCaisseClosed ? 'true' : 'false' }};
-            const montantPrecedent = {{ montantPrecedent is defined and montantPrecedent is not null ? montantPrecedent : 0 }};
+            const montantPrecedent = {{ montantPrecedent is defined and montantPrecedent is not null ? montantPrecedent|number_format(2, '.', '') : 0 }};
 
             if (currentRoute === 'app_caisse') {
                 if (!isCaisseOpen && !isCaisseClosed) {
@@ -761,6 +763,13 @@
         function ouvrirZCaisse(event, dateStr = null) {
             if (event) {
                 event.stopPropagation();
+            }
+
+            // Si la caisse est déjà fermée et qu'on ne force pas une date spécifique (rattrapage), on ouvre directement le PDF
+            const isCaisseClosed = {{ isCaisseClosed is defined and isCaisseClosed ? 'true' : 'false' }};
+            if (isCaisseClosed && !dateStr) {
+                window.open('{{ path("app_caisse_z") }}', '_blank');
+                return;
             }
             
             // Open modal instead of direct PDF

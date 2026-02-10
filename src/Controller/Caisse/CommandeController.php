@@ -95,9 +95,10 @@ class CommandeController extends AbstractController
         }
 
         // Generate PDF
-        $html = '<html><body style="font-family: sans-serif; font-size: 14pt; padding: 40px; text-align: center;">';
-        $html .= '<div style="border: 1px solid #ccc; padding: 20px; display: inline-block; margin-top: 50px;">';
-        $html .= '<h3>Destinataire :</h3>';
+        // Impression sur A4 en haut à gauche
+        $html = '<html><body style="font-family: sans-serif; font-size: 14pt; margin: 0; padding: 40px;">';
+        $html .= '<div style="border: 1px solid #ccc; padding: 20px; width: 12cm;">';
+        $html .= '<h3 style="margin-top: 0;">Destinataire :</h3>';
         $html .= '<p>' . nl2br($facture ? ($facture->getClientPrenom() . ' ' . $facture->getClientNom()) : ($order->getUser()->getPrenom() . ' ' . $order->getUser()->getNom())) . '</p>';
         $html .= '<p>' . nl2br($addressText) . '</p>';
         $html .= '</div>';
@@ -107,7 +108,7 @@ class CommandeController extends AbstractController
         $options->set('defaultFont', 'DejaVu Sans');
         $dompdf = new Dompdf($options);
         $dompdf->loadHtml($html);
-        $dompdf->setPaper('A6', 'landscape'); // Format étiquette
+        $dompdf->setPaper('A4', 'portrait'); // Format A4
         $dompdf->render();
 
         return new Response($dompdf->output(), 200, [
