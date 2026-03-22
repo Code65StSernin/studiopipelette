@@ -16,6 +16,80 @@
         <div id="calendar" style="background: white; padding: 20px; border-radius: 8px;"></div>
     </div>
 
+    <!-- Modal Creation Reservation -->
+    <div class="modal fade" id="modalCreateReservation" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Nouveau rendez-vous</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="overlap-alert" class="alert alert-danger d-none"></div>
+                    <form id="form-create-reservation">
+                        <input type="hidden" id="res-start-date">
+                        <div class="mb-3">
+                            <label class="form-label">Client</label>
+                            <div class="input-group">
+                                <select class="form-select" id="select-client" style="width: 70%;">
+                                    <option value="">-- Sélectionner un client --</option>
+                                    {% for user in users %}
+                                        <option value="{{ user.id }}">{{ user.prenom }} {{ user.nom }} ({{ user.email }})</option>
+                                    {% endfor %}
+                                </select>
+                                <button type="button" class="btn btn-outline-secondary" id="btn-new-client">Nouveau client</button>
+                            </div>
+                        </div>
+
+                        <div id="new-client-fields" class="d-none border p-3 mb-3 bg-light">
+                            <h6>Nouveau Client</h6>
+                            <div class="row">
+                                <div class="col-md-6 mb-2">
+                                    <input type="text" class="form-control" id="new-client-prenom" placeholder="Prénom">
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <input type="text" class="form-control" id="new-client-nom" placeholder="Nom">
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <input type="email" class="form-control" id="new-client-email" placeholder="Email">
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <input type="text" class="form-control" id="new-client-tel" placeholder="Téléphone">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Prestations (Plusieurs choix possibles)</label>
+                            <div class="row">
+                                {% for tarif in tarifs %}
+                                    <div class="col-md-6">
+                                        <div class="form-check">
+                                            <input class="form-check-input check-prestation" type="checkbox" value="{{ tarif.id }}" id="tarif-{{ tarif.id }}">
+                                            <label class="form-check-label" for="tarif-{{ tarif.id }}">
+                                                {{ tarif.nom }} ({{ tarif.dureeMinutes }} min - {{ tarif.tarif }}€)
+                                            </label>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <div id="pin-field" class="d-none border p-3 mb-3 bg-warning bg-opacity-10">
+                            <label class="form-label text-danger font-weight-bold">Code PIN Administrateur requis</label>
+                            <input type="password" class="form-control" id="admin-pin" placeholder="Saisir le code PIN">
+                            <small class="text-muted">Ce créneau est normalement indisponible. Le code PIN permet de passer outre.</small>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn btn-primary" id="btn-save-reservation">Enregistrer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
     <script src="https://unpkg.com/@popperjs/core@2"></script>
     <script src="https://unpkg.com/tippy.js@6"></script>
@@ -31,6 +105,21 @@
                 },
                 events: "{{ path('app_caisse_api_creneaux') }}",
                 locale: 'fr',
+                selectable: true,
+                selectOverlap: false,
+                select: function(info) {
+                    const startStr = info.startStr;
+                    document.getElementById('res-start-date').value = startStr;
+                    document.getElementById('overlap-alert').classList.add('d-none');
+                    document.getElementById('pin-field').classList.add('d-none');
+                    document.getElementById('admin-pin').value = "";
+                    document.getElementById('form-create-reservation').reset();
+                    document.getElementById('new-client-fields').classList.add('d-none');
+                    
+                    const modal = new bootstrap.Modal(document.getElementById('modalCreateReservation'));
+                    modal.show();
+                    calendar.unselect();
+                },
                 buttonText: {
                     today:    'Aujourd\'hui',
                     month:    'Mois',
@@ -116,6 +205,93 @@
                 }
             });
             calendar.render();
+
+            // Gestion de la modale de création
+            const btnNewClient = document.getElementById('btn-new-client');
+            const newClientFields = document.getElementById('new-client-fields');
+            const btnSave = document.getElementById('btn-save-reservation');
+            const alertBox = document.getElementById('overlap-alert');
+
+            if (btnNewClient) {
+                btnNewClient.addEventListener('click', () => {
+                    newClientFields.classList.toggle('d-none');
+                    if (!newClientFields.classList.contains('d-none')) {
+                        document.getElementById('select-client').value = "";
+                    }
+                });
+            }
+
+            if (btnSave) {
+                btnSave.addEventListener('click', () => {
+                    const startDate = document.getElementById('res-start-date').value;
+                    const userId = document.getElementById('select-client').value;
+                    const prestationIds = Array.from(document.querySelectorAll('.check-prestation:checked')).map(cb => cb.value);
+                    
+                    let newClientData = null;
+                    if (newClientFields && !newClientFields.classList.contains('d-none')) {
+                        newClientData = {
+                            prenom: document.getElementById('new-client-prenom').value,
+                            nom: document.getElementById('new-client-nom').value,
+                            email: document.getElementById('new-client-email').value,
+                            telephone: document.getElementById('new-client-tel').value
+                        };
+                        if (!newClientData.prenom || !newClientData.nom || !newClientData.email) {
+                            alert('Veuillez remplir les champs obligatoires du nouveau client (Prénom, Nom, Email).');
+                            return;
+                        }
+                    } else if (!userId) {
+                        alert('Veuillez sélectionner un client ou en créer un nouveau.');
+                        return;
+                    }
+
+                    if (prestationIds.length === 0) {
+                        alert('Veuillez sélectionner au moins une prestation.');
+                        return;
+                    }
+
+                    const data = {
+                        date: startDate,
+                        user_id: userId || null,
+                        prestation_ids: prestationIds,
+                        new_client: newClientData,
+                        admin_pin: document.getElementById('admin-pin').value || null
+                    };
+
+                    fetch('{{ path("app_caisse_reservation_create_manual") }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: JSON.stringify(data)
+                    }).then(response => response.json())
+                    .then(result => {
+                        if (result.success) {
+                            const modalEl = document.getElementById('modalCreateReservation');
+                            if (modalEl) {
+                                const modal = bootstrap.Modal.getInstance(modalEl);
+                                if (modal) modal.hide();
+                            }
+                            calendar.refetchEvents();
+                        } else {
+                            if (alertBox) {
+                                alertBox.textContent = result.error;
+                                alertBox.classList.remove('d-none');
+                            }
+                            
+                            if (result.requires_pin) {
+                                const pinField = document.getElementById('pin-field');
+                                if (pinField) pinField.classList.remove('d-none');
+                            }
+                        }
+                    }).catch(err => {
+                        if (alertBox) {
+                            alertBox.textContent = "Une erreur est survenue lors de l'enregistrement.";
+                            alertBox.classList.remove('d-none');
+                        }
+                    });
+                });
+            }
         });
     </script>
 {% endblock %}

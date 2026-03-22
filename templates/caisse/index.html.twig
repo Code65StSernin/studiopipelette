@@ -1425,58 +1425,64 @@
         }, {once: true});
     }
 
-    document.getElementById('pinConfirmBtn').addEventListener('click', function() {
-        const pin = document.getElementById('pinInput').value;
-        const btn = this;
-        
-        // Disable button while checking
-        btn.disabled = true;
-        document.getElementById('pinError').classList.add('d-none');
+    const pinConfirmBtn = document.getElementById('pinConfirmBtn');
+    if (pinConfirmBtn) {
+        pinConfirmBtn.addEventListener('click', function() {
+            const pinInput = document.getElementById('pinInput');
+            if (!pinInput) return;
+            
+            const pin = pinInput.value;
+            const btn = this;
+            
+            // Disable button while checking
+            btn.disabled = true;
+            const pinError = document.getElementById('pinError');
+            if (pinError) pinError.classList.add('d-none');
 
-        fetch('{{ path("app_caisse_check_pin") }}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            body: JSON.stringify({ pin: pin })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                if (pendingItem) {
-                    // Pass true for isForced
-                    addToCart(pendingItem.id, pendingItem.name, pendingItem.price, pendingItem.type, pendingItem.taille, true);
-                    pendingItem = null;
+            fetch('{{ path("app_caisse_check_pin") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({ pin: pin })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    if (pendingItem) {
+                        // Pass true for isForced
+                        addToCart(pendingItem.id, pendingItem.name, pendingItem.price, pendingItem.type, pendingItem.taille, true);
+                        pendingItem = null;
+                    }
+                    const modalEl = document.getElementById('pinModal');
+                    if (modalEl) {
+                        const modal = bootstrap.Modal.getInstance(modalEl);
+                        if (modal) modal.hide();
+                    }
+                } else {
+                    if (pinError) pinError.classList.remove('d-none');
                 }
-                const modalEl = document.getElementById('pinModal');
-                const modal = bootstrap.Modal.getInstance(modalEl);
-                modal.hide();
-            } else {
-                document.getElementById('pinError').classList.remove('d-none');
-            }
-        })
-        .catch(err => {
-            console.error(err);
-            alert('Erreur de communication avec le serveur');
-        })
-        .finally(() => {
-            btn.disabled = false;
+            })
+            .catch(err => {
+                console.error(err);
+                alert('Erreur de communication avec le serveur');
+            })
+            .finally(() => {
+                btn.disabled = false;
+            });
         });
-    });
+    }
 
     // Allow Enter key in PIN input
-    document.getElementById('pinInput').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            document.getElementById('pinConfirmBtn').click();
-        }
-    });
-
-    // Allow Enter key in Avoir input
-    document.getElementById('avoir-code-input').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            checkAvoir();
-        }
-    });
+    const pinInput = document.getElementById('pinInput');
+    if (pinInput) {
+        pinInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                const btn = document.getElementById('pinConfirmBtn');
+                if (btn) btn.click();
+            }
+        });
+    }
 </script>
 {% endblock %}

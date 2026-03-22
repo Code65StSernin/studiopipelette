@@ -13,6 +13,7 @@ use App\Entity\RemiseBanque;
 use App\Entity\Reservation;
 use App\Entity\UnavailabilityRule;
 use App\Entity\Vente;
+use App\Entity\User;
 use App\Repository\ArticleRepository;
 use App\Repository\CategorieVenteRepository;
 use App\Repository\SousCategorieVenteRepository;
@@ -28,6 +29,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 class CaisseController extends AbstractController
 {
@@ -1486,9 +1488,176 @@ class CaisseController extends AbstractController
     }
 
     #[Route('/caisse/planning', name: 'app_caisse_planning', methods: ['GET'])]
-    public function planning(): Response
+    public function planning(TarifRepository $tarifRepository, UserRepository $userRepository): Response
     {
-        return $this->render('caisse/planning.html.twig');
+        return $this->render('caisse/planning.html.twig', [
+            'tarifs' => $tarifRepository->findAll(),
+            'users' => $userRepository->findAll(),
+        ]);
+    }
+
+    #[Route('/caisse/reservation/create-manual', name: 'app_caisse_reservation_create_manual', methods: ['POST'])]
+    public function createManualReservation(
+        Request $request, 
+        EntityManagerInterface $em, 
+        TarifRepository $tarifRepository, 
+        UserRepository $userRepository, 
+        SocieteConfig $societeConfig,
+        UserPasswordHasherInterface $passwordHasher
+    ): JsonResponse
+    {
+        $data = json_decode($request->getContent(), true);
+        $dateStr = $data['date'] ?? null;
+        $userId = $data['user_id'] ?? null;
+        $prestationIds = $data['prestation_ids'] ?? [];
+        $adminPin = $data['admin_pin'] ?? null;
+
+        if (!$dateStr || (!$userId && empty($data['new_client'])) || empty($prestationIds)) {
+            return new JsonResponse(['error' => 'Données manquantes.'], 400);
+        }
+
+        $startDate = new \DateTime($dateStr);
+        $totalDuration = 0;
+        $totalPrice = 0;
+        $prestations = [];
+
+        foreach ($prestationIds as $id) {
+            $tarif = $tarifRepository->find($id);
+            if ($tarif) {
+                $prestations[] = $tarif;
+                $totalDuration += $tarif->getDureeMinutes();
+                $totalPrice += (float)$tarif->getTarif();
+            }
+        }
+
+        $endDate = (clone $startDate)->modify('+' . $totalDuration . ' minutes');
+
+        // 1. Check for OVERLAP with other reservations (NEVER allowed)
+        $overlap = $em->getRepository(Reservation::class)->createQueryBuilder('r')
+            ->where('r.status != :missed')
+            ->andWhere('r.dateStart < :end AND r.dateEnd > :start')
+            ->setParameter('missed', Reservation::STATUS_MISSED)
+            ->setParameter('start', $startDate)
+            ->setParameter('end', $endDate)
+            ->getQuery()
+            ->getResult();
+
+        if (!empty($overlap)) {
+            return new JsonResponse(['error' => 'Ce créneau empiète sur un autre rendez-vous (Chevauchement strict interdit).'], 409);
+        }
+
+        // 2. Check for UNAVAILABILITY RULES (Allowed with PIN)
+        $rules = $em->getRepository(UnavailabilityRule::class)->findBy(['active' => true]);
+        $hasRuleConflict = false;
+        
+        foreach ($rules as $rule) {
+            $type = $rule->getRecurrenceType();
+            $ruleStart = $rule->getStartDate();
+            $ruleEnd = $rule->getEndDate();
+            $days = $rule->getDaysOfWeek();
+            
+            // Time range for the rule
+            $ts = $rule->getTimeStart() ? $rule->getTimeStart()->format('H:i') : '00:00';
+            $te = $rule->getTimeEnd() ? $rule->getTimeEnd()->format('H:i') : '23:59';
+            
+            // Check if rule applies to this date
+            $matches = false;
+            if ($type === 'once') {
+                if ($ruleStart && $startDate->format('Y-m-d') === $ruleStart->format('Y-m-d')) $matches = true;
+            } elseif ($type === 'daily') {
+                $matches = true;
+            } elseif ($type === 'weekly') {
+                $w = (int)$startDate->format('w');
+                if (in_array($w, $days, true) || in_array((string)$w, $days, true)) $matches = true;
+            }
+            
+            if ($matches) {
+                // Rule bounds (DateTime objects for current day)
+                $ruleBoundsStart = (clone $startDate)->setTime((int)substr($ts, 0, 2), (int)substr($ts, 3, 2));
+                $ruleBoundsEnd = (clone $startDate)->setTime((int)substr($te, 0, 2), (int)substr($te, 3, 2));
+                
+                // Check for overlap with the rule
+                if ($startDate < $ruleBoundsEnd && $endDate > $ruleBoundsStart) {
+                    $hasRuleConflict = true;
+                    break;
+                }
+            }
+        }
+
+        if ($hasRuleConflict) {
+            if (!$adminPin || $adminPin !== $societeConfig->getAdminPin()) {
+                return new JsonResponse([
+                    'error' => 'Ce créneau est indisponible selon les règles configurées.',
+                    'requires_pin' => true
+                ], 403);
+            }
+        }
+
+        $reservation = new Reservation();
+        $reservation->setDateStart($startDate);
+        $reservation->setDateEnd($endDate);
+        $reservation->setTotalPrice($totalPrice);
+        $reservation->setStatus(Reservation::STATUS_CONFIRMED);
+
+        if ($userId) {
+            $user = $userRepository->find($userId);
+            if ($user) {
+                $reservation->setClientName($user->getPrenom() . ' ' . $user->getNom());
+                $reservation->setClientEmail($user->getEmail());
+                $reservation->setClientPhone($user->getTelephone());
+            }
+        } else {
+            $newClientData = $data['new_client'];
+            
+            // Check if user already exists with this email
+            $existingUser = $userRepository->findOneBy(['email' => $newClientData['email']]);
+            if ($existingUser) {
+                $user = $existingUser;
+            } else {
+                // Create new User
+                $user = new User();
+                $user->setEmail($newClientData['email']);
+                $user->setPrenom($newClientData['prenom']);
+                $user->setNom($newClientData['nom']);
+                $user->setTelephone($newClientData['telephone'] ?? null);
+                $user->setRoles(['ROLE_USER']);
+                $user->setCreatedAt(new \DateTimeImmutable());
+                
+                // Random password
+                $randomPassword = bin2hex(random_bytes(8));
+                $hashedPassword = $passwordHasher->hashPassword($user, $randomPassword);
+                $user->setPassword($hashedPassword);
+                
+                $em->persist($user);
+            }
+
+            $reservation->setClientName($user->getPrenom() . ' ' . $user->getNom());
+            $reservation->setClientEmail($user->getEmail());
+            $reservation->setClientPhone($user->getTelephone());
+        }
+
+        foreach ($prestations as $p) {
+            $reservation->addPrestation($p);
+        }
+
+        $em->persist($reservation);
+        $em->flush();
+
+        return new JsonResponse(['success' => true]);
+    }
+
+    #[Route('/caisse/api/users', name: 'app_caisse_api_users', methods: ['GET'])]
+    public function apiUsers(UserRepository $userRepository): JsonResponse
+    {
+        $users = $userRepository->findAll();
+        $data = array_map(function($user) {
+            return [
+                'id' => $user->getId(),
+                'text' => $user->getPrenom() . ' ' . $user->getNom() . ' (' . $user->getEmail() . ')'
+            ];
+        }, $users);
+
+        return new JsonResponse($data);
     }
 
     #[Route('/caisse/api/creneaux', name: 'app_caisse_api_creneaux')]
