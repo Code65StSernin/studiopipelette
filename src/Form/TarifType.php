@@ -7,6 +7,7 @@ use App\Entity\SousCategorieVente;
 use App\Entity\Tarif;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\Extension\Core\Type\ColorType;
 use Symfony\Component\Form\Extension\Core\Type\FileType;
 use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 use Symfony\Component\Form\Extension\Core\Type\MoneyType;
@@ -63,6 +64,16 @@ class TarifType extends AbstractType
                         'mimeTypesMessage' => 'Veuillez uploader une image valide (JPEG, PNG, WEBP)',
                     ])
                 ],
+            ])
+            ->add('couleurFond', ColorType::class, [
+                'label' => 'Couleur fond (planning)',
+                'required' => false,
+                'attr' => ['class' => 'form-control form-control-color']
+            ])
+            ->add('couleurTexte', ColorType::class, [
+                'label' => 'Couleur texte (planning)',
+                'required' => false,
+                'attr' => ['class' => 'form-control form-control-color']
             ])
         ;
     }

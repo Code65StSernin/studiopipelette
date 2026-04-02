@@ -1708,18 +1708,25 @@ class CaisseController extends AbstractController
             $end = $res->getDateEnd()->format('Y-m-d\TH:i:s');
             $prestationsLabels = [];
             $prestationsIds = [];
+            $bgColor = null;
+            $textColor = null;
             foreach ($res->getPrestations() as $t) {
                 $prestationsLabels[] = $t->getNom();
                 $prestationsIds[] = $t->getId();
+                if ($bgColor === null && method_exists($t, 'getCouleurFond')) {
+                    $bgColor = $t->getCouleurFond();
+                    $textColor = $t->getCouleurTexte();
+                }
             }
             $title = $res->getDateStart()->format('H:i') . ' - ' . $res->getDateEnd()->format('H:i') . ' · ' . ($res->getClientName() ?? 'Réservation');
             
+            $bgColor = $bgColor ?: '#d4807e';
+            $textColor = $textColor ?: '#FFFFFF';
+
             // Determine color based on status
-            $color = '#d4807e'; // Default confirmed
             if ($res->getStatus() === Reservation::STATUS_MISSED) {
-                $color = '#fd7e14'; // Orange
-            } elseif ($res->getStatus() === Reservation::STATUS_PAID) {
-                $color = '#28a745'; // Green
+                $bgColor = '#fd7e14';
+                $textColor = '#000000';
             }
 
             $events[] = [
@@ -1736,7 +1743,9 @@ class CaisseController extends AbstractController
                     'prestationsLabel' => implode(', ', $prestationsLabels),
                     'status' => $res->getStatus() ?? Reservation::STATUS_CONFIRMED,
                 ],
-                'color' => $color,
+                'backgroundColor' => $bgColor,
+                'borderColor' => $bgColor,
+                'textColor' => $textColor,
             ];
         }
 

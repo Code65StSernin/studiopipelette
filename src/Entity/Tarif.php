@@ -33,6 +33,12 @@ class Tarif
     #[ORM\Column(type: 'string', length: 255, nullable: true)]
     private ?string $image = null;
 
+    #[ORM\Column(type: 'string', length: 7, nullable: true)]
+    private ?string $couleurFond = null;
+
+    #[ORM\Column(type: 'string', length: 7, nullable: true)]
+    private ?string $couleurTexte = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -111,6 +117,30 @@ class Tarif
     public function setImage(?string $image): self
     {
         $this->image = $image;
+
+        return $this;
+    }
+
+    public function getCouleurFond(): ?string
+    {
+        return $this->couleurFond;
+    }
+
+    public function setCouleurFond(?string $couleurFond): self
+    {
+        $this->couleurFond = $couleurFond;
+
+        return $this;
+    }
+
+    public function getCouleurTexte(): ?string
+    {
+        return $this->couleurTexte;
+    }
+
+    public function setCouleurTexte(?string $couleurTexte): self
+    {
+        $this->couleurTexte = $couleurTexte;
 
         return $this;
     }
